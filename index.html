@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Meine Watchlist</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1115">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2a2f3a;
+    --text: #e8eaf0; --muted: #8b93a7; --accent: #ff5c5c; --accent2: #ff8a5c;
+    --film: #5ca8ff; --serie: #4fd1a5; --anime: #c58bff;
+    --geplant: #8b93a7; --schaue: #ffc65c; --gesehen: #4fd1a5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  header { position: sticky; top: 0; z-index: 5; background: rgba(15,17,21,.92); backdrop-filter: blur(8px);
+           border-bottom: 1px solid var(--line); padding: 14px 24px 0; }
+  .toprow { display: flex; align-items: center; gap: 12px; }
+  .logo { font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-right: 8px; white-space: nowrap; }
+  .logo span { color: var(--accent); }
+  .search { flex: 1; max-width: 420px; position: relative; }
+  .search input { width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px 9px 34px; outline: none; }
+  .search input:focus { border-color: var(--accent); }
+  .search::before { content: "⌕"; position: absolute; left: 12px; top: 6px; color: var(--muted); font-size: 18px; }
+  .spacer { flex: 1; }
+  .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; white-space: nowrap; }
+  .btn:hover { border-color: #3c4352; background: #252a35; }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.icon { padding: 8px 11px; }
+  .btn.danger { color: #ff7b7b; }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  .tabs { display: flex; gap: 4px; margin-top: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .tab { background: none; border: none; padding: 9px 14px; border-bottom: 2px solid transparent; color: var(--muted); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab .n { font-size: 12px; background: var(--panel2); border-radius: 8px; padding: 1px 7px; margin-left: 6px; }
+  .filters { display: flex; gap: 8px; margin-left: auto; padding-bottom: 6px; align-items: center; }
+  .chip { background: var(--panel2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 12px; font-size: 13px; color: var(--muted); }
+  .chip.active { color: var(--text); border-color: var(--accent); }
+  select.small { background: var(--panel2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 10px; font-size: 13px; }
+
+  main { padding: 22px 24px 60px; }
+  .banner { background: linear-gradient(135deg, rgba(255,92,92,.14), rgba(255,138,92,.08)); border: 1px solid rgba(255,92,92,.35);
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 14px; align-items: center; }
+  .banner b { display: block; margin-bottom: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
+          transition: transform .12s, border-color .12s; cursor: pointer; }
+  .card:hover { transform: translateY(-2px); border-color: #3c4352; }
+  .poster { aspect-ratio: 2/3; background: var(--panel2) center/cover no-repeat; position: relative; display: flex; align-items: center; justify-content: center;
+            color: var(--muted); font-size: 40px; }
+  .poster .badge { position: absolute; top: 8px; left: 8px; }
+  .poster .st { position: absolute; top: 8px; right: 8px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(0,0,0,.4); }
+  .badge { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; color: #0f1115; }
+  .badge.film { background: var(--film); } .badge.serie { background: var(--serie); } .badge.anime { background: var(--anime); }
+  .cbody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .ctitle { font-weight: 600; line-height: 1.25; }
+  .ctitle small { color: var(--muted); font-weight: 400; }
+  .where { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; align-items: center; min-height: 30px; }
+  .plogo { width: 30px; height: 30px; border-radius: 7px; background: var(--panel2); object-fit: cover; }
+  .wtext { font-size: 12px; color: var(--muted); }
+  .wtext.ok { color: var(--text); }
+  .empty { text-align: center; color: var(--muted); padding: 80px 20px; }
+  .empty .big { font-size: 48px; margin-bottom: 10px; }
+
+  /* Modals */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: flex-start; justify-content: center; z-index: 20; padding: 40px 16px; overflow: auto; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 760px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .mhead { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); gap: 10px; }
+  .mhead h2 { margin: 0; font-size: 17px; flex: 1; }
+  .x { background: none; border: none; color: var(--muted); font-size: 22px; line-height: 1; padding: 2px 6px; }
+  .mbody { padding: 18px 20px 20px; }
+  .seg { display: inline-flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button { background: none; border: none; padding: 6px 14px; border-radius: 7px; color: var(--muted); }
+  .seg button.active { background: #2c323e; color: var(--text); }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field label { color: var(--muted); font-size: 13px; }
+  .inp { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; outline: none; width: 100%; }
+  .inp:focus { border-color: var(--accent); }
+  textarea.inp { min-height: 70px; resize: vertical; }
+  .results { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; max-height: 55vh; overflow: auto; }
+  .res { display: flex; gap: 12px; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); align-items: center; }
+  .res img, .res .noimg { width: 46px; height: 69px; border-radius: 6px; object-fit: cover; background: #2a2f3a; flex: none; }
+  .res .info { flex: 1; min-width: 0; }
+  .res .info p { margin: 3px 0 0; color: var(--muted); font-size: 12px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .res select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .detail { display: grid; grid-template-columns: 170px 1fr; gap: 20px; }
+  .detail .dposter { width: 170px; aspect-ratio: 2/3; border-radius: 10px; background: var(--panel2) center/cover; display:flex; align-items:center; justify-content:center; font-size: 40px; color: var(--muted); }
+  .overview { color: #c3c8d4; margin: 0 0 14px; }
+  .pgroup { margin-bottom: 12px; }
+  .pgroup h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  .plist { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pitem { display: flex; align-items: center; gap: 7px; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 4px 10px 4px 4px; font-size: 13px; }
+  .pitem img { width: 26px; height: 26px; border-radius: 6px; }
+  .noprov { background: var(--panel2); border: 1px dashed var(--line); border-radius: 10px; padding: 12px; color: var(--muted); margin-bottom: 12px; }
+  a.lnk { color: #7fb6ff; cursor: pointer; text-decoration: none; }
+  a.lnk:hover { text-decoration: underline; }
+  .mfoot { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--line); align-items: center; }
+  .attrib { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: #2c323e; border: 1px solid #3c4352;
+           padding: 10px 18px; border-radius: 10px; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; max-width: 80vw; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+  .toast.err { border-color: #a34848; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: transparent; border-radius: 50%; animation: s .7s linear infinite; vertical-align: -2px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  .suggest { position: absolute; top: calc(100% + 6px); left: 0; width: min(560px, 90vw); background: var(--panel); border: 1px solid #3c4352;
+             border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.55); display: none; max-height: 70vh; overflow: auto; z-index: 30; }
+  .suggest.open { display: block; }
+  .suggest .sh { padding: 8px 12px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  .suggest .si { display: flex; gap: 10px; align-items: center; padding: 7px 12px; cursor: pointer; }
+  .suggest .si:hover, .suggest .si.hl { background: var(--panel2); }
+  .suggest .si img, .suggest .si .noimg { width: 34px; height: 51px; border-radius: 5px; object-fit: cover; background: #2a2f3a; flex: none; }
+  .suggest .si .info { flex: 1; min-width: 0; }
+  .suggest .si .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .suggest .si .rprov { margin-top: 3px; min-height: 0; }
+  .suggest .msg { padding: 12px; color: var(--muted); }
+  .suggest .add { padding: 6px 10px; font-size: 13px; }
+  #ovDetail .modal { max-width: 880px; }
+  .syncsec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .syncsec h3 { margin: 0 0 8px; font-size: 15px; }
+  .qrbox { display: flex; gap: 16px; align-items: flex-start; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .qrbox img { width: 170px; height: 170px; border-radius: 8px; background: #fff; flex: none; }
+  .btn.warn { border-color: #a34848; color: #ff7b7b; }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+
+  .btn.sm { padding: 5px 11px; font-size: 13px; }
+  .bar { height: 6px; background: #2a2f3a; border-radius: 4px; overflow: hidden; flex: 1; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width .25s; }
+  .bar.big { height: 9px; }
+  .bar.small { flex: none; width: 90px; height: 5px; }
+  .cprog { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .cprog .bar { flex: none; }
+  .epsbox { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .epsh { margin: 0 0 12px; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+  .epsh .state { font-size: 11px; font-weight: 600; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+  .eprog { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+  .eprog b { color: var(--text); }
+  .nextbox { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, rgba(255,92,92,.12), rgba(255,138,92,.06));
+             border: 1px solid rgba(255,92,92,.35); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; }
+  .nextbox.done { background: rgba(79,209,165,.08); border-color: rgba(79,209,165,.4); }
+  .seasons { display: flex; flex-direction: column; gap: 8px; }
+  .season { border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); overflow: hidden; }
+  .shead { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; }
+  .shead:hover { background: #252a35; }
+  .sname { font-weight: 600; }
+  .scount { font-size: 13px; min-width: 52px; text-align: right; }
+  .arrow { color: var(--muted); transition: transform .15s; }
+  .season.open .arrow { transform: rotate(90deg); }
+  .sbody { display: none; border-top: 1px solid var(--line); }
+  .season.open .sbody { display: block; }
+  .ep { display: flex; align-items: center; gap: 10px; padding: 7px 14px; cursor: pointer; border-bottom: 1px solid rgba(42,47,58,.6); }
+  .ep:last-child { border-bottom: none; }
+  .ep:hover { background: #252a35; }
+  .ep.seen .ename { color: var(--muted); }
+  .ep.future { opacity: .5; cursor: default; }
+  .enum { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; width: 30px; }
+  .ename { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .edate { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .upto { background: none; border: 1px solid var(--line); border-radius: 7px; font-size: 11px; padding: 2px 7px; color: var(--muted); visibility: hidden; }
+  .ep:hover .upto { visibility: visible; }
+  .upto:hover { color: var(--text); border-color: var(--accent); }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; flex: none; }
+  .plogo.xs { width: 24px; height: 24px; border-radius: 6px; }
+  .plogo.mine { outline: 2px solid var(--gesehen); outline-offset: 1px; }
+  .rprov { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 5px; min-height: 24px; }
+  .svc { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px; white-space: nowrap; }
+  .svc.sm { font-size: 10.5px; padding: 2px 6px; }
+  .minetag { font-size: 12px; color: var(--gesehen); font-weight: 600; }
+  .pitem.mine { border-color: var(--gesehen); }
+  .picker { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pchip { --c: #3c4352; background: var(--panel2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px 4px 9px; font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .pchip::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255,255,255,.15); }
+  .pchip:hover { border-color: #3c4352; color: var(--text); }
+  .pchip.on { border-color: var(--c); color: var(--text); background: color-mix(in srgb, var(--c) 22%, var(--panel2)); }
+  .pother { background: var(--panel2); border: 1px dashed var(--line); border-radius: 20px; padding: 4px 11px; font-size: 13px; outline: none; width: 160px; }
+  .pother:focus { border-color: var(--accent); }
+  ol.steps { margin: 6px 0 0; padding-left: 20px; color: #c3c8d4; }
+  ol.steps li { margin-bottom: 4px; }
+  /* ---------- Handy ---------- */
+  @media (max-width: 700px) {
+    body { font-size: 15px; }
+    header { padding: 10px 12px 0; backdrop-filter: none; background: var(--bg); }
+    .toprow { flex-wrap: wrap; gap: 8px; }
+    .logo { font-size: 17px; flex: 1; margin-right: 0; }
+    .toprow > .spacer { display: none; }
+    .search { order: 10; flex: 1 1 100%; max-width: none; }
+    .search input { padding: 11px 12px 11px 34px; font-size: 16px; }
+    .suggest { width: calc(100vw - 24px); max-height: 65vh; }
+    #btnAdd { position: fixed; right: 18px; bottom: calc(22px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%;
+              padding: 0; font-size: 0; z-index: 15; box-shadow: 0 8px 24px rgba(255,92,92,.45); }
+    #btnAdd::after { content: "+"; font-size: 32px; line-height: 58px; font-weight: 400; }
+    .tabs { margin-top: 6px; gap: 0; }
+    .tab { padding: 9px 10px; }
+    .filters { flex: 1 1 100%; margin-left: 0; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .chip, select.small { flex: none; }
+    main { padding: 14px 12px 90px; }
+    .banner { flex-direction: column; align-items: flex-start; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .cbody { padding: 8px 10px 10px; }
+    .plogo { width: 26px; height: 26px; }
+    .overlay { padding: 0; }
+    .overlay.open { display: block; }
+    .modal { border-radius: 0; border: none; max-width: none !important; min-height: 100%; }
+    .mhead { position: sticky; top: 0; background: var(--panel); z-index: 2; }
+    .mbody { padding: 14px; }
+    .detail { grid-template-columns: 1fr; gap: 12px; }
+    .detail .dposter { width: 110px; }
+    .res { flex-wrap: wrap; }
+    .res .info { flex-basis: calc(100% - 60px); }
+    .res select { margin-left: 58px; }
+    .shead { padding: 12px; gap: 8px; }
+    .bar.small { width: 50px; }
+    .ep { padding: 10px 12px; }
+    .ep { display: grid; grid-template-columns: 24px 34px minmax(0, 1fr) auto; grid-template-areas: "cb num name upto" ". . date date"; column-gap: 8px; row-gap: 2px; align-items: center; }
+    .ep input { grid-area: cb; } .ep .enum { grid-area: num; width: auto; } .ep .upto { grid-area: upto; }
+    .ep .ename { grid-area: name; white-space: normal; }
+    .ep .edate { grid-area: date; font-size: 11px; }
+    .upto { visibility: visible; }
+    input[type=checkbox] { width: 20px; height: 20px; }
+    .qrbox { flex-direction: column; }
+    .mfoot { position: sticky; bottom: 0; background: var(--panel); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="toprow">
+    <div class="logo"><img src="icon-32.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">Meine <span>Watchlist</span></div>
+    <div class="search"><input id="q" placeholder="Film, Serie oder Anime suchen …" autocomplete="off">
+      <div class="suggest" id="suggest"></div></div>
+    <div class="spacer"></div>
+    <button class="btn icon" id="btnSync" title="Abgleich PC ↔ Handy" style="display:none">☁</button>
+    <button class="btn icon" id="btnRefreshAll" title="Streaming-Infos für alle Titel aktualisieren">⟳</button>
+    <button class="btn icon" id="btnSettings" title="Einstellungen">⚙</button>
+    <button class="btn primary" id="btnAdd">+ Hinzufügen</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none"></div>
+</main>
+
+<!-- Hinzufügen -->
+<div class="overlay" id="ovAdd">
+  <div class="modal">
+    <div class="mhead"><h2>Titel hinzufügen</h2>
+      <div class="seg" id="addMode"><button data-m="search" class="active">Suchen</button><button data-m="manual">Manuell</button></div>
+      <button class="x" data-close>×</button></div>
+    <div class="mbody">
+      <div id="paneSearch">
+        <div class="row">
+          <input class="inp" id="sq" placeholder="Film, Serie oder Anime suchen … (z. B. Attack on Titan)" style="flex:1">
+          <button class="btn primary" id="sgo">Suchen</button>
+        </div>
+        <div class="results" id="sres"></div>
+      </div>
+      <div id="paneManual" style="display:none">
+        <div class="field"><label>Titel</label><input class="inp" id="mTitle"></div>
+        <div class="row" style="margin-bottom:14px">
+          <div class="field" style="margin:0;flex:1"><label>Art</label>
+            <select class="inp" id="mKind"><option value="film">Film</option><option value="serie">Serie</option><option value="anime">Anime</option></select></div>
+          <div class="field" style="margin:0;width:120px"><label>Jahr</label><input class="inp" id="mYear"></div>
+        </div>
+        <div class="field"><label>Wo kann man es schauen? (optional – anklicken)</label><div id="mWhere"></div></div>
+        <button class="btn primary" id="mSave">Zur Liste hinzufügen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Details -->
+<div class="overlay" id="ovDetail">
+  <div class="modal">
+    <div class="mhead"><h2 id="dTitle"></h2><button class="x" data-close>×</button></div>
+    <div class="mbody" id="dBody"></div>
+    <div class="mfoot">
+      <button class="btn danger" id="dDelete">Entfernen</button>
+      <div class="spacer"></div>
+      <button class="btn" id="dRefresh">⟳ Streaming-Infos aktualisieren</button>
+    </div>
+  </div>
+</div>
+
+<!-- Einstellungen -->
+<div class="overlay" id="ovSettings">
+  <div class="modal" style="max-width:600px">
+    <div class="mhead"><h2>Einstellungen</h2><button class="x" data-close>×</button></div>
+    <div class="mbody">
+      <div class="field"><label>TMDB-API-Schlüssel</label>
+        <input class="inp" id="sKey" placeholder="API-Schlüssel oder Lesezugriffstoken einfügen" spellcheck="false"></div>
+      <div class="hint" style="margin:-4px 0 14px">
+        Damit sucht das Programm Titel und zeigt dir, wo sie laufen. Der Schlüssel ist kostenlos:
+        <ol class="steps">
+          <li>Kostenloses Konto auf <a class="lnk" data-href="https://www.themoviedb.org/signup">themoviedb.org</a> erstellen</li>
+          <li><a class="lnk" data-href="https://www.themoviedb.org/settings/api">Einstellungen → API</a> öffnen und einen Schlüssel beantragen (Zweck: privat)</li>
+          <li>Den „API-Schlüssel“ kopieren und hier einfügen</li>
+        </ol>
+      </div>
+      <div class="field"><label>Meine Streaming-Dienste – Titel darauf werden markiert und lassen sich filtern</label><div id="sMine"></div></div>
+      <div class="field"><label>Land für Streaming-Angebote</label>
+        <select class="inp" id="sRegion">
+          <option value="DE">Deutschland</option><option value="AT">Österreich</option><option value="CH">Schweiz</option>
+          <option value="US">USA</option><option value="GB">Großbritannien</option><option value="NL">Niederlande</option>
+          <option value="FR">Frankreich</option><option value="IT">Italien</option><option value="ES">Spanien</option><option value="PL">Polen</option>
+        </select></div>
+      <div class="hint" id="sFile"></div>
+      <div class="syncsec">
+        <h3>📱 Handy & Abgleich</h3>
+        <div id="syncIntro" class="hint" style="margin-bottom:10px"></div>
+        <div class="field"><label>GitHub-Token (für den Abgleich – bleibt nur auf diesem Gerät)</label>
+          <input class="inp" id="sToken" placeholder="ghp_…" spellcheck="false" autocomplete="off"></div>
+        <div class="hint" id="syncState" style="margin:-6px 0 12px"></div>
+        <div id="deployBox"></div>
+      </div>
+    </div>
+    <div class="mfoot"><div class="spacer"></div><button class="btn" data-close>Abbrechen</button><button class="btn primary" id="sSave">Speichern</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Bekannte Streaming-Dienste: Name, Farbe, und wie sie bei TMDB/JustWatch heißen */
+const SERVICES = [
+  { n: "Netflix", c: "#e50914", a: ["netflix", "netflix basic with ads", "netflix standard with ads", "netflix kids"] },
+  { n: "Amazon Prime Video", c: "#00a8e1", a: ["amazon prime video", "amazon prime video with ads", "prime video"] },
+  { n: "Disney+", c: "#113ccf", a: ["disney plus", "disney+"] },
+  { n: "Crunchyroll", c: "#f47521", a: ["crunchyroll"] },
+  { n: "Apple TV+", c: "#555555", a: ["apple tv plus", "apple tv+"] },
+  { n: "WOW", c: "#7a2cff", a: ["wow", "sky go", "sky x", "sky store"] },
+  { n: "HBO Max", c: "#002be7", a: ["hbo max", "max"] },
+  { n: "Paramount+", c: "#0064ff", a: ["paramount plus", "paramount+", "paramount plus premium", "paramount plus basic with ads"] },
+  { n: "Joyn", c: "#e6007e", a: ["joyn", "joyn plus", "joyn plus+"] },
+  { n: "RTL+", c: "#e40046", a: ["rtl+", "rtl plus", "rtl+ max"] },
+  { n: "MagentaTV", c: "#e20074", a: ["magentatv", "magenta tv", "magentatv+"] },
+  { n: "ADN", c: "#0096fa", a: ["adn", "animation digital network"] },
+  { n: "Animax", c: "#ff3c78", a: ["animax", "animax plus amazon channel"] },
+  { n: "ARD Mediathek", c: "#003480", a: ["ard mediathek", "ard plus"] },
+  { n: "ZDF Mediathek", c: "#fa7d19", a: ["zdf", "zdf mediathek", "zdf herzkino amazon channel"] },
+  { n: "ARTE", c: "#fd4600", a: ["arte"] },
+  { n: "YouTube", c: "#ff0000", a: ["youtube", "youtube premium", "youtube free"] },
+  { n: "Pluto TV", c: "#fff200", a: ["pluto tv"] },
+  { n: "MUBI", c: "#0a0a0a", a: ["mubi", "mubi amazon channel"] },
+  { n: "Canal+", c: "#222222", a: ["canal+", "canal plus"] },
+  { n: "DAZN", c: "#f8f8f5", a: ["dazn"] },
+  { n: "Rakuten TV", c: "#bf0000", a: ["rakuten tv"] },
+];
+const ALIAS = new Map(); SERVICES.forEach(s => s.a.forEach(a => ALIAS.set(a, s.n)));
+function canon(name) {
+  const k = String(name || "").trim().toLowerCase();
+  return ALIAS.get(k) || ALIAS.get(k.replace(/\s+(basic|standard)?\s*with ads$/, "")) || String(name || "").trim();
+}
+const svcInfo = n => SERVICES.find(s => s.n === n);
+const manualList = it => (it.manualWhere || "").split(/[,;\/]+/).map(s => canon(s)).filter(Boolean);
+function svcBadge(name, extra = "") {
+  const s = svcInfo(name), c = s ? s.c : "#3c4352";
+  const light = ["#fff200", "#f8f8f5"].includes(c);
+  return `<span class="svc ${extra}" style="background:${c};color:${light ? "#111" : "#fff"}">${esc(name)}</span>`;
+}
+
+const KINDS = { film: "Film", serie: "Serie", anime: "Anime" };
+const KINDS_PL = { all: "Alle", film: "Filme", serie: "Serien", anime: "Anime" };
+const STATUS = { geplant: "Geplant", schaue: "Am Schauen", gesehen: "Gesehen" };
+let items = [], settings = {}, view = { kind: "all", status: "all", provider: "", q: "" }, current = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* ===== Handy-Modus: dieselben Funktionen wie das PC-Programm, direkt im Browser ===== */
+const Local = (() => {
+  const KEY = "watchlist-state-v1";
+  const TMDB = window.WATCHLIST_TMDB_BASE || "https://api.themoviedb.org/3";
+  let st = null;
+  const now = () => Date.now();
+  const iso = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  const err = (msg, code = 400) => { const e = new Error(msg); e.code = code; throw e; };
+
+  function load() {
+    if (st) return st;
+    try { st = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { st = null; }
+    st = st || {};
+    st.items = st.items || [];
+    st.deleted = st.deleted || {};
+    st.settings = Object.assign({ apiKey: "", region: "DE", myServices: [], modified: 0 }, st.settings || {});
+    return st;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { console.warn(e); } }
+  const find = id => load().items.find(i => i.id === id);
+  const newID = () => [...crypto.getRandomValues(new Uint8Array(8))].map(b => b.toString(16).padStart(2, "0")).join("");
+
+  async function tmdb(path, params = {}) {
+    const key = (load().settings.apiKey || "").trim();
+    if (!key) err("Kein TMDB-API-Schlüssel hinterlegt (Einstellungen ⚙)");
+    const bearer = key.length > 60 || key.startsWith("eyJ");
+    const q = new URLSearchParams(params); if (!bearer) q.set("api_key", key);
+    let r;
+    try { r = await fetch(TMDB + path + "?" + q, { headers: bearer ? { Authorization: "Bearer " + key, Accept: "application/json" } : { Accept: "application/json" } }); }
+    catch { err("TMDB nicht erreichbar – Internetverbindung prüfen", 502); }
+    if (r.status === 401) err("TMDB-API-Schlüssel ungültig", 502);
+    if (!r.ok) err("TMDB-Fehler " + r.status, 502);
+    return r.json();
+  }
+
+  async function search(query) {
+    const raw = await tmdb("/search/multi", { query, language: "de-DE", include_adult: "false" });
+    return (raw.results || []).filter(r => r.media_type === "movie" || r.media_type === "tv").map(r => {
+      const tv = r.media_type === "tv", date = (tv ? r.first_air_date : r.release_date) || "";
+      const anim = (r.genre_ids || []).includes(16);
+      return {
+        tmdbId: r.id, mediaType: r.media_type, overview: r.overview || "",
+        title: tv ? r.name : r.title, year: date.slice(0, 4),
+        poster: r.poster_path ? "https://image.tmdb.org/t/p/w185" + r.poster_path : "",
+        kind: anim && ["ja", "ko", "zh"].includes(r.original_language) ? "anime" : tv ? "serie" : "film",
+      };
+    });
+  }
+
+  const provCache = new Map();
+  async function providers(mt, id, region) {
+    const ck = `${mt}:${id}:${region}`, c = provCache.get(ck);
+    if (c && now() - c.at < 6 * 3600e3) return c.p;
+    const raw = await tmdb(`/${mt}/${id}/watch/providers`);
+    const conv = l => (l || []).slice().sort((a, b) => (a.display_priority || 0) - (b.display_priority || 0))
+      .map(p => ({ name: p.provider_name, logo: p.logo_path ? "https://image.tmdb.org/t/p/w92" + p.logo_path : "" }));
+    const r = (raw.results || {})[region] || {};
+    const p = { link: r.link || "", flatrate: conv(r.flatrate), free: conv(r.free), ads: conv(r.ads), rent: conv(r.rent), buy: conv(r.buy) };
+    provCache.set(ck, { p, at: now() });
+    return p;
+  }
+
+  async function tvDetails(id) {
+    const raw = await tmdb(`/tv/${id}`, { language: "de-DE" });
+    const states = { "Ended": "Beendet", "Canceled": "Abgesetzt", "Returning Series": "Läuft noch", "In Production": "In Produktion", "Planned": "In Produktion" };
+    return {
+      seasons: (raw.seasons || []).map(s => ({ number: s.season_number, name: s.name || "", episodeCount: s.episode_count || 0, airDate: s.air_date || "" })),
+      lastAired: raw.last_episode_to_air ? [raw.last_episode_to_air.season_number, raw.last_episode_to_air.episode_number] : null,
+      nextAir: raw.next_episode_to_air ? { season: raw.next_episode_to_air.season_number, episode: raw.next_episode_to_air.episode_number, name: raw.next_episode_to_air.name || "", airDate: raw.next_episode_to_air.air_date || "" } : null,
+      showState: states[raw.status] || "",
+    };
+  }
+
+  const seasonCache = new Map();
+  async function season(id, n) {
+    const ck = id + ":" + n, c = seasonCache.get(ck);
+    if (c && now() - c.at < 6 * 3600e3) return c.eps;
+    const raw = await tmdb(`/tv/${id}/season/${n}`, { language: "de-DE" });
+    const eps = (raw.episodes || []).map(e => ({ number: e.episode_number, name: e.name || "", airDate: e.air_date || "", overview: e.overview || "", runtime: e.runtime || 0, still: e.still_path ? "https://image.tmdb.org/t/p/w300" + e.still_path : "" }));
+    seasonCache.set(ck, { eps, at: now() });
+    return eps;
+  }
+
+  // gleiche Regeln wie im PC-Programm
+  function aired(it, s) {
+    if (!it.lastAired || it.lastAired.length !== 2) return s.episodeCount;
+    const [ls, le] = it.lastAired;
+    return s.number < ls ? s.episodeCount : s.number === ls ? Math.min(le, s.episodeCount) : 0;
+  }
+  function progress(it) {
+    let w = 0, a = 0;
+    for (const s of it.seasons || []) {
+      if (!s.number) continue;
+      const ai = aired(it, s); a += ai;
+      for (const e of (it.watched || {})[s.number] || []) if (e <= ai) w++;
+    }
+    return [w, a];
+  }
+  function setW(it, s, eps, on) {
+    it.watched = it.watched || {};
+    const set = new Set(it.watched[s] || []);
+    eps.forEach(e => on ? set.add(e) : set.delete(e));
+    const l = [...set].sort((a, b) => a - b);
+    if (l.length) it.watched[s] = l; else delete it.watched[s];
+  }
+  const range = (a, b) => { const o = []; for (let i = a; i <= b; i++) o.push(i); return o; };
+
+  async function refreshItem(it) {
+    if (!it.tmdbId || !it.mediaType) return;
+    const region = load().settings.region || "DE";
+    it.providers = await providers(it.mediaType, it.tmdbId, region);
+    it.region = region; it.updated = iso();
+    if (it.mediaType === "tv") {
+      try { Object.assign(it, await tvDetails(it.tmdbId)); } catch {}
+    }
+  }
+  function applyRefresh(dst, src) {
+    Object.assign(dst, { providers: src.providers, region: src.region, updated: src.updated });
+    if (!src.seasons) return false;
+    Object.assign(dst, { seasons: src.seasons, lastAired: src.lastAired, nextAir: src.nextAir, showState: src.showState });
+    const [w, a] = progress(dst);
+    if (dst.status === "gesehen" && w > 0 && w < a) { dst.status = "geplant"; dst.modified = now(); return true; }
+    return false;
+  }
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const pub = () => { const s = load().settings; return { apiKey: s.apiKey, region: s.region, myServices: s.myServices || [], modified: s.modified, dataFile: "", appVersion: APP_VERSION }; };
+
+  const routes = [
+    ["GET", /^\/api\/items$/, () => load().items],
+    ["POST", /^\/api\/items$/, async (m, b) => {
+      if (!b || !String(b.title || "").trim()) err("Titel fehlt");
+      const s = load();
+      if (b.tmdbId) { const ex = s.items.find(i => i.tmdbId === b.tmdbId && i.mediaType === b.mediaType); if (ex) err(`„${ex.title}“ ist schon auf deiner Liste`, 409); }
+      const it = Object.assign({ tmdbId: 0, mediaType: "", kind: "film", year: "", poster: "", overview: "", note: "", manualWhere: "", providers: null, region: "", updated: "", watched: {} }, b,
+        { id: newID(), title: String(b.title).trim(), status: b.status || "geplant", added: iso(), modified: now() });
+      let warning = "";
+      try { await refreshItem(it); } catch (e) { warning = e.message; }
+      s.items.unshift(it); save();
+      return { item: it, warning };
+    }],
+    ["PUT", /^\/api\/items\/([^/]+)$/, (m, b) => {
+      const it = find(m[1]); if (!it) err("Nicht gefunden", 404);
+      for (const [k, v] of Object.entries(b || {})) {
+        if (["status", "kind", "note", "manualWhere"].includes(k)) it[k] = v;
+        if (k === "title" && String(v).trim()) it.title = String(v).trim();
+      }
+      it.modified = now(); save(); return it;
+    }],
+    ["DELETE", /^\/api\/items\/([^/]+)$/, m => {
+      const s = load(); s.items = s.items.filter(i => i.id !== m[1]); s.deleted[m[1]] = now(); save(); return { ok: true };
+    }],
+    ["POST", /^\/api\/items\/([^/]+)\/refresh$/, async m => {
+      const it = find(m[1]); if (!it) err("Nicht gefunden", 404);
+      const c = clone(it); await refreshItem(c); applyRefresh(it, c); save(); return it;
+    }],
+    ["GET", /^\/api\/items\/([^/]+)\/season\/(\d+)$/, async m => {
+      const it = find(m[1]); if (!it || it.mediaType !== "tv" || !it.tmdbId) err("Keine Folgen-Infos für diesen Titel", 404);
+      return season(it.tmdbId, +m[2]);
+    }],
+    ["POST", /^\/api\/items\/([^/]+)\/watched$/, (m, b) => {
+      const it = find(m[1]); if (!it) err("Nicht gefunden", 404);
+      const [before] = progress(it), ss = (it.seasons || []);
+      if (b.mode === "season") { const s = ss.find(x => x.number === b.season); if (s) { if (b.watched) setW(it, s.number, range(1, aired(it, s)), true); else if (it.watched) delete it.watched[s.number]; } }
+      else if (b.mode === "upTo") ss.forEach(s => { if (s.number && s.number <= b.season) setW(it, s.number, range(1, s.number === b.season ? b.episode : aired(it, s)), true); });
+      else if (b.mode === "all") ss.forEach(s => { if (s.number) setW(it, s.number, range(1, aired(it, s)), true); });
+      else if (b.mode === "none") it.watched = {};
+      else setW(it, b.season, b.episodes || [], !!b.watched);
+      const [after, a] = progress(it);
+      if (after !== before) {
+        if (a > 0 && after >= a) it.status = "gesehen";
+        else if (after > 0 && (it.status === "geplant" || it.status === "gesehen")) it.status = "schaue";
+        else if (after === 0 && it.status === "schaue") it.status = "geplant";
+      }
+      it.watched = it.watched || {}; it.modified = now(); save(); return it;
+    }],
+    ["POST", /^\/api\/refresh-all$/, async () => {
+      let updated = 0, error = "";
+      for (const it of load().items.filter(i => i.tmdbId)) {
+        try { const c = clone(it); await refreshItem(c); applyRefresh(it, c); updated++; }
+        catch (e) { error = e.message; if (/Schlüssel|erreichbar/.test(error)) break; }
+      }
+      save(); return { updated, error };
+    }],
+    ["POST", /^\/api\/refresh-stale$/, async () => {
+      const s = load(), newEpisodes = [];
+      if (s.settings.apiKey) {
+        const stale = s.items.filter(i => i.mediaType === "tv" && i.tmdbId && (!i.seasons || !i.updated || now() - Date.parse(i.updated) > 6 * 3600e3)).slice(0, 60);
+        for (const it of stale) {
+          try { const c = clone(it); await refreshItem(c); if (applyRefresh(it, c)) newEpisodes.push(it.title); }
+          catch (e) { if (/Schlüssel|erreichbar/.test(e.message)) break; }
+        }
+        if (stale.length) save();
+      }
+      return { items: s.items, newEpisodes };
+    }],
+    ["GET", /^\/api\/search$/, async (m, b, q) => q.get("q") ? search(q.get("q")) : []],
+    ["GET", /^\/api\/providers$/, async (m, b, q) => providers(q.get("type"), +q.get("id"), load().settings.region || "DE")],
+    ["GET", /^\/api\/settings$/, () => pub()],
+    ["POST", /^\/api\/settings$/, async (m, b) => {
+      const key = String(b.apiKey || "").trim(), s = load();
+      if (key && key !== s.settings.apiKey) {
+        const old = s.settings.apiKey; s.settings.apiKey = key;
+        try { await tmdb("/configuration"); } catch (e) { s.settings.apiKey = old; throw e; }
+      }
+      if ((b.region || "DE") !== s.settings.region) provCache.clear();
+      Object.assign(s.settings, { apiKey: key, region: String(b.region || "DE").toUpperCase(), myServices: b.myServices || [], modified: now() });
+      save(); return { ok: true };
+    }],
+    ["GET", /^\/api\/state$/, () => { const s = load(); return { items: s.items, deleted: s.deleted, settings: pub() }; }],
+    ["PUT", /^\/api\/state$/, (m, b) => {
+      const s = load(); s.items = b.items || []; s.deleted = b.deleted || {};
+      if (b.settings && (b.settings.modified || 0) >= (s.settings.modified || 0)) {
+        Object.assign(s.settings, { apiKey: b.settings.apiKey || "", region: b.settings.region || "DE", myServices: b.settings.myServices || [], modified: b.settings.modified || 0 });
+      }
+      save(); return { ok: true };
+    }],
+    ["POST", /^\/api\/open$/, (m, b) => { window.open(b.url, "_blank", "noopener"); return { ok: true }; }],
+  ];
+
+  async function handle(method, path, body) {
+    const u = new URL(path, location.href);
+    for (const [mt, re, fn] of routes) {
+      const m = u.pathname.match(re);
+      if (m && mt === method) return fn(m, body, u.searchParams);
+    }
+    err("Unbekannte Anfrage: " + method + " " + u.pathname, 404);
+  }
+  return { handle };
+})();
+
+/* Läuft die Seite im PC-Programm ("server") oder als Handy-App ("local")? */
+let MODE = "server";
+async function detectMode() {
+  try { const r = await fetch("api/version", { cache: "no-store" }); if (r.ok && (await r.json()).version) return "server"; } catch {}
+  return "local";
+}
+const SYNC_SILENT = /^\/api\/(state|sync-local|ping|bye|open|deploy|search|providers|qr|version)/;
+async function api(method, path, body) {
+  let data;
+  if (MODE === "local") {
+    data = JSON.parse(JSON.stringify(await Local.handle(method, path, body) ?? null));
+  } else {
+    const r = await fetch(path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+    data = r.status === 204 ? null : await r.json().catch(() => null);
+    if (!r.ok) throw new Error((data && data.error) || ("Fehler " + r.status));
+  }
+  if (method !== "GET" && !SYNC_SILENT.test(path)) Sync.changed();
+  return data;
+}
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = "toast", 3200);
+}
+function openUrl(u) { api("POST", "/api/open", { url: u }).catch(() => window.open(u)); }
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-href]"); if (a) { e.preventDefault(); openUrl(a.dataset.href); }
+  if (e.target.matches("[data-close]")) e.target.closest(".overlay").classList.remove("open");
+  if (e.target.classList.contains("overlay")) e.target.classList.remove("open");
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".overlay.open").forEach(o => o.classList.remove("open")); });
+
+/* Anbieterliste zusammenfassen: gleiche Dienste (z. B. "Netflix basic with Ads") nur einmal */
+function dedupe(list) {
+  const seen = new Set(), out = [];
+  for (const x of list || []) { const n = canon(x.name); if (!seen.has(n)) { seen.add(n); out.push({ ...x, name: n }); } }
+  return out;
+}
+function streamProvidersOf(p) { return p ? dedupe([...(p.flatrate||[]), ...(p.free||[]), ...(p.ads||[])]) : []; }
+function streamProviders(it) { return streamProvidersOf(it.providers); }
+function allProviderNames(it) {
+  const p = it.providers, names = new Set();
+  if (p) for (const k of ["flatrate","free","ads"]) (p[k]||[]).forEach(x => names.add(canon(x.name)));
+  manualList(it).forEach(n => names.add(n));
+  return names;
+}
+function onMyServices(it) {
+  const mine = settings.myServices || []; if (!mine.length) return [];
+  const names = allProviderNames(it); return mine.filter(m => names.has(m));
+}
+function justwatchUrl(title) {
+  const r = (settings.region || "DE").toLowerCase();
+  return `https://www.justwatch.com/${r}/${r === "de" || r === "at" || r === "ch" ? "Suche" : "search"}?q=` + encodeURIComponent(title);
+}
+
+/* ---------- Staffeln & Folgen ---------- */
+const isShow = it => it.mediaType === "tv" && it.tmdbId;
+function airedIn(it, s) {
+  if (!it.lastAired || it.lastAired.length !== 2) return s.episodeCount;
+  const [ls, le] = it.lastAired;
+  if (s.number < ls) return s.episodeCount;
+  if (s.number === ls) return Math.min(le, s.episodeCount);
+  return 0;
+}
+const mainSeasons = it => (it.seasons || []).filter(s => s.number > 0).sort((a, b) => a.number - b.number);
+const watchedSet = (it, n) => new Set((it.watched || {})[n] || []);
+function prog(it) {
+  let w = 0, a = 0;
+  for (const s of mainSeasons(it)) { const ai = airedIn(it, s); a += ai; watchedSet(it, s.number).forEach(e => { if (e <= ai) w++; }); }
+  return { w, a, pct: a ? Math.round(w / a * 100) : 0 };
+}
+function nextEp(it) {
+  for (const s of mainSeasons(it)) {
+    const ws = watchedSet(it, s.number), ai = airedIn(it, s);
+    for (let e = 1; e <= ai; e++) if (!ws.has(e)) return { s: s.number, e };
+  }
+  return null;
+}
+const fmtDate = d => d ? new Date(d + "T12:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+const isFuture = d => !d || new Date(d + "T00:00:00") > new Date();
+const SE = (s, e) => `S${String(s).padStart(2, "0")} E${String(e).padStart(2, "0")}`;
+
+/* ---------- Anbieter-Auswahl (Chips) ---------- */
+function picker(el, selected, onChange, allowCustom = true) {
+  let sel = [...selected];
+  const draw = () => {
+    const custom = sel.filter(n => !svcInfo(n));
+    el.innerHTML = `<div class="picker">` +
+      SERVICES.map(s => `<button type="button" class="pchip ${sel.includes(s.n) ? "on" : ""}" data-n="${esc(s.n)}" style="--c:${s.c}">${esc(s.n)}</button>`).join("") +
+      custom.map(n => `<button type="button" class="pchip on" data-n="${esc(n)}" style="--c:#3c4352">${esc(n)} ✕</button>`).join("") +
+      (allowCustom ? `<input class="pother" placeholder="+ Anderer (Enter)">` : "") + `</div>`;
+    el.querySelectorAll(".pchip").forEach(b => b.onclick = () => {
+      const n = b.dataset.n; sel = sel.includes(n) ? sel.filter(x => x !== n) : [...sel, n]; draw(); onChange(sel);
+    });
+    const o = el.querySelector(".pother");
+    if (o) o.onkeydown = e => {
+      if (e.key !== "Enter") return; e.preventDefault();
+      const n = canon(o.value); if (n && !sel.includes(n)) { sel.push(n); draw(); onChange(sel); el.querySelector(".pother").focus(); }
+    };
+  };
+  draw();
+  return () => sel;
+}
+
+/* ---------- Liste ---------- */
+function renderTabs() {
+  const cnt = k => items.filter(i => k === "all" || i.kind === k).length;
+  const provs = new Map();
+  items.forEach(i => allProviderNames(i).forEach(n => provs.set(n, (provs.get(n)||0) + 1)));
+  const mineCount = items.filter(i => onMyServices(i).length).length;
+  const provOpts = ((settings.myServices||[]).length ? `<option value="__mine" ${view.provider==="__mine"?"selected":""}>⭐ Meine Dienste (${mineCount})</option>` : "") +
+    [...provs.entries()].sort((a,b) => b[1]-a[1]).map(([n,c]) => `<option value="${esc(n)}" ${view.provider===n?"selected":""}>${esc(n)} (${c})</option>`).join("");
+  $("#tabs").innerHTML =
+    Object.entries(KINDS_PL).map(([k,l]) => `<button class="tab ${view.kind===k?"active":""}" data-kind="${k}">${l}<span class="n">${cnt(k)}</span></button>`).join("") +
+    `<div class="filters">
+      ${[["all","Alle"],...Object.entries(STATUS)].map(([k,l]) => `<button class="chip ${view.status===k?"active":""}" data-status="${k}">${l}</button>`).join("")}
+      <select class="small" id="provFilter"><option value="">Alle Anbieter</option>${provOpts}</select>
+    </div>`;
+  $("#tabs").querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { view.kind = b.dataset.kind; render(); });
+  $("#tabs").querySelectorAll("[data-status]").forEach(b => b.onclick = () => { view.status = b.dataset.status; render(); });
+  $("#provFilter").onchange = e => { view.provider = e.target.value; render(); };
+}
+
+function render() {
+  renderTabs();
+  $("#banner").innerHTML = settings.apiKey ? "" : (MODE === "local" && !Sync.token) ?
+    `<div class="banner"><div style="font-size:26px">📱</div><div style="flex:1"><b>Mit deinem PC verbinden</b>
+     Öffne auf dem PC die Watchlist → ⚙ → „Handy & Abgleich“ und scanne den QR-Code mit der Handy-Kamera. Dann hast du hier denselben Stand.</div>
+     <button class="btn primary" onclick="openSettings()">Mehr</button></div>` :
+    `<div class="banner"><div style="font-size:26px">🔑</div><div style="flex:1"><b>Noch ein Schritt: TMDB-Schlüssel eintragen</b>
+     Damit kannst du Titel suchen und siehst automatisch, auf welchen Diensten sie laufen. Der Schlüssel ist kostenlos und in 2 Minuten erstellt.</div>
+     <button class="btn primary" onclick="openSettings()">Jetzt einrichten</button></div>`;
+  const q = view.q.toLowerCase();
+  const list = items.filter(i =>
+    (view.kind === "all" || i.kind === view.kind) &&
+    (view.status === "all" || i.status === view.status) &&
+    (!view.provider || (view.provider === "__mine" ? onMyServices(i).length : allProviderNames(i).has(view.provider))) &&
+    (!q || i.title.toLowerCase().includes(q) || (i.note||"").toLowerCase().includes(q)));
+  const grid = $("#grid"), empty = $("#empty");
+  if (!list.length) {
+    grid.innerHTML = ""; empty.style.display = "block";
+    empty.innerHTML = items.length
+      ? `<div class="big">🔍</div>Keine Treffer mit diesen Filtern.` + (view.q.trim() ? `<div style="margin-top:14px"><button class="btn primary" id="emptyAdd">„${esc(view.q.trim())}“ suchen und hinzufügen</button></div>` : "")
+      : `<div class="big">🍿</div><div style="font-size:16px;color:var(--text);margin-bottom:6px">Deine Watchlist ist noch leer</div>Füge oben rechts mit „+ Hinzufügen“ deinen ersten Film, deine erste Serie oder deinen ersten Anime hinzu.`;
+    const ea = $("#emptyAdd"); if (ea) ea.onclick = () => openAdd(view.q.trim());
+    return;
+  }
+  empty.style.display = "none";
+  grid.innerHTML = list.map(i => {
+    const sp = streamProviders(i), ml = manualList(i).filter(n => !sp.some(p => p.name === n));
+    const mine = onMyServices(i);
+    const logo = p => p.logo ? `<img class="plogo ${mine.includes(p.name) ? "mine" : ""}" src="${esc(p.logo)}" title="${esc(p.name)}" alt="${esc(p.name)}">` : svcBadge(p.name, "sm");
+    let where;
+    if (sp.length || ml.length) {
+      const all = [...sp, ...ml.map(n => ({ name: n }))];
+      where = all.slice(0, 6).map(logo).join("") + (all.length > 6 ? `<span class="wtext">+${all.length-6}</span>` : "");
+    }
+    else if (i.providers && ((i.providers.rent||[]).length || (i.providers.buy||[]).length)) where = `<span class="wtext">Nur leihen/kaufen</span>`;
+    else if (i.providers) where = `<span class="wtext">Aktuell nicht im Stream</span>`;
+    else where = `<span class="wtext">Anbieter unbekannt</span>`;
+    return `<div class="card" data-id="${i.id}">
+      <div class="poster" style="${i.poster ? `background-image:url('${esc(i.poster)}')` : ""}">${i.poster ? "" : "🎞"}
+        <span class="badge ${i.kind}">${KINDS[i.kind]||i.kind}</span>
+        <span class="st" style="background:var(--${i.status})" title="${STATUS[i.status]}"></span></div>
+      <div class="cbody"><div class="ctitle">${esc(i.title)} ${i.year ? `<small>(${esc(i.year)})</small>` : ""}</div>
+        ${mine.length ? `<div class="minetag">✓ In deinem Abo: ${esc(mine.join(", "))}</div>` : ""}
+        ${cardProgress(i)}
+        <div class="where">${where}</div></div></div>`;
+  }).join("");
+  grid.querySelectorAll(".card").forEach(c => c.onclick = () => openDetail(c.dataset.id));
+}
+
+function cardProgress(i) {
+  if (!isShow(i) || !(i.seasons || []).length) return "";
+  const p = prog(i), n = nextEp(i);
+  let txt;
+  if (!p.w) txt = `${mainSeasons(i).length} Staffel${mainSeasons(i).length === 1 ? "" : "n"} · ${p.a} Folgen`;
+  else if (n && i.status === "geplant") txt = `🆕 ${p.a - p.w} neue Folge${p.a - p.w === 1 ? "" : "n"} · ${SE(n.s, n.e)}`;
+  else if (n) txt = `Weiter: ${SE(n.s, n.e)}`;
+  else txt = i.nextAir ? `Alles gesehen · neue Folge ${fmtDate(i.nextAir.airDate)}` : "✓ Alles gesehen";
+  return `<div class="cprog"><div class="bar"><i style="width:${p.pct}%"></i></div><span>${esc(txt)}</span></div>`;
+}
+
+async function load() {
+  [items, settings] = await Promise.all([api("GET", "/api/items"), api("GET", "/api/settings")]);
+  render();
+  checkNewEpisodes();
+}
+// Beim Start (und alle 6 Stunden) nach neuen Folgen schauen
+async function checkNewEpisodes() {
+  if (!settings.apiKey || !items.some(i => isShow(i))) return;
+  try {
+    const r = await api("POST", "/api/refresh-stale");
+    const byId = new Map(r.items.map(i => [i.id, i]));
+    items.forEach(it => { const u = byId.get(it.id); if (u) replaceItem(it, u); });
+    render();
+    if (current && $("#ovDetail").classList.contains("open")) renderEps();
+    if (r.newEpisodes.length) toast(`🆕 Neue Folgen: ${r.newEpisodes.slice(0, 3).join(", ")}${r.newEpisodes.length > 3 ? " …" : ""}`);
+  } catch {}
+}
+setInterval(checkNewEpisodes, 6 * 60 * 60 * 1000);
+/* ---------- Suchfeld oben: eigene Liste filtern + Vorschläge von TMDB ---------- */
+let sugSeq = 0, sugTimer = null, sugResults = [];
+const sugBox = () => $("#suggest");
+function closeSuggest() { sugBox().classList.remove("open"); }
+function ownMatches(q) { q = q.toLowerCase(); return items.filter(i => i.title.toLowerCase().includes(q)).slice(0, 4); }
+function renderSuggest(q, state) {
+  const own = ownMatches(q);
+  let h = "";
+  if (own.length) h += `<div class="sh">Auf deiner Liste</div>` + own.map(i => `<div class="si" data-own="${i.id}">
+      ${i.poster ? `<img src="${esc(i.poster)}">` : `<div class="noimg"></div>`}
+      <div class="info"><div class="t">${esc(i.title)} <span class="hint">${esc(i.year)}</span></div><span class="hint">${KINDS[i.kind]} · ${STATUS[i.status]}</span></div></div>`).join("");
+  h += `<div class="sh">Neu hinzufügen</div>`;
+  if (state === "nokey") h += `<div class="msg">Für Vorschläge brauchst du einen TMDB-Schlüssel. <a class="lnk" id="sugSetup">Jetzt einrichten</a> · <a class="lnk" id="sugManual">manuell hinzufügen</a></div>`;
+  else if (state === "loading") h += `<div class="msg"><span class="spin"></span> Suche …</div>`;
+  else if (typeof state === "string") h += `<div class="msg" style="color:#ff7b7b">${esc(state)}</div>`;
+  else if (!sugResults.length) h += `<div class="msg">Keine Treffer bei TMDB. <a class="lnk" id="sugManual">„${esc(q)}“ manuell hinzufügen</a></div>`;
+  else h += sugResults.map((r, idx) => {
+    const have = items.find(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
+    return `<div class="si" data-sug="${idx}">
+      ${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}
+      <div class="info"><div class="t">${esc(r.title)} <span class="hint">${esc(r.year)} · ${KINDS[r.kind]}</span></div>
+        <div class="rprov" id="sp${idx}">${r.providers ? provLine(r.providers) : idx < 8 ? `<span class="hint"><span class="spin"></span></span>` : ""}</div></div>
+      ${have ? `<span class="hint">✓ Auf Liste</span>` : `<button class="btn primary add" data-sadd="${idx}">+ Hinzufügen</button>`}</div>`;
+  }).join("");
+  const box = sugBox(); box.innerHTML = h; box.classList.add("open");
+  box.querySelectorAll("[data-own]").forEach(el => el.onclick = () => { closeSuggest(); openDetail(el.dataset.own); });
+  box.querySelectorAll("[data-sug]").forEach(el => el.onclick = ev => {
+    const r = sugResults[+el.dataset.sug]; const have = items.find(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
+    if (ev.target.closest("[data-sadd]")) return;
+    closeSuggest(); if (have) openDetail(have.id); else openAdd(r.title);
+  });
+  box.querySelectorAll("[data-sadd]").forEach(b => b.onclick = async ev => {
+    ev.stopPropagation(); const r = sugResults[+b.dataset.sadd];
+    b.disabled = true; b.innerHTML = `<span class="spin"></span>`;
+    try { await addSearchResult(r, r.kind); renderSuggest(q, null); } catch (e) { toast(e.message, true); b.disabled = false; b.textContent = "+ Hinzufügen"; }
+  });
+  const su = $("#sugSetup"); if (su) su.onclick = () => { closeSuggest(); openSettings(); };
+  const sm = $("#sugManual"); if (sm) sm.onclick = () => { closeSuggest(); openAdd(q); setMode("manual"); $("#mTitle").value = q; };
+}
+async function runSuggest() {
+  const q = $("#q").value.trim();
+  if (q.length < 2) { closeSuggest(); return; }
+  if (!settings.apiKey) { renderSuggest(q, "nokey"); return; }
+  const seq = ++sugSeq;
+  if (!sugBox().querySelector("[data-sug]")) renderSuggest(q, "loading");
+  try {
+    const res = await api("GET", "/api/search?q=" + encodeURIComponent(q));
+    if (seq !== sugSeq) return;
+    sugResults = res.slice(0, 10); renderSuggest(q, null);
+    sugResults.slice(0, 8).forEach(async (r, idx) => {
+      try {
+        const p = await api("GET", `/api/providers?type=${r.mediaType}&id=${r.tmdbId}`);
+        if (seq !== sugSeq) return; r.providers = p;
+        const el = document.getElementById("sp" + idx); if (el) el.innerHTML = provLine(p);
+      } catch { const el = document.getElementById("sp" + idx); if (el) el.innerHTML = ""; }
+    });
+  } catch (e) { if (seq === sugSeq) renderSuggest(q, e.message); }
+}
+$("#q").oninput = e => {
+  view.q = e.target.value; render();
+  clearTimeout(sugTimer); sugTimer = setTimeout(runSuggest, 280);
+};
+$("#q").onfocus = () => { if ($("#q").value.trim().length >= 2) runSuggest(); };
+$("#q").onkeydown = e => {
+  if (e.key === "Escape") { closeSuggest(); $("#q").blur(); }
+  if (e.key === "Enter") { clearTimeout(sugTimer); runSuggest(); }
+};
+document.addEventListener("mousedown", e => { if (!e.target.closest(".search")) closeSuggest(); });
+
+/* ---------- Hinzufügen ---------- */
+let getManualWhere = () => [];
+function openAdd(prefill) {
+  $("#ovAdd").classList.add("open");
+  getManualWhere = picker($("#mWhere"), [], () => {});
+  setMode(settings.apiKey ? "search" : "manual");
+  if (settings.apiKey) {
+    if (prefill != null) $("#sq").value = prefill;
+    doSearch();
+  } else if (prefill) $("#mTitle").value = prefill;
+  const f = settings.apiKey ? $("#sq") : $("#mTitle"); f.focus();
+  if (prefill == null) f.select();
+}
+$("#btnAdd").onclick = () => openAdd();
+function setMode(m) {
+  $("#addMode").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.m === m));
+  $("#paneSearch").style.display = m === "search" ? "" : "none";
+  $("#paneManual").style.display = m === "manual" ? "" : "none";
+  if (m === "search" && !settings.apiKey) $("#sres").innerHTML = `<div class="hint">Für die Suche brauchst du einen TMDB-Schlüssel. <a class="lnk" onclick="openSettings()">Jetzt einrichten</a> – oder füge den Titel manuell hinzu.</div>`;
+}
+$("#addMode").querySelectorAll("button").forEach(b => b.onclick = () => setMode(b.dataset.m));
+
+let lastResults = [], searchSeq = 0, searchTimer = null;
+function provLine(p) {
+  const sp = streamProvidersOf(p);
+  if (!sp.length) {
+    const paid = p && ((p.rent||[]).length || (p.buy||[]).length);
+    return `<span class="hint">${paid ? "Nur leihen/kaufen" : "Aktuell nicht im Stream"}</span>`;
+  }
+  const mine = settings.myServices || [];
+  return sp.slice(0, 7).map(x => x.logo
+    ? `<img class="plogo xs ${mine.includes(x.name) ? "mine" : ""}" src="${esc(x.logo)}" title="${esc(x.name)}">`
+    : svcBadge(x.name, "sm")).join("") + (sp.length > 7 ? `<span class="hint">+${sp.length-7}</span>` : "");
+}
+async function doSearch() {
+  const q = $("#sq").value.trim(), box = $("#sres");
+  if (q.length < 2) { lastResults = []; box.innerHTML = q ? "" : `<div class="hint">Tipp einfach los – Vorschläge erscheinen automatisch.</div>`; return; }
+  if (!settings.apiKey) { setMode("search"); return; }
+  const seq = ++searchSeq;
+  if (!box.querySelector(".res")) box.innerHTML = `<div class="hint"><span class="spin"></span> Suche …</div>`;
+  try {
+    const res = await api("GET", "/api/search?q=" + encodeURIComponent(q));
+    if (seq !== searchSeq) return; // veraltete Antwort
+    lastResults = res;
+    if (!res.length) { box.innerHTML = `<div class="hint">Nichts gefunden. Versuch es mit dem englischen oder Originaltitel – oder füge ihn manuell hinzu.</div>`; return; }
+    box.innerHTML = res.map((r, idx) => {
+      const have = items.some(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
+      return `<div class="res">${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}
+        <div class="info"><b>${esc(r.title)}</b> <span class="hint">${esc(r.year)} · ${r.mediaType === "movie" ? "Film" : "TV"}</span>
+          <div class="rprov" id="rp${idx}">${idx < 8 ? `<span class="hint"><span class="spin"></span> Anbieter …</span>` : ""}</div>
+          <p>${esc(r.overview)}</p></div>
+        <select data-idx="${idx}">${Object.entries(KINDS).map(([k,l]) => `<option value="${k}" ${r.kind===k?"selected":""}>${l}</option>`).join("")}</select>
+        <button class="btn ${have ? "" : "primary"}" data-add="${idx}" ${have ? "disabled" : ""}>${have ? "✓ Auf Liste" : "+ Hinzufügen"}</button></div>`;
+    }).join("");
+    box.querySelectorAll("[data-add]").forEach(b => b.onclick = () => addResult(+b.dataset.add, b));
+    // Anbieter für die ersten Treffer nachladen
+    res.slice(0, 8).forEach(async (r, idx) => {
+      try {
+        const p = await api("GET", `/api/providers?type=${r.mediaType}&id=${r.tmdbId}`);
+        if (seq !== searchSeq) return;
+        r.providers = p;
+        const el = document.getElementById("rp" + idx); if (el) el.innerHTML = provLine(p);
+      } catch { const el = document.getElementById("rp" + idx); if (el) el.innerHTML = ""; }
+    });
+  } catch (e) { if (seq === searchSeq) box.innerHTML = `<div class="hint" style="color:#ff7b7b">${esc(e.message)}</div>`; }
+}
+$("#sgo").onclick = () => { clearTimeout(searchTimer); doSearch(); };
+$("#sq").oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(doSearch, 280); };
+$("#sq").onkeydown = e => { if (e.key === "Enter") { clearTimeout(searchTimer); doSearch(); } };
+
+async function addSearchResult(r, kind) {
+  const res = await api("POST", "/api/items", { tmdbId: r.tmdbId, mediaType: r.mediaType, kind, title: r.title, year: r.year, poster: r.poster, overview: r.overview });
+  items.unshift(res.item); render();
+  const sp = streamProviders(res.item);
+  toast(res.warning ? "Hinzugefügt – " + res.warning : sp.length ? `„${r.title}“ hinzugefügt · läuft auf ${sp.map(p=>p.name).slice(0,3).join(", ")}` : `„${r.title}“ hinzugefügt`, !!res.warning);
+  return res.item;
+}
+async function addResult(idx, btn) {
+  const r = lastResults[idx];
+  const kind = $(`#sres select[data-idx="${idx}"]`).value;
+  btn.disabled = true; btn.innerHTML = `<span class="spin"></span>`;
+  try { await addSearchResult(r, kind); btn.textContent = "✓ Auf Liste"; btn.classList.remove("primary"); }
+  catch (e) { btn.disabled = false; btn.textContent = "+ Hinzufügen"; toast(e.message, true); }
+}
+
+$("#mSave").onclick = async () => {
+  const title = $("#mTitle").value.trim(); if (!title) { $("#mTitle").focus(); return; }
+  try {
+    const res = await api("POST", "/api/items", { title, kind: $("#mKind").value, year: $("#mYear").value.trim(), manualWhere: getManualWhere().join(", ") });
+    items.unshift(res.item); render();
+    $("#mTitle").value = $("#mYear").value = ""; getManualWhere = picker($("#mWhere"), [], () => {});
+    toast(`„${title}“ hinzugefügt`); $("#ovAdd").classList.remove("open");
+  } catch (e) { toast(e.message, true); }
+};
+
+/* ---------- Details ---------- */
+function provGroup(title, list) {
+  list = dedupe(list); if (!list.length) return "";
+  const mine = settings.myServices || [];
+  return `<div class="pgroup"><h4>${title}</h4><div class="plist">${list.map(p => `<span class="pitem ${mine.includes(p.name) ? "mine" : ""}">${p.logo ? `<img src="${esc(p.logo)}">` : ""}${esc(p.name)}${mine.includes(p.name) ? " ✓" : ""}</span>`).join("")}</div></div>`;
+}
+let openSeasons = new Set(), epCache = {};
+function openDetail(id) {
+  current = items.find(i => i.id === id); if (!current) return;
+  openSeasons = new Set(); epCache = {};
+  // Bei Serien die Staffel mit der nächsten Folge direkt aufklappen
+  const n = isShow(current) && nextEp(current); if (n) openSeasons.add(n.s);
+  renderDetail(); $("#ovDetail").classList.add("open");
+  $("#ovDetail").scrollTop = 0;
+  // Ältere Einträge ohne Staffel-Infos nachladen
+  if (isShow(current) && !(current.seasons || []).length && settings.apiKey) {
+    const it = current;
+    api("POST", `/api/items/${it.id}/refresh`).then(u => {
+      replaceItem(it, u); render();
+      if (current === it) { const n2 = nextEp(it); if (n2) openSeasons.add(n2.s); renderEps(); }
+    }).catch(e => { const b = $("#epsBox"); if (b && current === it) b.innerHTML = `<div class="noprov">Folgen konnten nicht geladen werden: ${esc(e.message)}</div>`; });
+  }
+}
+
+/* ---------- Folgen-Ansicht im Detailfenster ---------- */
+function replaceItem(it, u) { for (const k of Object.keys(it)) if (!(k in u)) delete it[k]; Object.assign(it, u); }
+function renderEps() {
+  const box = $("#epsBox"), it = current; if (!box || !it) return;
+  const seasons = mainSeasons(it), specials = (it.seasons || []).find(s => s.number === 0);
+  if (!seasons.length && !specials) {
+    box.innerHTML = `<h3 class="epsh">📼 Staffeln & Folgen</h3><div class="noprov">${settings.apiKey ? `<span class="spin"></span> Lade Staffeln …` : "Für Folgen-Infos brauchst du einen TMDB-Schlüssel (⚙)."}</div>`;
+    return;
+  }
+  const p = prog(it), n = nextEp(it);
+  let head = `<h3 class="epsh">📼 Staffeln & Folgen ${it.showState ? `<span class="state">${esc(it.showState)}</span>` : ""}</h3>
+    <div class="eprog"><div class="bar big"><i style="width:${p.pct}%"></i></div><span><b>${p.w}</b> von ${p.a} Folgen gesehen · ${p.pct}%</span></div>`;
+  if (n) head += `<div class="nextbox"><div><div class="hint">Als Nächstes</div><b>${SE(n.s, n.e)}</b> <span id="nextName"></span></div>
+      <button class="btn primary" id="nextMark">✓ Gesehen</button></div>`;
+  else if (p.a) head += `<div class="nextbox done"><div><b>🎉 Alle ausgestrahlten Folgen gesehen!</b></div></div>`;
+  if (it.nextAir) head += `<div class="hint" style="margin:-4px 0 10px">📅 Nächste Folge: ${SE(it.nextAir.season, it.nextAir.episode)}${it.nextAir.name ? ` „${esc(it.nextAir.name)}“` : ""} am ${fmtDate(it.nextAir.airDate)}</div>`;
+  head += `<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn sm" id="allSeen">Alles als gesehen</button><button class="btn sm" id="noneSeen">Alles zurücksetzen</button></div>`;
+
+  const list = [...seasons, ...(specials && specials.episodeCount ? [specials] : [])].map(s => {
+    const ai = airedIn(it, s), ws = watchedSet(it, s.number);
+    const w = [...ws].filter(e => e <= ai).length, full = ai > 0 && w >= ai, open = openSeasons.has(s.number);
+    const label = s.number === 0 ? "Specials" : (s.name && !/^(Staffel|Season) \d+$/.test(s.name) ? `Staffel ${s.number} · ${esc(s.name)}` : `Staffel ${s.number}`);
+    return `<div class="season ${open ? "open" : ""}" data-s="${s.number}">
+      <div class="shead">
+        <input type="checkbox" class="scheck" ${full ? "checked" : ""} ${ai ? "" : "disabled"} title="Ganze Staffel als gesehen markieren">
+        <span class="sname">${label}</span>
+        <span class="hint">${s.airDate ? s.airDate.slice(0, 4) : ""}</span>
+        <span class="spacer"></span>
+        <div class="bar small"><i style="width:${ai ? Math.round(w / ai * 100) : 0}%"></i></div>
+        <span class="scount">${w}/${ai}${s.episodeCount > ai ? ` <span class="hint">(+${s.episodeCount - ai})</span>` : ""}</span>
+        <span class="arrow">▸</span>
+      </div>
+      <div class="sbody">${open ? episodesHtml(s) : ""}</div></div>`;
+  }).join("");
+  const ov = $("#ovDetail"), keep = ov.scrollTop;
+  box.innerHTML = head + `<div class="seasons">${list}</div>`;
+  ov.scrollTop = keep;
+
+  // Ereignisse
+  if (n) {
+    $("#nextMark").onclick = () => markEp(n.s, [n.e], true);
+    const eps = epCache[n.s]; const fill = list => { const ep = list.find(e => e.number === n.e); if (ep && $("#nextName")) $("#nextName").textContent = ep.name ? `– ${ep.name}` : ""; };
+    if (eps) fill(eps); else loadSeason(n.s).then(l => l && fill(l));
+  }
+  $("#allSeen").onclick = () => watchedReq({ mode: "all" });
+  $("#noneSeen").onclick = () => { if (confirm("Alle Markierungen für diese Serie entfernen?")) watchedReq({ mode: "none" }); };
+  box.querySelectorAll(".season").forEach(el => {
+    const s = +el.dataset.s;
+    el.querySelector(".shead").onclick = e => {
+      if (e.target.classList.contains("scheck")) return;
+      if (openSeasons.has(s)) openSeasons.delete(s); else openSeasons.add(s);
+      renderEps();
+    };
+    el.querySelector(".scheck").onchange = e => watchedReq({ mode: "season", season: s, watched: e.target.checked });
+    if (openSeasons.has(s) && !epCache[s]) loadSeason(s).then(() => renderEps());
+  });
+  box.querySelectorAll(".ep input").forEach(cb => cb.onchange = () => markEp(+cb.dataset.s, [+cb.dataset.e], cb.checked));
+  box.querySelectorAll(".upto").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); watchedReq({ mode: "upTo", season: +b.dataset.s, episode: +b.dataset.e }); });
+}
+
+function episodesHtml(s) {
+  const it = current, eps = epCache[s.number];
+  if (eps === undefined) return `<div class="hint" style="padding:10px 14px"><span class="spin"></span> Lade Folgen …</div>`;
+  if (eps === null) return `<div class="hint" style="padding:10px 14px;color:#ff7b7b">Folgen konnten nicht geladen werden.</div>`;
+  const ws = watchedSet(it, s.number), ai = airedIn(it, s);
+  return eps.map(e => {
+    const future = e.number > ai && isFuture(e.airDate), seen = ws.has(e.number);
+    return `<label class="ep ${seen ? "seen" : ""} ${future ? "future" : ""}">
+      <input type="checkbox" data-s="${s.number}" data-e="${e.number}" ${seen ? "checked" : ""} ${future ? "disabled" : ""}>
+      <span class="enum">E${String(e.number).padStart(2, "0")}</span>
+      <span class="ename" title="${esc(e.overview)}">${esc(e.name || "Folge " + e.number)}</span>
+      <span class="edate">${future ? (e.airDate ? "ab " + fmtDate(e.airDate) : "angekündigt") : fmtDate(e.airDate)}${e.runtime ? ` · ${e.runtime} Min.` : ""}</span>
+      ${future || s.number === 0 ? "" : `<button class="upto" data-s="${s.number}" data-e="${e.number}" title="Alle Folgen bis hier als gesehen markieren">bis hier ✓</button>`}
+    </label>`;
+  }).join("");
+}
+
+async function loadSeason(n) {
+  if (epCache[n] !== undefined) return epCache[n];
+  const it = current;
+  try { const eps = await api("GET", `/api/items/${it.id}/season/${n}`); if (current === it) epCache[n] = eps; return eps; }
+  catch { if (current === it) epCache[n] = null; return null; }
+}
+async function watchedReq(body) {
+  const it = current;
+  try {
+    const u = await api("POST", `/api/items/${it.id}/watched`, body);
+    replaceItem(it, u); render();
+    if (current === it) {
+      // Status-Knöpfe oben aktualisieren
+      document.querySelectorAll("#dStatus button").forEach(x => x.classList.toggle("active", x.dataset.s === it.status));
+      renderEps();
+    }
+  } catch (e) { toast(e.message, true); }
+}
+const markEp = (season, episodes, watched) => watchedReq({ season, episodes, watched });
+function renderDetail() {
+  const i = current, p = i.providers;
+  $("#dTitle").textContent = i.title + (i.year ? ` (${i.year})` : "");
+  let where = "";
+  if (p) {
+    where = provGroup("Im Abo (Flatrate)", p.flatrate) + provGroup("Kostenlos", p.free) + provGroup("Kostenlos mit Werbung", p.ads) + provGroup("Leihen", p.rent) + provGroup("Kaufen", p.buy);
+    if (!where) where = `<div class="noprov">In ${esc(i.region || settings.region)} ist der Titel gerade bei keinem bekannten Anbieter verfügbar.</div>`;
+  } else if (i.tmdbId) {
+    where = `<div class="noprov">Noch keine Streaming-Infos geladen – klicke unten auf „Aktualisieren“.</div>`;
+  } else {
+    where = `<div class="noprov">Manuell hinzugefügter Titel – trag unten selbst ein, wo er läuft, oder schau bei JustWatch nach.</div>`;
+  }
+  $("#dBody").innerHTML = `<div class="detail">
+      <div class="dposter" style="${i.poster ? `background-image:url('${esc(i.poster)}')` : ""}">${i.poster ? "" : "🎞"}</div>
+      <div>
+        <div class="row" style="margin-bottom:12px">
+          <select class="inp" id="dKind" style="width:auto">${Object.entries(KINDS).map(([k,l]) => `<option value="${k}" ${i.kind===k?"selected":""}>${l}</option>`).join("")}</select>
+          <div class="seg" id="dStatus">${Object.entries(STATUS).map(([k,l]) => `<button data-s="${k}" class="${i.status===k?"active":""}">${l}</button>`).join("")}</div>
+        </div>
+        ${i.overview ? `<p class="overview">${esc(i.overview)}</p>` : ""}
+        <h3 style="margin:0 0 10px;font-size:15px">📺 Wo kann ich das schauen?</h3>
+        ${where}
+        <div class="row" style="gap:16px;margin-bottom:14px">
+          ${p && p.link ? `<a class="lnk" data-href="${esc(p.link)}">Alle Angebote ansehen ↗</a>` : ""}
+          <a class="lnk" data-href="${esc(justwatchUrl(i.title))}">Auf JustWatch suchen ↗</a>
+        </div>
+        <div class="field"><label>Eigene Angabe „Wo schauen“ – anklicken oder eigenen eintragen (z. B. DVD)</label><div id="dWhere"></div></div>
+        <div class="field"><label>Notiz</label><textarea class="inp" id="dNote" placeholder="z. B. Empfehlung von Max, ab Staffel 2 weiter">${esc(i.note)}</textarea></div>
+        ${i.updated ? `<div class="attrib">Streaming-Daten: JustWatch über TMDB · Stand ${new Date(i.updated).toLocaleDateString("de-DE")}</div>` : ""}
+      </div></div>
+      ${isShow(i) ? `<div id="epsBox" class="epsbox"></div>` : ""}`;
+  if (isShow(i)) renderEps();
+  $("#dKind").onchange = e => update({ kind: e.target.value });
+  $("#dStatus").querySelectorAll("button").forEach(b => b.onclick = () => { update({ status: b.dataset.s }); $("#dStatus").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); });
+  picker($("#dWhere"), manualList(i), sel => update({ manualWhere: sel.join(", ") }));
+  $("#dNote").onchange = e => update({ note: e.target.value });
+  $("#dRefresh").style.display = i.tmdbId ? "" : "none";
+}
+async function update(fields) {
+  try { const it = await api("PUT", "/api/items/" + current.id, fields); replaceItem(current, it); render(); }
+  catch (e) { toast(e.message, true); }
+}
+$("#dDelete").onclick = async () => {
+  if (!confirm(`„${current.title}“ von der Liste entfernen?`)) return;
+  await api("DELETE", "/api/items/" + current.id);
+  items = items.filter(i => i.id !== current.id); $("#ovDetail").classList.remove("open"); render(); toast("Entfernt");
+};
+$("#dRefresh").onclick = async () => {
+  const b = $("#dRefresh"); b.disabled = true; b.innerHTML = `<span class="spin"></span> Lädt …`;
+  try { const it = await api("POST", `/api/items/${current.id}/refresh`); replaceItem(current, it); renderDetail(); render(); toast("Aktualisiert"); }
+  catch (e) { toast(e.message, true); }
+  b.disabled = false; b.textContent = "⟳ Streaming-Infos aktualisieren";
+};
+$("#btnRefreshAll").onclick = async () => {
+  if (!settings.apiKey) { openSettings(); return; }
+  const b = $("#btnRefreshAll"); b.disabled = true; b.innerHTML = `<span class="spin"></span>`;
+  try {
+    const r = await api("POST", "/api/refresh-all");
+    items = await api("GET", "/api/items"); render();
+    toast(r.error ? `${r.updated} aktualisiert – ${r.error}` : `${r.updated} Titel aktualisiert`, !!r.error);
+  } catch (e) { toast(e.message, true); }
+  b.disabled = false; b.textContent = "⟳";
+};
+
+/* ---------- Einstellungen ---------- */
+function openSettings() {
+  $("#ovAdd").classList.remove("open");
+  $("#sKey").value = settings.apiKey || ""; $("#sRegion").value = settings.region || "DE";
+  const portable = /Watchlist-Daten\.json$/.test(settings.dataFile || "");
+  $("#sFile").innerHTML = "Gespeichert in: <code>" + esc(settings.dataFile || "") + "</code>" + (portable
+    ? "<br>💡 Kopier die <b>Watchlist.exe</b> zusammen mit <b>Watchlist-Daten.json</b> auf einen anderen Rechner (oder leg beide auf einen USB-Stick / in OneDrive) – Schlüssel, Dienste und Liste sind dann sofort da."
+    : "<br>Tipp: Leg die Watchlist.exe in einen normalen Ordner (z. B. Dokumente oder OneDrive), dann wird alles neben der .exe gespeichert und wandert mit.");
+  if (MODE === "local") $("#sFile").innerHTML = "Deine Liste ist auf diesem Handy gespeichert" + (Sync.token ? " und wird mit deinem PC abgeglichen." : ".");
+  getMine = picker($("#sMine"), settings.myServices || [], () => {}, false);
+  renderSyncSettings(); Sync.status();
+  $("#ovSettings").classList.add("open");
+}
+let getMine = () => settings.myServices || [];
+$("#btnSettings").onclick = openSettings;
+$("#sSave").onclick = async () => {
+  const b = $("#sSave"); b.disabled = true; b.innerHTML = `<span class="spin"></span> Prüfe …`;
+  const regionChanged = $("#sRegion").value !== settings.region;
+  try {
+    const keep = { syncToken: settings.syncToken, gistId: settings.gistId, pagesUrl: settings.pagesUrl, deployedVersion: settings.deployedVersion };
+    const changedSettings = $("#sKey").value.trim() !== (settings.apiKey || "") || $("#sRegion").value !== settings.region ||
+      JSON.stringify(getMine().slice().sort()) !== JSON.stringify((settings.myServices || []).slice().sort());
+    if (changedSettings) await api("POST", "/api/settings", { apiKey: $("#sKey").value.trim(), region: $("#sRegion").value, myServices: getMine() });
+    settings = Object.assign(keep, await api("GET", "/api/settings"));
+    const tokenChanged = $("#sToken").value.trim() !== Sync.token;
+    render();
+    if (tokenChanged) {
+      b.innerHTML = `<span class="spin"></span> Verbinde …`;
+      await Sync.setToken($("#sToken").value.trim());
+      if (Sync.error) throw new Error(Sync.error);
+      renderSyncSettings(); toast(Sync.token ? "✓ Abgleich eingerichtet" : "Abgleich ausgeschaltet");
+    } else { $("#ovSettings").classList.remove("open"); toast("Gespeichert"); }
+    if (regionChanged && settings.apiKey && items.some(i => i.tmdbId)) $("#btnRefreshAll").click();
+  } catch (e) { toast(e.message, true); }
+  b.disabled = false; b.textContent = "Speichern";
+};
+
+/* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
+const APP_VERSION = "10";
+const Sync = (() => {
+  const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
+  const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
+  let token = "", gistId = "", busy = false, again = false, timer = null, mutations = 0;
+  let lastSync = 0, lastErr = "";
+
+  async function loadLocal() {
+    if (MODE === "server") { token = settings.syncToken || ""; gistId = settings.gistId || ""; }
+    else { try { const o = JSON.parse(localStorage.getItem(LKEY) || "{}"); token = o.token || ""; gistId = o.gistId || ""; } catch {} }
+  }
+  async function saveLocal() {
+    if (MODE === "server") { await api("POST", "/api/sync-local", { syncToken: token, gistId }); settings.syncToken = token; settings.gistId = gistId; }
+    else try { localStorage.setItem(LKEY, JSON.stringify({ token, gistId })); } catch {}
+  }
+  async function gh(method, path, body) {
+    let r;
+    try {
+      r = await fetch(GH + path, { method, cache: "no-store", headers: Object.assign({ Authorization: "Bearer " + token, Accept: "application/vnd.github+json" },
+        body ? { "Content-Type": "application/json" } : {}), body: body ? JSON.stringify(body) : undefined });
+    } catch { throw new Error("GitHub nicht erreichbar – Internet prüfen"); }
+    if (r.status === 401) throw new Error("GitHub-Token ungültig oder abgelaufen");
+    if (r.status === 404) return null;
+    if (r.status === 403) throw new Error("GitHub verweigert den Zugriff – hat der Token das Recht „gist“?");
+    if (!r.ok) throw new Error("GitHub-Fehler " + r.status);
+    return r.json();
+  }
+  async function findGist() {
+    if (gistId) { const g = await gh("GET", "/gists/" + gistId); if (g && g.files && g.files[FILE]) return g; gistId = ""; }
+    for (let page = 1; page <= 10; page++) {
+      const list = await gh("GET", `/gists?per_page=100&page=${page}`);
+      if (!list || !list.length) break;
+      const hit = list.find(x => x.files && x.files[FILE]);
+      if (hit) { gistId = hit.id; await saveLocal(); return gh("GET", "/gists/" + hit.id); }
+      if (list.length < 100) break;
+    }
+    return null;
+  }
+  async function readRemote(g) {
+    const f = g.files[FILE]; let txt = f.content;
+    if (f.truncated) txt = await (await fetch(f.raw_url)).text();
+    try { return JSON.parse(txt || "{}"); } catch { return {}; }
+  }
+
+  // Zwei Stände zusammenführen: pro Titel gewinnt die neuere Änderung; Löschungen werden übernommen.
+  function merge(a, b) {
+    const deleted = Object.assign({}, a.deleted || {});
+    for (const [k, v] of Object.entries(b.deleted || {})) deleted[k] = Math.max(deleted[k] || 0, v);
+    const byId = new Map();
+    for (const it of [...(a.items || []), ...(b.items || [])]) {
+      const ex = byId.get(it.id), m = it.modified || 0, em = ex ? ex.modified || 0 : -1;
+      if (!ex || m > em || (m === em && (it.updated || "") > (ex.updated || ""))) byId.set(it.id, it);
+    }
+    let items = [...byId.values()].filter(it => !(deleted[it.id] && deleted[it.id] >= (it.modified || 0)));
+    // Derselbe Titel auf zwei Geräten getrennt hinzugefügt → den zuletzt geänderten behalten
+    items.sort((x, y) => (y.modified || 0) - (x.modified || 0));
+    const seen = new Set();
+    items = items.filter(it => {
+      if (!it.tmdbId) return true;
+      const k = it.mediaType + ":" + it.tmdbId;
+      if (seen.has(k)) { deleted[it.id] = Math.max(deleted[it.id] || 0, it.modified || 0); return false; }
+      seen.add(k); return true;
+    });
+    items.sort((x, y) => (Date.parse(y.added) || 0) - (Date.parse(x.added) || 0));
+    const cutoff = Date.now() - 90 * 864e5;
+    for (const k of Object.keys(deleted)) if (deleted[k] < cutoff) delete deleted[k];
+    const sa = a.settings || {}, sb = b.settings || {}, s = (sb.modified || 0) > (sa.modified || 0) ? sb : sa;
+    return { items, deleted, settings: { apiKey: s.apiKey || "", region: s.region || "DE", myServices: s.myServices || [], modified: s.modified || 0 } };
+  }
+  // Vergleichbare Form (Reihenfolge egal)
+  function canon(x) {
+    const items = (x.items || []).slice().sort((p, q) => p.id < q.id ? -1 : 1).map(i => JSON.stringify(i, Object.keys(i).sort()));
+    const del = Object.keys(x.deleted || {}).sort().map(k => k + "=" + x.deleted[k]);
+    const s = x.settings || {};
+    return JSON.stringify([items, del, s.apiKey || "", s.region || "DE", (s.myServices || []).slice().sort(), s.modified || 0]);
+  }
+
+  async function run() {
+    if (!token) { status(); return; }
+    if (busy) { again = true; return; }
+    busy = true; status();
+    try {
+      const m0 = mutations;
+      const g = await findGist();
+      const local = await api("GET", "/api/state");
+      const remote = g ? await readRemote(g) : { items: [], deleted: {}, settings: {} };
+      const merged = merge(local, remote), mc = canon(merged);
+      if (mc !== canon(local)) {
+        if (mutations !== m0) { again = true; throw null; } // währenddessen geändert → gleich nochmal
+        await api("PUT", "/api/state", merged);
+        await reloadData();
+      }
+      if (!g || mc !== canon(remote)) {
+        const content = JSON.stringify(Object.assign({ app: "watchlist", format: 1, savedAt: new Date().toISOString() }, merged));
+        if (g) await gh("PATCH", "/gists/" + g.id, { files: { [FILE]: { content } } });
+        else {
+          const ng = await gh("POST", "/gists", { description: DESC, public: false, files: { [FILE]: { content } } });
+          if (!ng) throw new Error("Gist konnte nicht angelegt werden");
+          gistId = ng.id; await saveLocal();
+        }
+      }
+      lastSync = Date.now(); lastErr = "";
+    } catch (e) { if (e) lastErr = e.message; }
+    busy = false; status();
+    if (again) { again = false; setTimeout(run, 300); }
+  }
+
+  function changed() { mutations++; if (!token) return; clearTimeout(timer); timer = setTimeout(run, 1500); }
+  function status() {
+    const b = $("#btnSync"); if (!b) return;
+    b.style.display = token ? "" : "none";
+    b.innerHTML = busy ? `<span class="spin"></span>` : lastErr ? "⚠" : "☁";
+    b.title = busy ? "Gleiche ab …" : lastErr ? "Abgleich fehlgeschlagen: " + lastErr : lastSync ? "Abgeglichen um " + new Date(lastSync).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "Abgleich PC ↔ Handy";
+    b.classList.toggle("warn", !!lastErr && !busy);
+    const s = $("#syncState");
+    if (s) s.innerHTML = !token ? "Noch nicht eingerichtet." : busy ? `<span class="spin"></span> Gleiche ab …` : lastErr ? `<span style="color:#ff7b7b">⚠ ${esc(lastErr)}</span>` : lastSync ? `✓ Abgeglichen um ${new Date(lastSync).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "";
+  }
+  async function setToken(t) {
+    t = (t || "").trim(); if (t === token) return;
+    token = t; gistId = ""; lastErr = ""; lastSync = 0; await saveLocal(); status();
+    if (token) await run();
+  }
+  return { loadLocal, run, changed, status, setToken, get token() { return token; }, get error() { return lastErr; }, merge };
+})();
+
+/* Daten nach einem Abgleich neu laden, ohne offene Fenster zu zerstören */
+async function reloadData() {
+  [items, settings] = await Promise.all([api("GET", "/api/items"), api("GET", "/api/settings")]);
+  if (MODE === "server") { settings.syncToken = settings.syncToken || ""; }
+  render();
+  if (current) {
+    const fresh = items.find(i => i.id === current.id);
+    if (!fresh) { current = null; $("#ovDetail").classList.remove("open"); }
+    else { current = fresh; if ($("#ovDetail").classList.contains("open")) { document.querySelectorAll("#dStatus button").forEach(x => x.classList.toggle("active", x.dataset.s === fresh.status)); renderEps(); } }
+  }
+}
+
+/* ---------- Einstellungen: Abschnitt Handy & Abgleich ---------- */
+const TOKEN_URL = "https://github.com/settings/tokens/new?description=Meine%20Watchlist&scopes=gist,public_repo";
+function renderSyncSettings() {
+  $("#sToken").value = Sync.token;
+  if (MODE === "server") {
+    $("#syncIntro").innerHTML = `Damit du auf PC und Handy denselben Stand hast:
+      <ol class="steps"><li>Kostenloses Konto auf <a class="lnk" data-href="https://github.com/signup">github.com</a> anlegen (falls noch nicht vorhanden)</li>
+      <li><a class="lnk" data-href="${TOKEN_URL}">Token erstellen</a> <span class="hint">(öffnet sich nichts: im Browser <code>github.com/settings/tokens/new</code> aufrufen und dort die Haken bei <b>gist</b> und <b>public_repo</b> setzen)</span> – Haken bei <b>gist</b> und <b>public_repo</b> sind schon gesetzt. Bei „Expiration“ am besten <b>No expiration</b> wählen, dann unten auf „Generate token“.</li>
+      <li>Den Token (beginnt mit <code>ghp_</code>) hier einfügen und speichern</li></ol>`;
+    const box = $("#deployBox");
+    if (!Sync.token) { box.innerHTML = ""; return; }
+    box.innerHTML = `<button class="btn primary" id="btnDeploy">${settings.pagesUrl ? "📱 Handy-App aktualisieren" : "📱 Handy-App einrichten"}</button>
+      <div id="deployOut" style="margin-top:12px"></div>`;
+    if (settings.pagesUrl) showQR();
+    $("#btnDeploy").onclick = async () => {
+      const b = $("#btnDeploy"); b.disabled = true; b.innerHTML = `<span class="spin"></span> Richte ein …`;
+      try { const r = await api("POST", "/api/deploy"); settings.pagesUrl = r.url; settings.deployedVersion = APP_VERSION; showQR(true); }
+      catch (e) { $("#deployOut").innerHTML = `<div class="hint" style="color:#ff7b7b">${esc(e.message)}</div>`; }
+      b.disabled = false; b.textContent = "📱 Handy-App aktualisieren";
+    };
+  } else {
+    $("#syncIntro").innerHTML = Sync.token ? "Diese App ist mit deinem PC verbunden." :
+      `So verbindest du die Handy-App mit deinem PC: Öffne auf dem PC <b>Watchlist → ⚙ → Handy & Abgleich</b> und scanne den QR-Code mit der Handy-Kamera. Oder füge hier denselben GitHub-Token ein wie am PC.`;
+    $("#deployBox").innerHTML = "";
+  }
+}
+function showQR(fresh) {
+  const link = settings.pagesUrl + "#connect=" + encodeURIComponent(Sync.token);
+  $("#deployOut").innerHTML = `<div class="qrbox">
+      <img src="api/qr?text=${encodeURIComponent(link)}" alt="QR-Code">
+      <div><b>Mit dem Handy scannen</b> (Kamera-App oder Google Lens).<br>
+        <span class="hint">Die App öffnet sich und ist sofort mit deinem PC verbunden. Danach in Chrome über ⋮ → <b>„Zum Startbildschirm hinzufügen“</b> bzw. „App installieren“ als App ablegen.</span>
+        ${fresh ? `<div class="hint" style="margin-top:6px">⏳ Beim allerersten Einrichten braucht GitHub 1–2 Minuten, bis die Seite erreichbar ist.</div>` : ""}
+        <div class="hint" style="margin-top:6px">Adresse: <a class="lnk" data-href="${esc(settings.pagesUrl)}">${esc(settings.pagesUrl)}</a></div>
+        <div class="hint" style="margin-top:6px">🔒 Der QR-Code enthält deinen Token – nicht weitergeben.</div></div></div>`;
+}
+
+/* ---------- Start ---------- */
+(async () => {
+  MODE = await detectMode();
+  document.body.classList.add("mode-" + MODE);
+  if (MODE === "server") {
+    const ping = () => {
+      fetch("/api/ping", { method: "POST" }).catch(() => {});
+      fetch("/api/version").then(r => r.json()).then(v => { if (v.version && v.version !== APP_VERSION) location.reload(); }).catch(() => {});
+    };
+    ping(); setInterval(ping, 20000);
+    addEventListener("pagehide", () => navigator.sendBeacon("/api/bye"));
+  } else {
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+  // Verbindungslink aus dem QR-Code (#connect=…) übernehmen – beim Start und wenn die App schon offen ist
+  const connectFromHash = async () => {
+    if (MODE !== "local" || !location.hash.startsWith("#connect=")) return false;
+    const t = decodeURIComponent(location.hash.slice(9));
+    history.replaceState(null, "", location.pathname + location.search);
+    await Sync.setToken(t);
+    toast(Sync.error ? "Verbindung fehlgeschlagen: " + Sync.error : "✓ Mit deinem PC verbunden", !!Sync.error);
+    render();
+    return true;
+  };
+  addEventListener("hashchange", connectFromHash);
+  try { await load(); } catch (e) { toast(e.message, true); }
+  await Sync.loadLocal(); Sync.status();
+  if (!(await connectFromHash()) && Sync.token) await Sync.run();
+  // Handy-App automatisch auf den neuesten Stand bringen, wenn die .exe aktualisiert wurde
+  if (MODE === "server" && Sync.token && settings.pagesUrl && settings.deployedVersion !== APP_VERSION) {
+    api("POST", "/api/deploy").then(r => { settings.pagesUrl = r.url; settings.deployedVersion = APP_VERSION; }).catch(() => {});
+  }
+  setInterval(() => { if (document.visibilityState === "visible") Sync.run(); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") Sync.run(); });
+})();
+
+</script>
+</body>
+</html>
