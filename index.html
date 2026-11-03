@@ -133,6 +133,7 @@
   .suggest .msg { padding: 12px; color: var(--muted); }
   .suggest .add { padding: 6px 10px; font-size: 13px; }
   #ovDetail .modal { max-width: 880px; }
+  #ovSettings .mfoot { position: sticky; bottom: 0; background: var(--panel); border-radius: 0 0 16px 16px; }
   .syncsec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .syncsec h3 { margin: 0 0 8px; font-size: 15px; }
   .qrbox { display: flex; gap: 16px; align-items: flex-start; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -401,6 +402,7 @@ const Local = (() => {
   const TMDB = window.WATCHLIST_TMDB_BASE || "https://api.themoviedb.org/3";
   let st = null;
   const now = () => Date.now();
+  const bump = old => Math.max(Date.now(), (old || 0) + 1);
   const iso = () => new Date().toISOString().replace(/\.\d+Z$/, "Z");
   const err = (msg, code = 400) => { const e = new Error(msg); e.code = code; throw e; };
 
@@ -520,7 +522,7 @@ const Local = (() => {
     if (!src.seasons) return false;
     Object.assign(dst, { seasons: src.seasons, lastAired: src.lastAired, nextAir: src.nextAir, showState: src.showState });
     const [w, a] = progress(dst);
-    if (dst.status === "gesehen" && w > 0 && w < a) { dst.status = "geplant"; dst.modified = now(); return true; }
+    if (dst.status === "gesehen" && w > 0 && w < a) { dst.status = "geplant"; dst.modified = bump(dst.modified); return true; }
     return false;
   }
   const clone = o => JSON.parse(JSON.stringify(o));
@@ -545,10 +547,10 @@ const Local = (() => {
         if (["status", "kind", "note", "manualWhere"].includes(k)) it[k] = v;
         if (k === "title" && String(v).trim()) it.title = String(v).trim();
       }
-      it.modified = now(); save(); return it;
+      it.modified = bump(it.modified); save(); return it;
     }],
     ["DELETE", /^\/api\/items\/([^/]+)$/, m => {
-      const s = load(); s.items = s.items.filter(i => i.id !== m[1]); s.deleted[m[1]] = now(); save(); return { ok: true };
+      const s = load(), it = find(m[1]); s.items = s.items.filter(i => i.id !== m[1]); s.deleted[m[1]] = bump(it && it.modified); save(); return { ok: true };
     }],
     ["POST", /^\/api\/items\/([^/]+)\/refresh$/, async m => {
       const it = find(m[1]); if (!it) err("Nicht gefunden", 404);
@@ -572,7 +574,7 @@ const Local = (() => {
         else if (after > 0 && (it.status === "geplant" || it.status === "gesehen")) it.status = "schaue";
         else if (after === 0 && it.status === "schaue") it.status = "geplant";
       }
-      it.watched = it.watched || {}; it.modified = now(); save(); return it;
+      it.watched = it.watched || {}; it.modified = bump(it.modified); save(); return it;
     }],
     ["POST", /^\/api\/refresh-all$/, async () => {
       let updated = 0, error = "";
@@ -605,7 +607,7 @@ const Local = (() => {
         try { await tmdb("/configuration"); } catch (e) { s.settings.apiKey = old; throw e; }
       }
       if ((b.region || "DE") !== s.settings.region) provCache.clear();
-      Object.assign(s.settings, { apiKey: key, region: String(b.region || "DE").toUpperCase(), myServices: b.myServices || [], modified: now() });
+      Object.assign(s.settings, { apiKey: key, region: String(b.region || "DE").toUpperCase(), myServices: b.myServices || [], modified: bump(s.settings.modified) });
       save(); return { ok: true };
     }],
     ["GET", /^\/api\/state$/, () => { const s = load(); return { items: s.items, deleted: s.deleted, settings: pub() }; }],
@@ -1237,11 +1239,25 @@ function openSettings() {
     ? "<br>💡 Kopier die <b>Watchlist.exe</b> zusammen mit <b>Watchlist-Daten.json</b> auf einen anderen Rechner (oder leg beide auf einen USB-Stick / in OneDrive) – Schlüssel, Dienste und Liste sind dann sofort da."
     : "<br>Tipp: Leg die Watchlist.exe in einen normalen Ordner (z. B. Dokumente oder OneDrive), dann wird alles neben der .exe gespeichert und wandert mit.");
   if (MODE === "local") $("#sFile").innerHTML = "Deine Liste ist auf diesem Handy gespeichert" + (Sync.token ? " und wird mit deinem PC abgeglichen." : ".");
-  getMine = picker($("#sMine"), settings.myServices || [], () => {}, false);
+  getMine = picker($("#sMine"), settings.myServices || [], sel => saveQuick({ myServices: sel }), false);
+  $("#sRegion").onchange = e => saveQuick({ region: e.target.value }, true);
   renderSyncSettings(); Sync.status();
   $("#ovSettings").classList.add("open");
 }
 let getMine = () => settings.myServices || [];
+// Auswahl von Diensten/Land sofort speichern (ohne auf „Speichern“ klicken zu müssen)
+let quickChain = Promise.resolve();
+function saveQuick(change, refreshAfter) {
+  quickChain = quickChain.then(async () => {
+    try {
+      const keep = { syncToken: settings.syncToken, gistId: settings.gistId, pagesUrl: settings.pagesUrl, deployedVersion: settings.deployedVersion };
+      await api("POST", "/api/settings", Object.assign({ apiKey: settings.apiKey || "", region: settings.region || "DE", myServices: settings.myServices || [] }, change));
+      settings = Object.assign(keep, await api("GET", "/api/settings"));
+      render(); toast("✓ Gespeichert");
+      if (refreshAfter && settings.apiKey && items.some(i => i.tmdbId)) $("#btnRefreshAll").click();
+    } catch (e) { toast(e.message, true); }
+  });
+}
 $("#btnSettings").onclick = openSettings;
 $("#sSave").onclick = async () => {
   const b = $("#sSave"); b.disabled = true; b.innerHTML = `<span class="spin"></span> Prüfe …`;
@@ -1266,7 +1282,7 @@ $("#sSave").onclick = async () => {
 };
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "12";
+const APP_VERSION = "13";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
@@ -1332,7 +1348,8 @@ const Sync = (() => {
     items.sort((x, y) => (Date.parse(y.added) || 0) - (Date.parse(x.added) || 0));
     const cutoff = Date.now() - 90 * 864e5;
     for (const k of Object.keys(deleted)) if (deleted[k] < cutoff) delete deleted[k];
-    const sa = a.settings || {}, sb = b.settings || {}, s = (sb.modified || 0) > (sa.modified || 0) ? sb : sa;
+    const sa = a.settings || {}, sb = b.settings || {}, filled = x => (x.apiKey ? 2 : 0) + ((x.myServices || []).length ? 1 : 0);
+    const s = (sb.modified || 0) > (sa.modified || 0) || ((sb.modified || 0) === (sa.modified || 0) && filled(sb) > filled(sa)) ? sb : sa;
     return { items, deleted, settings: { apiKey: s.apiKey || "", region: s.region || "DE", myServices: s.myServices || [], modified: s.modified || 0 } };
   }
   // Vergleichbare Form (Reihenfolge egal)
