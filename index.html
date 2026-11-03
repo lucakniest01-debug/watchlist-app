@@ -160,6 +160,10 @@
   .shead { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; }
   .shead:hover { background: #252a35; }
   .sname { font-weight: 600; }
+  .sinfo { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+  .smeta { font-size: 12px; color: var(--muted); }
+  .durline { font-size: 13px; color: var(--muted); margin: -4px 0 12px; }
+  .durline b { color: var(--text); font-weight: 600; }
   .scount { font-size: 13px; min-width: 52px; text-align: right; }
   .arrow { color: var(--muted); transition: transform .15s; }
   .season.open .arrow { transform: rotate(90deg); }
@@ -227,6 +231,7 @@
     .res .info { flex-basis: calc(100% - 60px); }
     .res select { margin-left: 58px; }
     .shead { padding: 12px; gap: 8px; }
+    .sinfo { flex-direction: column; gap: 1px; align-items: flex-start; }
     .bar.small { width: 50px; }
     .ep { padding: 10px 12px; }
     .ep { display: grid; grid-template-columns: 24px 34px minmax(0, 1fr) auto; grid-template-areas: "cb num name upto" ". . date date"; column-gap: 8px; row-gap: 2px; align-items: center; }
@@ -995,18 +1000,56 @@ function openDetail(id) {
   const n = isShow(current) && nextEp(current); if (n) openSeasons.add(n.s);
   renderDetail(); $("#ovDetail").classList.add("open");
   $("#ovDetail").scrollTop = 0;
+  if (isShow(current) && (current.seasons || []).length) loadAllSeasons(current);
   // Ältere Einträge ohne Staffel-Infos nachladen
   if (isShow(current) && !(current.seasons || []).length && settings.apiKey) {
     const it = current;
     api("POST", `/api/items/${it.id}/refresh`).then(u => {
       replaceItem(it, u); render();
-      if (current === it) { const n2 = nextEp(it); if (n2) openSeasons.add(n2.s); renderEps(); }
+      if (current === it) { const n2 = nextEp(it); if (n2) openSeasons.add(n2.s); renderEps(); loadAllSeasons(it); }
     }).catch(e => { const b = $("#epsBox"); if (b && current === it) b.innerHTML = `<div class="noprov">Folgen konnten nicht geladen werden: ${esc(e.message)}</div>`; });
   }
 }
 
+/* ---------- Laufzeit pro Staffel ---------- */
+function fmtDur(min) {
+  min = Math.round(min); if (!min) return "";
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h} Std.${m ? ` ${m} Min.` : ""}` : `${m} Min.`;
+}
+// Gesamt- und Restdauer einer Staffel (fehlende Laufzeiten werden mit dem Durchschnitt der Staffel geschätzt)
+function seasonDur(it, s) {
+  const eps = epCache[s.number]; if (!eps || !eps.length) return null;
+  const known = eps.filter(e => e.runtime > 0);
+  if (!known.length) return null;
+  const avg = known.reduce((a, e) => a + e.runtime, 0) / known.length;
+  const ai = airedIn(it, s), ws = watchedSet(it, s.number);
+  let total = 0, left = 0;
+  for (const e of eps) {
+    const r = e.runtime > 0 ? e.runtime : avg;
+    total += r;
+    if (!ws.has(e.number) && (e.number <= ai || s.number === 0)) left += r;
+  }
+  return { total, left, approx: known.length < eps.length };
+}
+let durTimer = null;
+const renderEpsSoon = () => { clearTimeout(durTimer); durTimer = setTimeout(renderEps, 120); };
+async function loadAllSeasons(it) {
+  const list = (it.seasons || []).map(s => s.number).filter(n => epCache[n] === undefined);
+  let i = 0;
+  const worker = async () => {
+    while (i < list.length && current === it) { const n = list[i++]; await loadSeason(n); if (current === it) renderEpsSoon(); }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+}
+
 /* ---------- Folgen-Ansicht im Detailfenster ---------- */
 function replaceItem(it, u) { for (const k of Object.keys(it)) if (!(k in u)) delete it[k]; Object.assign(it, u); }
+function durText(it, s) {
+  const d = seasonDur(it, s); if (!d) return "";
+  const ap = d.approx ? "≈ " : "";
+  return `⏱ ${ap}${fmtDur(d.total)}` + (d.left > 0 && d.left < d.total - 0.5 ? ` · noch ${ap}${fmtDur(d.left)}` : "");
+}
 function renderEps() {
   const box = $("#epsBox"), it = current; if (!box || !it) return;
   const seasons = mainSeasons(it), specials = (it.seasons || []).find(s => s.number === 0);
@@ -1017,6 +1060,12 @@ function renderEps() {
   const p = prog(it), n = nextEp(it);
   let head = `<h3 class="epsh">📼 Staffeln & Folgen ${it.showState ? `<span class="state">${esc(it.showState)}</span>` : ""}</h3>
     <div class="eprog"><div class="bar big"><i style="width:${p.pct}%"></i></div><span><b>${p.w}</b> von ${p.a} Folgen gesehen · ${p.pct}%</span></div>`;
+  const durs = seasons.map(s => seasonDur(it, s));
+  if (durs.some(d => d)) {
+    const all = durs.every(d => d), tot = durs.reduce((a, d) => a + (d ? d.total : 0), 0), left = durs.reduce((a, d) => a + (d ? d.left : 0), 0);
+    const ap = !all || durs.some(d => d && d.approx) ? "≈ " : "";
+    head += `<div class="durline">⏱ Gesamt ${ap}<b>${fmtDur(tot)}</b>${left > 0 && left < tot ? ` · noch ${ap}<b>${fmtDur(left)}</b>` : left === 0 ? " · alles geschaut" : ""}${all ? "" : ` <span class="spin"></span>`}</div>`;
+  }
   if (n) head += `<div class="nextbox"><div><div class="hint">Als Nächstes</div><b>${SE(n.s, n.e)}</b> <span id="nextName"></span></div>
       <button class="btn primary" id="nextMark">✓ Gesehen</button></div>`;
   else if (p.a) head += `<div class="nextbox done"><div><b>🎉 Alle ausgestrahlten Folgen gesehen!</b></div></div>`;
@@ -1030,8 +1079,8 @@ function renderEps() {
     return `<div class="season ${open ? "open" : ""}" data-s="${s.number}">
       <div class="shead">
         <input type="checkbox" class="scheck" ${full ? "checked" : ""} ${ai ? "" : "disabled"} title="Ganze Staffel als gesehen markieren">
-        <span class="sname">${label}</span>
-        <span class="hint">${s.airDate ? s.airDate.slice(0, 4) : ""}</span>
+        <div class="sinfo"><span class="sname">${label}</span>
+          <span class="smeta">${[s.airDate ? s.airDate.slice(0, 4) : "", durText(it, s)].filter(Boolean).join(" · ")}</span></div>
         <span class="spacer"></span>
         <div class="bar small"><i style="width:${ai ? Math.round(w / ai * 100) : 0}%"></i></div>
         <span class="scount">${w}/${ai}${s.episodeCount > ai ? ` <span class="hint">(+${s.episodeCount - ai})</span>` : ""}</span>
@@ -1203,7 +1252,7 @@ $("#sSave").onclick = async () => {
 };
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "10";
+const APP_VERSION = "11";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
