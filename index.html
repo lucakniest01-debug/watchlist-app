@@ -162,6 +162,9 @@
   .sname { font-weight: 600; }
   .sinfo { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
   .smeta { font-size: 12px; color: var(--muted); }
+  .rt { font-size: 12px; color: var(--muted); }
+  .rtline { font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+  .rtline b { color: var(--text); }
   .durline { font-size: 13px; color: var(--muted); margin: -4px 0 12px; }
   .durline b { color: var(--text); font-weight: 600; }
   .scount { font-size: 13px; min-width: 52px; text-align: right; }
@@ -504,12 +507,16 @@ const Local = (() => {
     const region = load().settings.region || "DE";
     it.providers = await providers(it.mediaType, it.tmdbId, region);
     it.region = region; it.updated = iso();
+    if (it.mediaType === "movie") {
+      try { const m = await tmdb(`/movie/${it.tmdbId}`, { language: "de-DE" }); if (m.runtime > 0) it.runtime = m.runtime; } catch {}
+    }
     if (it.mediaType === "tv") {
       try { Object.assign(it, await tvDetails(it.tmdbId)); } catch {}
     }
   }
   function applyRefresh(dst, src) {
     Object.assign(dst, { providers: src.providers, region: src.region, updated: src.updated });
+    if (src.runtime > 0) dst.runtime = src.runtime;
     if (!src.seasons) return false;
     Object.assign(dst, { seasons: src.seasons, lastAired: src.lastAired, nextAir: src.nextAir, showState: src.showState });
     const [w, a] = progress(dst);
@@ -578,7 +585,8 @@ const Local = (() => {
     ["POST", /^\/api\/refresh-stale$/, async () => {
       const s = load(), newEpisodes = [];
       if (s.settings.apiKey) {
-        const stale = s.items.filter(i => i.mediaType === "tv" && i.tmdbId && (!i.seasons || !i.updated || now() - Date.parse(i.updated) > 6 * 3600e3)).slice(0, 60);
+        const old = i => !i.updated || now() - Date.parse(i.updated) > 6 * 3600e3;
+        const stale = s.items.filter(i => i.tmdbId && ((i.mediaType === "tv" && (!i.seasons || old(i))) || (i.mediaType === "movie" && !i.runtime && old(i)))).slice(0, 60);
         for (const it of stale) {
           try { const c = clone(it); await refreshItem(c); if (applyRefresh(it, c)) newEpisodes.push(it.title); }
           catch (e) { if (/Schlüssel|erreichbar/.test(e.message)) break; }
@@ -787,6 +795,7 @@ function render() {
         <span class="st" style="background:var(--${i.status})" title="${STATUS[i.status]}"></span></div>
       <div class="cbody"><div class="ctitle">${esc(i.title)} ${i.year ? `<small>(${esc(i.year)})</small>` : ""}</div>
         ${mine.length ? `<div class="minetag">✓ In deinem Abo: ${esc(mine.join(", "))}</div>` : ""}
+        ${i.mediaType === "movie" && i.runtime ? `<div class="rt">⏱ ${fmtDur(i.runtime)}</div>` : ""}
         ${cardProgress(i)}
         <div class="where">${where}</div></div></div>`;
   }).join("");
@@ -811,7 +820,7 @@ async function load() {
 }
 // Beim Start (und alle 6 Stunden) nach neuen Folgen schauen
 async function checkNewEpisodes() {
-  if (!settings.apiKey || !items.some(i => isShow(i))) return;
+  if (!settings.apiKey || !items.some(i => isShow(i) || (i.mediaType === "movie" && i.tmdbId && !i.runtime))) return;
   try {
     const r = await api("POST", "/api/refresh-stale");
     const byId = new Map(r.items.map(i => [i.id, i]));
@@ -1001,6 +1010,10 @@ function openDetail(id) {
   renderDetail(); $("#ovDetail").classList.add("open");
   $("#ovDetail").scrollTop = 0;
   if (isShow(current) && (current.seasons || []).length) loadAllSeasons(current);
+  if (current.mediaType === "movie" && current.tmdbId && !current.runtime && settings.apiKey) {
+    const it = current;
+    api("POST", `/api/items/${it.id}/refresh`).then(u => { replaceItem(it, u); render(); if (current === it) renderDetail(); }).catch(() => {});
+  }
   // Ältere Einträge ohne Staffel-Infos nachladen
   if (isShow(current) && !(current.seasons || []).length && settings.apiKey) {
     const it = current;
@@ -1169,6 +1182,7 @@ function renderDetail() {
           <select class="inp" id="dKind" style="width:auto">${Object.entries(KINDS).map(([k,l]) => `<option value="${k}" ${i.kind===k?"selected":""}>${l}</option>`).join("")}</select>
           <div class="seg" id="dStatus">${Object.entries(STATUS).map(([k,l]) => `<button data-s="${k}" class="${i.status===k?"active":""}">${l}</button>`).join("")}</div>
         </div>
+        ${i.mediaType === "movie" ? `<div class="rtline">⏱ Laufzeit: <b>${i.runtime ? fmtDur(i.runtime) : settings.apiKey && i.tmdbId ? `<span class="spin"></span>` : "unbekannt"}</b>${i.runtime >= 60 ? ` <span class="hint">(${i.runtime} Min.)</span>` : ""}</div>` : ""}
         ${i.overview ? `<p class="overview">${esc(i.overview)}</p>` : ""}
         <h3 style="margin:0 0 10px;font-size:15px">📺 Wo kann ich das schauen?</h3>
         ${where}
@@ -1252,7 +1266,7 @@ $("#sSave").onclick = async () => {
 };
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "11";
+const APP_VERSION = "12";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
