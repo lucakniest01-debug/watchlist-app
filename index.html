@@ -134,6 +134,7 @@
   .suggest .add { padding: 6px 10px; font-size: 13px; }
   #ovDetail .modal { max-width: 880px; }
   #ovSettings .mfoot { position: sticky; bottom: 0; background: var(--panel); border-radius: 0 0 16px 16px; }
+  #lostBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: #5a1f24; border-top: 1px solid #a34848; color: #ffd9d9; padding: 12px 18px; text-align: center; font-size: 14px; }
   .syncsec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .syncsec h3 { margin: 0 0 8px; font-size: 15px; }
   .qrbox { display: flex; gap: 16px; align-items: flex-start; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -632,6 +633,13 @@ const Local = (() => {
   return { handle };
 })();
 
+/* Hinweis, wenn das PC-Programm nicht mehr läuft */
+function showLost() {
+  if (document.getElementById("lostBar")) return;
+  const d = document.createElement("div"); d.id = "lostBar";
+  d.innerHTML = `⚠ Das Watchlist-Programm läuft nicht mehr. Schließ dieses Fenster und starte <b>Watchlist.exe</b> neu – deine Daten sind gespeichert.`;
+  document.body.appendChild(d);
+}
 /* Läuft die Seite im PC-Programm ("server") oder als Handy-App ("local")? */
 let MODE = "server";
 async function detectMode() {
@@ -644,7 +652,9 @@ async function api(method, path, body) {
   if (MODE === "local") {
     data = JSON.parse(JSON.stringify(await Local.handle(method, path, body) ?? null));
   } else {
-    const r = await fetch(path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+    let r;
+    try { r = await fetch(path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined }); }
+    catch { showLost(); throw new Error("Keine Verbindung zum Watchlist-Programm – bitte dieses Fenster schließen und Watchlist.exe neu starten."); }
     data = r.status === 204 ? null : await r.json().catch(() => null);
     if (!r.ok) throw new Error((data && data.error) || ("Fehler " + r.status));
   }
@@ -1282,7 +1292,7 @@ $("#sSave").onclick = async () => {
 };
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "13";
+const APP_VERSION = "14";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
@@ -1467,6 +1477,9 @@ function showQR(fresh) {
       fetch("/api/version").then(r => r.json()).then(v => { if (v.version && v.version !== APP_VERSION) location.reload(); }).catch(() => {});
     };
     ping(); setInterval(ping, 20000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") fetch("/api/version", { cache: "no-store" }).then(ping).catch(showLost);
+    });
     addEventListener("pagehide", () => navigator.sendBeacon("/api/bye"));
   } else {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
