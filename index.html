@@ -212,9 +212,28 @@
   body.view-shop #grid, body.view-shop #empty, body.view-shop #banner, body.view-shop #tabs { display: none !important; }
   .shopbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
   .shopbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
-  .shelf { margin: 18px 0 8px; }
-  .shelf h3 { margin: 0 0 6px 4px; font-size: 16px; }
-  .rack { position: relative; perspective: 1400px; }
+  .shophero { position: relative; overflow: hidden; display: flex; align-items: center; gap: 20px; padding: 26px 28px; margin-bottom: 16px; border-radius: 18px;
+    background: radial-gradient(ellipse at 15% 0%, rgba(255,92,92,.35), transparent 60%), radial-gradient(ellipse at 90% 120%, rgba(255,159,67,.25), transparent 60%), #15121a;
+    border: 1px solid #3a2a33; }
+  .shophero::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 2px, transparent 2px 46px); pointer-events: none; }
+  .herotext { flex: 1; position: relative; z-index: 1; }
+  .shophero h2 { margin: 0 0 6px; font-size: 26px; letter-spacing: .3px; }
+  .shophero p { margin: 0; color: #c9c2cf; max-width: 560px; }
+  .herobtn { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 14px 22px; font-size: 16px; border-radius: 14px; box-shadow: 0 10px 30px rgba(255,92,92,.35); }
+  .herobtn small { font-size: 12px; font-weight: 400; opacity: .9; margin-top: 2px; }
+  .herobtn:hover { transform: translateY(-1px); }
+  .shelf { margin: 22px 0 6px; }
+  .shelfhead { display: flex; align-items: center; gap: 6px; margin: 0 4px 2px; }
+  .shelf h3 { margin: 0; font-size: 17px; }
+  .arrow-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 20px; line-height: 1; padding: 0 0 2px; }
+  .arrow-btn:hover { border-color: var(--accent); }
+  .rack { position: relative; perspective: 1400px; border-radius: 14px; background: radial-gradient(ellipse 60% 70% at 50% 0%, rgba(255,200,140,.10), transparent 70%), linear-gradient(#141218, #110f14); }
+  .case .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 8px 8px; background: linear-gradient(transparent, rgba(0,0,0,.88)); display: flex; flex-direction: column; gap: 1px;
+    opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s; text-align: left; }
+  .case .cap b { font-size: 12px; line-height: 1.2; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .case .cap i { font-style: normal; font-size: 11px; color: #d9d2dd; }
+  .case:hover .cap, .case:focus-visible .cap { opacity: 1; transform: none; }
+  .case:hover .ctype { opacity: 0; }
   /* Regalbrett */
   .rack::after { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; height: 16px; border-radius: 3px;
     background: linear-gradient(180deg, #3a2a20 0%, #2a1d16 55%, #1a120d 100%); box-shadow: 0 10px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,220,180,.15); z-index: 0; }
@@ -230,7 +249,7 @@
     background: linear-gradient(90deg, #111, #2c2c2c 40%, #111); border-radius: 2px; }
   .case::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index: 1; border-radius: 3px 0 0 3px; }
   .case .tag { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; background: var(--gesehen); color: #0f1115; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.5); z-index: 3; }
-  .case .ctype { position: absolute; left: 8px; bottom: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; color: #0f1115; z-index: 2; opacity: 0; transition: opacity .2s; }
+  .case .ctype { position: absolute; left: 8px; top: 8px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; color: #0f1115; z-index: 2; opacity: 0; transition: opacity .2s; }
   .case:hover .ctype { opacity: 1; }
   .ctype.film { background: var(--film); } .ctype.serie { background: var(--serie); } .ctype.anime { background: var(--anime); }
   .loadrow { padding: 60px 20px; }
@@ -271,6 +290,13 @@
     border: 2px solid rgba(255,255,255,.18); display: none; touch-action: none; }
   #joyKnob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 4px 14px rgba(0,0,0,.5); }
   @media (pointer: coarse) { #joy, #cross { display: block; } #roomLabel { bottom: 170px; } }
+  #room.locked #cross { display: block; }
+  #room.locked #roomCanvas { cursor: none; }
+  #roomStart { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.96); display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center;
+    background: rgba(15,17,21,.86); backdrop-filter: blur(8px); border: 1px solid rgba(255,107,107,.5); border-radius: 16px; padding: 18px 26px; color: var(--text);
+    box-shadow: 0 20px 50px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: 420px; }
+  #roomStart.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  #roomStart b { font-size: 17px; } #roomStart span { font-size: 13px; color: var(--muted); }
   .roombtn { margin-left: auto; }
 
   /* ---------- Handy ---------- */
@@ -321,6 +347,9 @@
     .viewsw { order: 11; flex: 1 1 100%; display: flex; margin: 0; }
     .viewsw button { flex: 1; padding: 8px 6px; }
     .case { width: 100px; }
+    .shophero { flex-direction: column; align-items: stretch; padding: 18px; gap: 14px; }
+    .shophero h2 { font-size: 21px; } .shophero p { font-size: 14px; }
+    .arrow-btn { display: none; }
     .shelf .row { gap: 10px; padding: 12px 6px 18px; }
     .shopbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     .shopbar > * { flex: none; }
@@ -349,6 +378,10 @@
   <div id="banner"></div>
   <div class="grid" id="grid"></div>
   <section id="shop">
+    <div class="shophero">
+      <div class="herotext"><h2>🎬 Videothek</h2><p>Stöbere durch die Regale, dreh die Hüllen um und stell, was dich reizt, direkt auf deine Watchlist.</p></div>
+      <button class="btn primary herobtn" id="enterRoom">🚶 Raum betreten<small>in 3D durch die Videothek laufen</small></button>
+    </div>
     <div class="shopbar" id="shopBar"></div>
     <div id="shopShelves"></div>
     <div class="attrib" style="margin-top:24px">Daten und Bilder: TMDB · Streaming-Angebote: JustWatch</div>
@@ -406,6 +439,7 @@
   <div id="roomMsg"></div>
   <div id="roomLabel"></div>
   <div id="cross"></div>
+  <button id="roomStart"><b>🖱 Klicken zum Umsehen</b><span>Danach bewegst du die Ansicht einfach mit der Maus · W A S D zum Gehen · Esc gibt die Maus frei</span></button>
   <div id="joy"><div id="joyKnob"></div></div>
 </div>
 
@@ -1507,7 +1541,7 @@ const Shop = (() => {
   function caseHtml(r, key) {
     const have = onList(r);
     return `<button class="case ${have ? "have" : ""}" data-key="${key}" title="${esc(r.title)}${r.year ? " (" + r.year + ")" : ""}">
-      <span class="cover"><img loading="lazy" src="${esc(r.poster)}" alt="${esc(r.title)}"></span>
+      <span class="cover"><img loading="lazy" src="${esc(r.poster)}" alt="${esc(r.title)}"><span class="cap"><b>${esc(r.title)}</b>${r.year ? `<i>${esc(r.year)}${r.vote ? " · ★ " + r.vote.toFixed(1) : ""}</i>` : ""}</span></span>
       <span class="spine"></span>
       ${have ? `<span class="tag">✓</span>` : ""}
       <span class="ctype ${r.kind}">${KINDS[r.kind]}</span></button>`;
@@ -1522,13 +1556,15 @@ const Shop = (() => {
     shelfState = {};
     if (observer) observer.disconnect();
     box.innerHTML = SHELVES.filter(fits).map(sh => `<section class="shelf" data-shelf="${sh.id}">
-        <h3>${sh.name}</h3>
+        <div class="shelfhead"><h3>${sh.name}</h3><span class="spacer"></span>
+          <button class="arrow-btn" data-dir="-1" aria-label="zurück">‹</button><button class="arrow-btn" data-dir="1" aria-label="weiter">›</button></div>
         <div class="rack"><div class="row" data-row="${sh.id}"><div class="hint loadrow"><span class="spin"></span></div></div></div></section>`).join("");
     observer = new IntersectionObserver(es => es.forEach(e => {
       if (!e.isIntersecting) return;
       const id = e.target.dataset.shelf; observer.unobserve(e.target); loadMore(id);
     }), { rootMargin: "300px" });
     box.querySelectorAll(".shelf").forEach(el => observer.observe(el));
+    box.querySelectorAll(".arrow-btn").forEach(b => b.onclick = () => { const row = b.closest(".shelf").querySelector(".row"); row.scrollBy({ left: +b.dataset.dir * row.clientWidth * .8, behavior: "smooth" }); });
     built = true;
   }
 
@@ -1625,8 +1661,7 @@ const Shop = (() => {
       Object.entries({ all: "Alles", film: "Filme", serie: "Serien", anime: "Anime" }).map(([k, l]) => `<button class="chip ${kind === k ? "active" : ""}" data-k="${k}">${l}</button>`).join("") +
       `<span class="sep"></span>` +
       (hasMine ? `<button class="chip ${onlyMine ? "active" : ""}" id="shopMine">⭐ Nur meine Dienste${onlyMine ? ` <span class="hint">(${esc((settings.myServices || []).slice(0, 3).join(", "))}${settings.myServices.length > 3 ? " …" : ""})</span>` : ""}</button>`
-        : `<span class="hint">Tipp: Unter ⚙ deine Dienste wählen, dann zeigt die Videothek nur, was du schauen kannst.</span>`) +
-      `<button class="btn primary sm roombtn" id="enterRoom">🚶 Raum betreten</button>`;
+        : `<span class="hint">Tipp: Unter ⚙ deine Dienste wählen, dann zeigt die Videothek nur, was du schauen kannst.</span>`);
     $("#shopBar").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { kind = b.dataset.k; renderBar(); build(); });
     const m = $("#shopMine"); if (m) m.onclick = () => { onlyMine = !onlyMine; renderBar(); build(); };
     $("#enterRoom").onclick = () => Room.open();
@@ -1656,7 +1691,7 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
 const Room = (() => {
   let T = null, renderer, scene, camera, store, raf = 0, running = false, last = 0, builtSig = "";
-  let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc;
+  let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
   const pos = { x: 0, z: 0 };
   const EYE = 1.62, HALF = 8, MARGIN = 1.15;
   const CASE_W = 0.27, CASE_H = 0.38, CASE_D = 0.045, PER_ROW = 12, ROWS = 4, UNIT_W = 4.1;
@@ -1669,7 +1704,7 @@ const Room = (() => {
   }
   function carpet() {
     const t = canvasTex(256, 256, (g, w, h) => {
-      g.fillStyle = "#2a1f3a"; g.fillRect(0, 0, w, h);
+      g.fillStyle = "#301a2c"; g.fillRect(0, 0, w, h);
       for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${150 + Math.random() * 80},${90 + Math.random() * 60},${180 + Math.random() * 60},${Math.random() * .12})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
       g.strokeStyle = "rgba(255,140,90,.18)"; g.lineWidth = 3;
       for (let k = 0; k < 4; k++) { g.beginPath(); g.arc(64 + (k % 2) * 128, 64 + (k >> 1) * 128, 34, 0, Math.PI * 2); g.stroke(); }
@@ -1713,14 +1748,15 @@ const Room = (() => {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = T.SRGBColorSpace;
     scene = new T.Scene();
-    scene.background = new T.Color(0x0b0c10);
-    scene.fog = new T.Fog(0x0b0c10, 9, 22);
+    scene.background = new T.Color(0x0c0a10);
+    scene.fog = new T.Fog(0x0c0a10, 11, 26);
     camera = new T.PerspectiveCamera(68, 1, 0.05, 60);
     camera.rotation.order = "YXZ";
     ray = new T.Raycaster(); ray.far = 16; ndc = new T.Vector2();
 
-    scene.add(new T.HemisphereLight(0xfff1e0, 0x1a1528, 1.1));
-    const sun = new T.DirectionalLight(0xffffff, .6); sun.position.set(3, 8, 2); scene.add(sun);
+    scene.add(new T.HemisphereLight(0xffe9d2, 0x1c1426, 0.95));
+    const sun = new T.DirectionalLight(0xfff0e0, .45); sun.position.set(3, 8, 2); scene.add(sun);
+    glowTex = canvasTex(256, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,120,90,.55)"); gr.addColorStop(.5, "rgba(255,90,90,.15)"); gr.addColorStop(1, "rgba(255,90,90,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 
     // Boden, Decke, Wände
     const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ map: carpet() }));
@@ -1734,6 +1770,10 @@ const Room = (() => {
       // Leuchtstreifen unten an der Wand
       const strip = new T.Mesh(new T.PlaneGeometry(HALF * 2, .05), new T.MeshBasicMaterial({ color: 0xff6b5c }));
       strip.position.set(Math.sin(a) * -(HALF - .01), .04, Math.cos(a) * -(HALF - .01)); strip.rotation.y = a; scene.add(strip);
+      const topStrip = new T.Mesh(new T.PlaneGeometry(HALF * 2, .04), new T.MeshBasicMaterial({ color: 0xff9f43 }));
+      topStrip.position.set(Math.sin(a) * -(HALF - .01), 3.12, Math.cos(a) * -(HALF - .01)); topStrip.rotation.y = a; scene.add(topStrip);
+      const wains = new T.Mesh(new T.PlaneGeometry(HALF * 2, .9), new T.MeshLambertMaterial({ color: 0x17141d }));
+      wains.position.set(Math.sin(a) * -(HALF - .02), .45, Math.cos(a) * -(HALF - .02)); wains.rotation.y = a; scene.add(wains);
     }
     // Deckenlampen
     const lamp = new T.MeshBasicMaterial({ color: 0xfff6e6 });
@@ -1747,6 +1787,14 @@ const Room = (() => {
       g.font = "28px Segoe UI, sans-serif"; g.fillText("Videothek", w / 2, h / 2 + 56);
     }) }));
     rug.rotation.x = -Math.PI / 2; rug.position.y = .005; scene.add(rug);
+    const neonTex = canvasTex(1024, 256, (g, w, h) => {
+      g.clearRect(0, 0, w, h); g.font = "bold 120px Segoe UI, system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.shadowColor = "#ff5c7a"; g.shadowBlur = 40; g.fillStyle = "#ffd6dc"; g.fillText("WATCHLIST", w / 2, h / 2); g.shadowBlur = 16; g.fillText("WATCHLIST", w / 2, h / 2);
+    });
+    const neon = new T.Group();
+    for (const r of [0, Math.PI]) { const p = new T.Mesh(new T.PlaneGeometry(3.4, .85), new T.MeshBasicMaterial({ map: neonTex, transparent: true, depthWrite: false })); p.rotation.y = r; neon.add(p); }
+    for (const sx of [-1.2, 1.2]) { const c = new T.Mesh(new T.CylinderGeometry(.006, .006, .7), new T.MeshBasicMaterial({ color: 0x555555 })); c.position.set(sx, .77, 0); neon.add(c); }
+    neon.position.set(0, 2.5, 0); scene.add(neon); shared.neon = neon;
 
     store = new T.Group(); scene.add(store);
     addEventListener("resize", resize);
@@ -1768,7 +1816,16 @@ const Room = (() => {
     for (const y of BOARD_Y) { const b = new T.Mesh(new T.BoxGeometry(UNIT_W, .035, .4), shared.wood); b.position.set(0, y - .02, 0); g.add(b); }
     const top = new T.Mesh(new T.BoxGeometry(UNIT_W, .04, .42), shared.wood); top.position.set(0, 2.26, 0); g.add(top);
     for (const sx of [-1, 1]) { const s = new T.Mesh(new T.BoxGeometry(.05, 2.3, .42), shared.wood); s.position.set(sx * UNIT_W / 2, 1.13, 0); g.add(s); }
-    const sign = new T.Mesh(new T.PlaneGeometry(3.2, .5), new T.MeshBasicMaterial({ map: signTex(label) })); sign.position.set(0, 2.62, -.18); g.add(sign);
+    const sign = new T.Mesh(new T.PlaneGeometry(3.2, .5), new T.MeshBasicMaterial({ map: signTex(label) })); sign.position.set(0, 2.62, -.17); g.add(sign);
+    const glow = new T.Mesh(new T.PlaneGeometry(4.6, 1.3), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.62, -.19); g.add(glow);
+    // warme LED-Leiste unter dem Deckbrett
+    shared.led = shared.led || new T.MeshBasicMaterial({ color: 0xfff1d6 });
+    const led = new T.Mesh(new T.BoxGeometry(UNIT_W - .12, .015, .02), shared.led); led.position.set(0, 2.225, .17); g.add(led);
+    // leuchtende Vorderkanten der Bretter
+    shared.edge = shared.edge || new T.MeshBasicMaterial({ color: 0xff7a59, transparent: true, opacity: .7 });
+    for (const y of BOARD_Y) { const e = new T.Mesh(new T.PlaneGeometry(UNIT_W - .06, .012), shared.edge); e.position.set(0, y - .02, .201); g.add(e); }
+    // Licht pro Regal (nur am PC, am Handy wäre es zu langsam)
+    if (!matchMedia("(pointer: coarse)").matches) { const l = new T.PointLight(0xffd9b0, 4.5, 4.5, 1.6); l.position.set(0, 2.05, .9); g.add(l); }
     store.add(g);
     return g;
   }
@@ -1853,14 +1910,35 @@ const Room = (() => {
       const hit = ray.intersectObjects(pickables, false)[0];
       return hit ? hit.object : null;
     };
-    cv.addEventListener("pointerdown", e => { drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: 0 }; cv.setPointerCapture(e.pointerId); });
+    const lockable = "requestPointerLock" in cv && matchMedia("(pointer: fine)").matches;
+    const locked = () => document.pointerLockElement === cv;
+    function lockReq() {
+      try { const p = cv.requestPointerLock({ unadjustedMovement: true }); if (p && p.catch) p.catch(() => { try { cv.requestPointerLock(); } catch {} }); } catch { try { cv.requestPointerLock(); } catch {} }
+    }
+    // Maus: ein Klick fängt die Maus ein – danach schaut man allein durch Bewegen umher
+    cv.addEventListener("click", e => {
+      if (!lockable) return;
+      if (!locked()) { lockReq(); return; }
+      if (aimed) { const m = aimed; document.exitPointerLock(); select(m); }
+    });
+    document.addEventListener("pointerlockchange", () => {
+      const on = locked(); $("#room").classList.toggle("locked", on);
+      if (!on) { releasedAt = performance.now(); setAim(null); }
+      startPrompt();
+    });
+    document.addEventListener("mousemove", e => {
+      if (!locked()) return;
+      yaw -= e.movementX * .0024 * sens; pitch = Math.max(-1.25, Math.min(1.25, pitch - e.movementY * .0024 * sens));
+    });
+    $("#roomStart").onclick = () => lockReq();
+    cv.addEventListener("pointerdown", e => { if (lockable && e.pointerType === "mouse") return; drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: 0 }; cv.setPointerCapture(e.pointerId); });
     cv.addEventListener("pointermove", e => {
       if (drag && drag.id === e.pointerId) {
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
         drag.moved += Math.abs(dx) + Math.abs(dy);
         const s = e.pointerType === "touch" ? .006 : .0045;
         yaw -= dx * s; pitch = Math.max(-1.2, Math.min(1.2, pitch - dy * s));
-      } else if (e.pointerType === "mouse") setAim(pick(e.clientX, e.clientY));
+      } else if (e.pointerType === "mouse" && !lockable) setAim(pick(e.clientX, e.clientY));
     });
     const up = e => {
       if (!drag || drag.id !== e.pointerId) return;
@@ -1873,7 +1951,7 @@ const Room = (() => {
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
       keys[e.code] = true;
-      if (e.code === "Escape") close();
+      if (e.code === "Escape" && performance.now() - releasedAt > 400) close();
       if (e.code === "Enter" && aimed) select(aimed);
       if (/^(Arrow|Space)/.test(e.code)) e.preventDefault();
     });
@@ -1900,16 +1978,22 @@ const Room = (() => {
     if (aimed) aimed.position.z = aimed.userData.base;
     aimed = m;
     const lab = $("#roomLabel");
-    if (m) { m.position.z = m.userData.base + .07; const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – klicken zum Ansehen</span>`; lab.style.opacity = 1; }
+    if (m) { m.position.z = m.userData.base + .07; const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Ansehen</span>`; lab.style.opacity = 1; }
     else lab.style.opacity = 0;
   }
   function select(m) { setAim(m); keys = {}; Shop.openItem(m.userData.r); }
 
   // Am Handy: was in der Bildmitte ist, wird hervorgehoben
   function aimCenter() {
-    if (!matchMedia("(pointer: coarse)").matches) return;
+    const coarse = matchMedia("(pointer: coarse)").matches, lockedNow = document.pointerLockElement === $("#roomCanvas");
+    if (!coarse && !lockedNow) return;
     ndc.set(0, 0); ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObjects(pickables, false)[0]; setAim(hit && hit.distance < 3.5 ? hit.object : null);
+    const hit = ray.intersectObjects(pickables, false)[0]; setAim(hit && hit.distance < (coarse ? 3.5 : 12) ? hit.object : null);
+  }
+  // Startkarte „Klicken zum Umsehen“ (nur Maus)
+  function startPrompt() {
+    const show = running && matchMedia("(pointer: fine)").matches && document.pointerLockElement !== $("#roomCanvas") && !document.querySelector(".overlay.open");
+    $("#roomStart").classList.toggle("show", show);
   }
 
   function loop(t) {
@@ -1929,9 +2013,11 @@ const Room = (() => {
       clampPos();
     }
     const bob = (Math.abs(joy.x) + Math.abs(joy.y) + (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.ArrowUp || keys.ArrowDown ? 1 : 0)) ? Math.sin(t / 140) * .012 : 0;
+    if (shared.neon) shared.neon.rotation.y = Math.sin(t / 2600) * .25;
     camera.position.set(pos.x, EYE + bob, pos.z);
     camera.rotation.set(pitch, yaw, 0);
     aimCenter();
+    if (!(t % 30 < 17)) startPrompt();
     renderer.render(scene, camera);
   }
 
@@ -1946,15 +2032,17 @@ const Room = (() => {
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
       ? "🕹 Links: bewegen · 👆 Wischen: umsehen · Hülle antippen: ansehen"
-      : "⌨ W A S D / Pfeile: gehen · 🖱 Ziehen: umsehen · Rad: vor/zurück · Hülle anklicken: ansehen · Shift: schneller";
+      : "🖱 Maus bewegen: umsehen · ⌨ W A S D: gehen · Shift: schneller · Klick auf Hülle: ansehen · Esc: Maus freigeben";
     $("#roomHelp").classList.add("show"); setTimeout(() => $("#roomHelp").classList.remove("show"), 7000);
-    running = true; last = performance.now(); raf = requestAnimationFrame(loop);
+    running = true; last = performance.now(); raf = requestAnimationFrame(loop); startPrompt();
     const sig = Shop.filterSig();
     if (sig !== builtSig) { builtSig = sig; pos.x = 0; pos.z = 2.5; yaw = 0; pitch = -.05; await fill(); }
     else { mark(); $("#roomMsg").textContent = ""; }
   }
   function close() {
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
+    if (document.pointerLockElement) document.exitPointerLock();
+    $("#roomStart").classList.remove("show");
     $("#room").classList.remove("open"); document.body.classList.remove("in-room");
     Shop.markCases();
   }
@@ -1996,7 +2084,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "17";
+const APP_VERSION = "18";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
