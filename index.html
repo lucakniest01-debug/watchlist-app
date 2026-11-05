@@ -298,7 +298,7 @@
   .cin-tabs button, .cin-btn { font: inherit; font-size: .85em; color: #f3e9e0; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 2em; padding: .35em 1em; cursor: pointer; }
   .cin-tabs button.on, .cin-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; color: #fff; font-weight: 600; }
   .cin-btn.ghost { background: none; }
-  #cineYT, #cineKBAlign, #cineKBHome, #cineKBClose { display: none; } #cine.yt-on #cineYT, #cine.kb-on #cineKBAlign, #cine.kb-on #cineKBHome, #cine.kb-on #cineKBClose { display: inline-flex; }
+  #cineYT, #cineKBAlign, #cineKBHome, #cineKBClose, #cineKBWin { display: none; } #cine.kb-svc #cineKBWin { display: inline-flex; } #cine.yt-on #cineYT, #cine.kb-on #cineKBAlign, #cine.kb-on #cineKBHome, #cine.kb-on #cineKBClose { display: inline-flex; }
   #cine.kb-on #cineMenu, #cine.kb-on #cineFileBtn { display: none; }
   #cineKBFull, #cineStreamStop { display: none; } #cine.kb-on #cineKBFull, #cine.st-on #cineStreamStop { display: inline-flex; }
   .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11em, 1fr)); gap: .9em; }
@@ -526,6 +526,7 @@
       <button class="btn" id="cineKBHome">⌂ YouTube-Start</button>
       <button class="btn" id="cineKBFull">⛶ Vollbild</button>
       <button class="btn" id="cineStreamStop">✖ Streaming beenden</button>
+      <button class="btn" id="cineKBWin">🪟 Eigenes Fenster</button>
       <button class="btn" id="cineKBClose">✖ YouTube schließen</button>
       <input type="file" id="cineFile" accept="video/*" hidden>
     </div>
@@ -2347,7 +2348,14 @@ const Room = (() => {
     };
     let streamTimer = null;
     function streamUrl(name, title) { const s = STREAM[name]; if (!s) return null; return title && s.search ? s.search(encodeURIComponent(title)) : s.home; }
-    async function openStream(url, label) {
+    // Streamingdienst direkt in der Leinwand – genau wie YouTube über den Kino-Browser
+    function openStream(url, label) {
+      kbHome = (STREAM[label] || {}).home || url; kbLabel = label || "";
+      if (MODE !== "server") { window.open(url, "_blank", "noopener"); return; }
+      openRealYT(url, true);
+    }
+    // Ausweg, falls ein Dienst auf der Leinwand schwarz bleibt: eigenes Edge-Vollbildfenster
+    async function openStreamWindow(url, label) {
       if (MODE !== "server") { window.open(url, "_blank", "noopener"); return; }
       try { await api("POST", "/api/kinowindow", { url }); } catch (e) { toast(e.message, true); return; }
       closeRealYT(); stopMedia(); view = "stream"; setLights(true);
@@ -2365,7 +2373,7 @@ const Room = (() => {
       const s = el(), mine = settings.myServices || [];
       const names = Object.keys(STREAM).filter(n => n !== "YouTube").sort((a, b) => (mine.includes(b) - mine.includes(a)));
       s.innerHTML = `<div class="cin-menu"><div class="cin-head"><b>📺 Streaming</b>${tabsHtml()}</div>
-        <div class="cin-note" style="margin-bottom:.8em">Startet den Dienst bildschirmfüllend in Edge – mit deiner Anmeldung. Zurück ins Kino mit Alt + F4 oder F11.</div>
+        <div class="cin-note" style="margin-bottom:.8em">Läuft direkt auf der Leinwand – beim ersten Mal einmal anmelden, danach bleibt die Anmeldung gespeichert. Bleibt das Bild schwarz: unten „🪟 Eigenes Fenster“.</div>
         <div class="st-grid">${names.map(n => { const c = (svcInfo(n) || {}).c || "#444"; return `<button class="st-tile ${mine.includes(n) ? "mine" : ""}" data-st="${esc(n)}" style="--c:${c}"><b>${esc(n)}</b>${mine.includes(n) ? "<i>⭐ dein Abo</i>" : ""}</button>`; }).join("")}</div></div>`;
       wireTabs(s);
       s.querySelectorAll("[data-st]").forEach(b => b.onclick = () => openStream(streamUrl(b.dataset.st), b.dataset.st));
@@ -2376,17 +2384,22 @@ const Room = (() => {
     // Maus und Tastatur gehen über das DevTools-Protokoll zurück.
     const KW = 1400, KH = 600;           // Seitengröße im Kino-Browser (Seitenverhältnis der Leinwand)
     let curW = KW, curH = KH, fullOn = false;
-    let ws = null, msgId = 0, pend = {}, kbUrl = "https://www.youtube.com/", kimg = null, lastMove = 0;
+    let ws = null, msgId = 0, pend = {}, kbUrl = "https://www.youtube.com/", kimg = null, lastMove = 0, kbHome = "https://www.youtube.com/", kbLabel = "YouTube";
+    function setBarLabels() {
+      const n = kbLabel && kbLabel !== "YouTube" ? kbLabel : "YouTube";
+      $("#cineKBHome").textContent = "⌂ " + n + "-Start"; $("#cineKBClose").textContent = "✖ " + n + " schließen";
+    }
     const cdp = (method, params = {}) => new Promise((res, rej) => {
       if (!ws || ws.readyState !== 1) return rej(new Error("keine Verbindung"));
       const i = ++msgId; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params }));
     });
-    async function openRealYT(url) {
-      kbUrl = url || "https://www.youtube.com/";
+    async function openRealYT(url, svc) {
+      if (!svc) { kbHome = "https://www.youtube.com/"; kbLabel = "YouTube"; }
+      kbUrl = url || kbHome;
       if (MODE !== "server") { window.open(kbUrl, "_blank", "noopener"); return; }
-      if (kinoActive && ws) { cdp("Page.navigate", { url: kbUrl }).catch(() => {}); return; }
+      if (kinoActive && ws) { $("#cine").classList.toggle("kb-svc", kbLabel !== "YouTube"); setBarLabels(); cdp("Page.navigate", { url: kbUrl }).catch(() => {}); return; }
       stopMedia(); view = "browser"; setLights(true);
-      el().innerHTML = `<div class="cin-msg"><span class="spin"></span> YouTube wird geladen …</div>`;
+      el().innerHTML = `<div class="cin-msg"><span class="spin"></span> ${esc(kbLabel || "YouTube")} wird geladen …</div>`;
       let info;
       try { info = await api("POST", "/api/kinobrowser", { url: kbUrl }); }
       catch (e) { el().innerHTML = `<div class="cin-msg">⚠ ${esc(e.message)}<br><button class="cin-btn" id="kbBack">← Zurück</button></div>`; $("#kbBack").onclick = () => { view = "menu"; render(); }; return; }
@@ -2404,9 +2417,10 @@ const Room = (() => {
       ws.onclose = () => { if (kinoActive) { kinoActive = false; if (view === "browser") { view = "menu"; render(); } } };
       await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }).catch(() => {});
       if (ws.readyState !== 1) { el().innerHTML = `<div class="cin-msg">⚠ Verbindung zum Kino-Browser fehlgeschlagen.</div>`; return; }
-      el().innerHTML = `<img class="kino-frame" alt=""><div class="kino-hint">🖱 Klicken, scrollen und tippen wie gewohnt</div>`;
+      const svcOn = !!kbLabel && kbLabel !== "YouTube";
+      el().innerHTML = `<img class="kino-frame" alt=""><div class="kino-hint">🖱 Klicken, scrollen und tippen wie gewohnt${svcOn ? " · Bild schwarz? → unten „🪟 Eigenes Fenster“" : ""}</div>`;
       kimg = el().querySelector(".kino-frame"); kinoActive = true;
-      $("#cine").classList.add("kb-on");
+      $("#cine").classList.add("kb-on"); $("#cine").classList.toggle("kb-svc", svcOn); setBarLabels();
       try {
         await cdp("Page.enable");
         // Vollbild verhindern (sonst würde das unsichtbare Fenster auf den Bildschirm springen)
@@ -2417,7 +2431,7 @@ const Room = (() => {
         await cdp("Page.startScreencast", { format: "jpeg", quality: 78, maxWidth: KW, maxHeight: KH, everyNthFrame: 1 });
         await cdp("Page.navigate", { url: kbUrl });
       } catch {}
-      setTimeout(() => { const h = el().querySelector(".kino-hint"); if (h) h.classList.add("gone"); }, 4000);
+      setTimeout(() => { const h = el().querySelector(".kino-hint"); if (h) h.classList.add("gone"); }, svcOn ? 9000 : 4000);
     }
     async function setViewport(w, h) {
       curW = w; curH = h;
@@ -2442,7 +2456,7 @@ const Room = (() => {
       if (fullOn) { fullOn = false; $("#cine").classList.remove("kb-full"); $("#cineKBFull").textContent = "⛶ Vollbild"; }
       curW = KW; curH = KH;
       if (!$("#cine").classList.contains("kb-on") && !kinoActive) return;
-      $("#cine").classList.remove("kb-on"); kinoActive = false; kimg = null;
+      $("#cine").classList.remove("kb-on", "kb-svc"); kinoActive = false; kimg = null;
       try { if (ws) { ws.onclose = null; ws.close(); } } catch {}
       ws = null; pend = {};
       if (MODE === "server") api("POST", "/api/kinobrowser/close").catch(() => {});
@@ -2478,7 +2492,11 @@ const Room = (() => {
     const kinoNav = cmd => {
       if (!kinoActive) return;
       if (cmd === "back") cdp("Runtime.evaluate", { expression: "history.back()" }).catch(() => {});
-      else if (cmd === "home") cdp("Page.navigate", { url: "https://www.youtube.com/" }).catch(() => {});
+      else if (cmd === "home") cdp("Page.navigate", { url: kbHome }).catch(() => {});
+      else if (cmd === "window") {
+        const label = kbLabel;
+        cdp("Runtime.evaluate", { expression: "location.href", returnByValue: true }).then(r => r.result.value).catch(() => kbUrl).then(u => openStreamWindow(/^https:\/\//.test(u || "") ? u : kbUrl, label));
+      }
       else if (cmd === "reload") cdp("Page.reload").catch(() => {});
     };
     async function ytGo(q) {
@@ -2538,7 +2556,7 @@ const Room = (() => {
           <div class="cin-kind">${KINDS[cur.kind] || ""}${cur.year ? " · " + esc(cur.year) : ""}${cur.runtime ? " · ⏱ " + fmtDur(cur.runtime) : ""}${isShow(cur) && (cur.seasons || []).length ? ` · ${prog(cur).w}/${prog(cur).a} Folgen` : ""}</div>
           <h2>${esc(cur.title)}</h2><p>${esc(cur.overview || "")}</p>
           <div class="cin-actions">${cur.tmdbId ? `<button class="cin-btn primary" id="cinTrailer">▶ Trailer abspielen</button>` : ""}${watch}${mark}<button class="cin-btn" id="cinYTMore">▶ Mehr auf YouTube</button><button class="cin-btn ghost" id="cinBack">← Programm</button></div>
-          <div class="cin-note">„▶ Jetzt ansehen“ öffnet den Dienst bildschirmfüllend – zurück ins Kino mit Alt + F4.</div></div></div>`;
+          <div class="cin-note">„▶ Jetzt ansehen“ öffnet den Dienst direkt auf der Leinwand und sucht den Titel.</div></div></div>`;
         const t = $("#cinTrailer"); if (t) t.onclick = () => playTrailer(cur);
         s.querySelectorAll("[data-watch]").forEach(b => b.onclick = () => {
           const name = b.dataset.watch, u = name && streamUrl(name, cur.title);
@@ -2854,6 +2872,7 @@ const Room = (() => {
     $("#cineKBFull").onclick = () => Cinema.full();
     $("#cineStreamStop").onclick = () => api("POST", "/api/kinowindow/close").catch(() => {}).then(() => Cinema.streamCheck());
     $("#cineKBClose").onclick = () => Cinema.menu();
+    $("#cineKBWin").onclick = () => Cinema.kinoNav("window");
     $("#cineFile").onchange = e => { Cinema.playFile(e.target.files[0]); e.target.value = ""; };
     $("#arcadeBack").onclick = closeArcade;
   }
@@ -3018,7 +3037,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "27";
+const APP_VERSION = "28";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
