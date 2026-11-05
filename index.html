@@ -278,6 +278,13 @@
   body.in-room #btnAdd { display: none; }
   #roomCanvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   #roomCanvas:active { cursor: grabbing; }
+  #roomShuffle { position: absolute; top: 14px; right: 14px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
+  #ovArcade { padding: 0; background: rgba(5,6,12,.92); align-items: center; z-index: 25; }
+  .arcadewrap { width: min(1000px, 100vw); height: min(720px, 100vh); display: flex; flex-direction: column; margin: auto; border: 3px solid #5ec8e5; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 0 40px rgba(94,200,229,.35), 0 0 0 8px #1a1d3d; background: #0b0d1f; }
+  .arcadetop { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #1a1d3d; color: #ffc857; font-size: 15px; }
+  #arcadeFrame { flex: 1; width: 100%; border: 0; background: #0b0d1f; }
+  @media (max-width: 700px) { .arcadewrap { border-radius: 0; border: 0; box-shadow: none; height: 100%; } }
   #roomBack { position: absolute; top: 14px; left: 14px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #roomHelp { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(15,17,21,.82); border: 1px solid var(--line); border-radius: 10px;
     padding: 8px 14px; font-size: 13px; color: var(--muted); opacity: 0; transition: opacity .6s; pointer-events: none; max-width: calc(100vw - 150px); text-align: center; }
@@ -435,12 +442,21 @@
 <div id="room">
   <canvas id="roomCanvas"></canvas>
   <button class="btn" id="roomBack">← Zurück</button>
+  <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
   <div id="roomLabel"></div>
   <div id="cross"></div>
   <button id="roomStart"><b>🖱 Klicken zum Umsehen</b><span>Danach bewegst du die Ansicht einfach mit der Maus · W A S D zum Gehen · Esc gibt die Maus frei</span></button>
   <div id="joy"><div id="joyKnob"></div></div>
+</div>
+
+<!-- Arcade: Orbit-Hopper spielen -->
+<div class="overlay" id="ovArcade">
+  <div class="arcadewrap">
+    <div class="arcadetop"><b>🕹 Orbit-Hopper</b><span class="spacer"></span><button class="btn" id="arcadeBack">← Zurück in die Videothek</button></div>
+    <iframe id="arcadeFrame" title="Orbit-Hopper" src="about:blank"></iframe>
+  </div>
 </div>
 
 <!-- Videothek: geöffnete Hülle -->
@@ -1477,7 +1493,7 @@ const Shop = (() => {
     { id: "docu", name: "🌍 Dokus", movie: { with_genres: "99" }, tv: { with_genres: "99" } },
   ];
   const ENGL = { film: "movie", serie: "tv" };
-  let kind = "all", onlyMine = true, provIds = null, built = false, shelfState = {}, observer = null, caseData = null;
+  let kind = "all", onlyMine = true, provIds = null, built = false, shelfState = {}, observer = null, caseData = null, offsets = {}, mixSeed = 0;
 
   const pick = (o, ks) => Object.fromEntries(Object.entries(o).filter(([k]) => ks.includes(k)));
   function toR(r, mt) {
@@ -1508,7 +1524,19 @@ const Shop = (() => {
   }
   const mineActive = () => onlyMine && (settings.myServices || []).length > 0;
 
+  // Mit „Neu mischen“ wird pro Regal eine andere Seite der Ergebnisse gezeigt und die Reihenfolge gemischt
   async function fetchShelf(sh, page) {
+    const off = offsets[sh.id] || 0;
+    let list = await fetchShelfRaw(sh, page + off);
+    if (!list.length && off) list = await fetchShelfRaw(sh, page);
+    if (mixSeed) { let s = mixSeed + page * 97 + sh.id.length; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280; list = list.map(x => [rnd(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]); }
+    return list;
+  }
+  function reshuffle() {
+    mixSeed = 1 + Math.floor(Math.random() * 100000);
+    for (const sh of SHELVES) offsets[sh.id] = Math.floor(Math.random() * (sh.id === "new" ? 3 : 7));
+  }
+  async function fetchShelfRaw(sh, page) {
     const region = settings.region || "DE", base = { language: "de-DE", include_adult: "false", page, watch_region: region };
     if (mineActive()) {
       const ids = await loadProvIds();
@@ -1660,11 +1688,13 @@ const Shop = (() => {
     $("#shopBar").innerHTML =
       Object.entries({ all: "Alles", film: "Filme", serie: "Serien", anime: "Anime" }).map(([k, l]) => `<button class="chip ${kind === k ? "active" : ""}" data-k="${k}">${l}</button>`).join("") +
       `<span class="sep"></span>` +
+      `<button class="chip" id="shopMix" title="Andere Titel in die Regale stellen">🔀 Neu mischen</button>` +
       (hasMine ? `<button class="chip ${onlyMine ? "active" : ""}" id="shopMine">⭐ Nur meine Dienste${onlyMine ? ` <span class="hint">(${esc((settings.myServices || []).slice(0, 3).join(", "))}${settings.myServices.length > 3 ? " …" : ""})</span>` : ""}</button>`
         : `<span class="hint">Tipp: Unter ⚙ deine Dienste wählen, dann zeigt die Videothek nur, was du schauen kannst.</span>`);
     $("#shopBar").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { kind = b.dataset.k; renderBar(); build(); });
     const m = $("#shopMine"); if (m) m.onclick = () => { onlyMine = !onlyMine; renderBar(); build(); };
     $("#enterRoom").onclick = () => Room.open();
+    $("#shopMix").onclick = () => { reshuffle(); build(); toast("🔀 Neue Titel in den Regalen"); };
   }
 
   function show() {
@@ -1673,7 +1703,7 @@ const Shop = (() => {
     if (!built || show._sig !== sig) { provIds = null; build(); show._sig = sig; }
     else markCases();
   }
-  return { show, markCases, openItem, onList, fetchShelf, shelves: () => SHELVES.filter(fits), filterSig: () => JSON.stringify([kind, mineActive(), settings.myServices, settings.region]) };
+  return { show, markCases, openItem, onList, fetchShelf, reshuffle, rebuild: () => { if (built) build(); }, shelves: () => SHELVES.filter(fits), filterSig: () => JSON.stringify([kind, mineActive(), settings.myServices, settings.region, mixSeed]) };
 })();
 
 /* Umschalten zwischen „Meine Liste“ und „Videothek“ */
@@ -1692,6 +1722,7 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 const Room = (() => {
   let T = null, renderer, scene, camera, store, raf = 0, running = false, last = 0, builtSig = "";
   let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
+  let fixedPicks = [], colliders = [], arcade = null, posterGroup = null, popcorn = null;
   const pos = { x: 0, z: 0 };
   const EYE = 1.62, HALF = 8, MARGIN = 1.15;
   const CASE_W = 0.27, CASE_H = 0.38, CASE_D = 0.045, PER_ROW = 12, ROWS = 4, UNIT_W = 4.1;
@@ -1741,6 +1772,159 @@ const Room = (() => {
     });
   }
   const checkTex = () => canvasTex(64, 64, (g) => { g.fillStyle = "#4fd1a5"; g.beginPath(); g.arc(32, 32, 30, 0, 7); g.fill(); g.fillStyle = "#0f1115"; g.font = "bold 40px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("✓", 32, 35); });
+
+
+  // ---------- Deko ----------
+  function buildDecor() {
+    // Lichterkette rundum unter der Decke
+    const bulbs = new T.InstancedMesh(new T.SphereGeometry(.035, 8, 6), new T.MeshBasicMaterial({ color: 0xffe3a8 }), 160);
+    const mtx = new T.Matrix4(); let n = 0;
+    for (let side = 0; side < 4; side++) for (let i = 0; i < 40; i++) {
+      const t = -HALF + .2 + i * (HALF * 2 - .4) / 39, sag = Math.sin(i * .9) * .04;
+      const x = side === 0 ? t : side === 1 ? HALF - .12 : side === 2 ? -t : -HALF + .12;
+      const z = side === 0 ? -HALF + .12 : side === 1 ? t : side === 2 ? HALF - .12 : -t;
+      mtx.makeTranslation(x, 3.0 + sag, z); bulbs.setMatrixAt(n++, mtx);
+    }
+    scene.add(bulbs);
+    // Pflanzen in den Ecken
+    for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) plant(x * (HALF - .55), z * (HALF - .55));
+    // Popcorn-Maschine und Arcade-Automat seitlich vom Eingang
+    popcornMachine(-3.4, 4.6, Math.atan2(3.4, -4.6));
+    arcadeCabinet(3.4, 4.6, Math.atan2(-3.4, -4.6));
+    // Sitzbank vor der Mitte
+    const bench = new T.Group();
+    const seat = new T.Mesh(new T.BoxGeometry(1.8, .12, .5), new T.MeshLambertMaterial({ color: 0x8a2a3a })); seat.position.y = .45; bench.add(seat);
+    for (const sx of [-.75, .75]) { const leg = new T.Mesh(new T.BoxGeometry(.08, .4, .4), new T.MeshLambertMaterial({ color: 0x222222 })); leg.position.set(sx, .2, 0); bench.add(leg); }
+    bench.position.set(0, 0, -3.4); scene.add(bench); colliders.push({ x: 0, z: -3.4, r: .95 });
+  }
+  function plant(x, z) {
+    const g = new T.Group();
+    const pot = new T.Mesh(new T.CylinderGeometry(.22, .17, .42, 16), new T.MeshLambertMaterial({ color: 0xc46a3c })); pot.position.y = .21; g.add(pot);
+    const leafMat = new T.MeshLambertMaterial({ color: 0x2f8a4e });
+    for (let i = 0; i < 9; i++) {
+      const leaf = new T.Mesh(new T.ConeGeometry(.07, .75, 6), leafMat);
+      const a = i / 9 * Math.PI * 2; leaf.position.set(Math.cos(a) * .08, .75, Math.sin(a) * .08);
+      leaf.rotation.set(Math.sin(a) * .5, 0, -Math.cos(a) * .5); g.add(leaf);
+    }
+    const top = new T.Mesh(new T.SphereGeometry(.2, 10, 8), new T.MeshLambertMaterial({ color: 0x3aa35e })); top.position.y = .95; top.scale.set(1, .7, 1); g.add(top);
+    g.position.set(x, 0, z); scene.add(g); colliders.push({ x, z, r: .35 });
+  }
+  function popcornMachine(x, z, rot) {
+    const g = new T.Group();
+    const red = new T.MeshLambertMaterial({ color: 0xc8202e }), gold = new T.MeshLambertMaterial({ color: 0xe8b94a });
+    const cart = new T.Mesh(new T.BoxGeometry(.7, .8, .55), red); cart.position.y = .55; g.add(cart);
+    for (const sx of [-.3, .3]) { const w = new T.Mesh(new T.CylinderGeometry(.12, .12, .05, 16), new T.MeshLambertMaterial({ color: 0x222222 })); w.rotation.z = Math.PI / 2; w.position.set(sx, .12, .25); g.add(w); }
+    const glass = new T.Mesh(new T.BoxGeometry(.66, .6, .5), new T.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: .18 })); glass.position.y = 1.25; g.add(glass);
+    const corn = new T.InstancedMesh(new T.IcosahedronGeometry(.03, 0), new T.MeshLambertMaterial({ color: 0xfff1c4, emissive: 0x332a10 }), 260);
+    const m = new T.Matrix4();
+    for (let i = 0; i < 260; i++) { m.makeTranslation((Math.random() - .5) * .6, .97 + Math.random() * Math.random() * .3, (Math.random() - .5) * .44); corn.setMatrixAt(i, m); }
+    g.add(corn);
+    const roof = new T.Mesh(new T.BoxGeometry(.76, .1, .58), red); roof.position.y = 1.6; g.add(roof);
+    const sign = new T.Mesh(new T.PlaneGeometry(.66, .2), new T.MeshBasicMaterial({ map: canvasTex(512, 160, (c, w, hh) => {
+      c.fillStyle = "#c8202e"; c.fillRect(0, 0, w, hh); c.fillStyle = "#ffe08a"; c.font = "bold 96px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ffcf5a"; c.shadowBlur = 18; c.fillText("POPCORN", w / 2, hh / 2 + 4);
+    }) })); sign.position.set(0, 1.76, .1); g.add(sign);
+    for (const sx of [-.33, .33]) { const post = new T.Mesh(new T.BoxGeometry(.03, .62, .03), gold); post.position.set(sx, 1.25, .25); g.add(post); }
+    const lamp = new T.PointLight(0xffc96b, 2.2, 2.5, 1.8); lamp.position.set(0, 1.45, 0); g.add(lamp);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .55 });
+    popcorn = g;
+  }
+
+  // ---------- Arcade-Automat mit Orbit-Hopper ----------
+  function arcadeCabinet(x, z, rot) {
+    const g = new T.Group();
+    const side = canvasTex(256, 512, (c, w, hh) => {
+      const gr = c.createLinearGradient(0, 0, w, hh); gr.addColorStop(0, "#151a3a"); gr.addColorStop(1, "#0b0d1f"); c.fillStyle = gr; c.fillRect(0, 0, w, hh);
+      for (let i = 0; i < 60; i++) { c.fillStyle = `rgba(233,236,255,${Math.random() * .7})`; c.fillRect(Math.random() * w, Math.random() * hh, 2, 2); }
+      c.strokeStyle = "rgba(94,200,229,.6)"; c.lineWidth = 6; c.setLineDash([10, 14]);
+      for (const r of [60, 95, 130]) { c.beginPath(); c.arc(w / 2, hh * .55, r, 0, 7); c.stroke(); }
+      c.setLineDash([]); const pg = c.createRadialGradient(w / 2 - 10, hh * .55 - 10, 4, w / 2, hh * .55, 34); pg.addColorStop(0, "#bff0fb"); pg.addColorStop(1, "#1f5e78");
+      c.fillStyle = pg; c.beginPath(); c.arc(w / 2, hh * .55, 34, 0, 7); c.fill();
+      c.fillStyle = "#ffc857"; c.fillRect(0, hh - 30, w, 8);
+    });
+    const body = new T.MeshLambertMaterial({ color: 0x1a1d3d }), sideM = new T.MeshLambertMaterial({ map: side }), black = new T.MeshLambertMaterial({ color: 0x0a0a10 });
+    const mats = [sideM, sideM, body, body, body, body];
+    const lower = new T.Mesh(new T.BoxGeometry(.78, 1.0, .72), mats); lower.position.set(0, .5, 0); g.add(lower);
+    const upper = new T.Mesh(new T.BoxGeometry(.78, 1.0, .46), mats); upper.position.set(0, 1.5, -.13); g.add(upper);
+    // Bildschirm mit laufender Vorschau
+    const cv = document.createElement("canvas"); cv.width = 320; cv.height = 256;
+    const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace;
+    const bezel = new T.Mesh(new T.BoxGeometry(.7, .58, .03), black); bezel.position.set(0, 1.45, .105); bezel.rotation.x = -.18; g.add(bezel);
+    const screen = new T.Mesh(new T.PlaneGeometry(.62, .496), new T.MeshBasicMaterial({ map: tex })); screen.position.set(0, 1.45, .123); screen.rotation.x = -.18; g.add(screen);
+    // Bedienfeld mit Joystick und Knöpfen
+    const panel = new T.Mesh(new T.BoxGeometry(.78, .07, .34), new T.MeshLambertMaterial({ color: 0x23284f })); panel.position.set(0, 1.04, .26); panel.rotation.x = .3; g.add(panel);
+    const stick = new T.Mesh(new T.CylinderGeometry(.012, .012, .12), black); stick.position.set(-.18, 1.12, .27); g.add(stick);
+    const ball = new T.Mesh(new T.SphereGeometry(.035, 12, 10), new T.MeshLambertMaterial({ color: 0xff6b6b })); ball.position.set(-.18, 1.18, .27); g.add(ball);
+    for (const [bx, col] of [[.08, 0xffc857], [.2, 0x5ec8e5]]) { const b = new T.Mesh(new T.CylinderGeometry(.035, .035, .03, 16), new T.MeshBasicMaterial({ color: col })); b.position.set(bx, 1.09, .29); b.rotation.x = .3; g.add(b); }
+    // Leuchtschild oben
+    const marq = canvasTex(512, 160, (c, w, hh) => {
+      c.fillStyle = "#0b0d1f"; c.fillRect(0, 0, w, hh);
+      c.textBaseline = "middle"; c.textAlign = "left";
+      let size = 70; const font = s => `900 ${s}px Impact, Segoe UI, sans-serif`;
+      const widths = () => { c.font = font(size); return [c.measureText("ORBIT ").width, c.measureText("HOPPER").width]; };
+      let [w1, w2] = widths(); while (w1 + w2 > w - 50 && size > 30) { size -= 4; [w1, w2] = widths(); }
+      const x0 = (w - w1 - w2) / 2;
+      c.shadowColor = "#5ec8e5"; c.shadowBlur = 22; c.fillStyle = "#e9ecff"; c.fillText("ORBIT", x0, hh / 2 + 4);
+      c.shadowColor = "#ffc857"; c.fillStyle = "#ffc857"; c.fillText("HOPPER", x0 + w1, hh / 2 + 4);
+    });
+    const marquee = new T.Mesh(new T.BoxGeometry(.78, .22, .3), [black, black, black, black, new T.MeshBasicMaterial({ map: marq }), black]); marquee.position.set(0, 2.1, -.05); g.add(marquee);
+    const coin = new T.Mesh(new T.PlaneGeometry(.16, .1), new T.MeshBasicMaterial({ color: 0xff6b6b })); coin.position.set(0, .62, .361); g.add(coin);
+    const glowL = new T.PointLight(0x5ec8e5, 2.5, 2.6, 1.6); glowL.position.set(0, 1.5, .7); g.add(glowL);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+    colliders.push({ x, z, r: .6 });
+    for (const part of [lower, upper, screen, bezel, marquee, panel]) { part.userData.arcade = true; fixedPicks.push(part); }
+    pickables.push(...fixedPicks);
+    // Vorschau: Planet, gestrichelte Bahnen, kreisendes Raumschiff und Sterne – wie im Spiel
+    const ctx = cv.getContext("2d"), bg = Array.from({ length: 50 }, () => [Math.random() * 320, Math.random() * 256, Math.random() * 6]);
+    const st = [[0, 1.2], [1, 3.6], [2, 5.1]];
+    arcade = { draw(t) {
+      const W = 320, H = 256, cx = W / 2, cy = H / 2 + 10, u = 100;
+      ctx.fillStyle = "#0b0d1f"; ctx.fillRect(0, 0, W, H);
+      for (const [sx, sy, ph] of bg) { ctx.globalAlpha = .35 + .35 * Math.sin(t / 900 + ph); ctx.fillStyle = "#e9ecff"; ctx.fillRect(sx, sy, 1.5, 1.5); }
+      ctx.globalAlpha = 1; ctx.setLineDash([4, 8]); ctx.lineWidth = 1.5;
+      [0.38, 0.6, 0.82].forEach((k, i) => { ctx.beginPath(); ctx.arc(cx, cy, k * u, 0, 7); ctx.strokeStyle = i === 1 ? "rgba(94,200,229,.5)" : "rgba(142,149,196,.25)"; ctx.stroke(); });
+      ctx.setLineDash([]);
+      const pr = u * .17, gr = ctx.createRadialGradient(cx - pr * .35, cy - pr * .35, pr * .1, cx, cy, pr); gr.addColorStop(0, "#bff0fb"); gr.addColorStop(.55, "#5ec8e5"); gr.addColorStop(1, "#1f5e78");
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, pr, 0, 7); ctx.fill();
+      for (const [ring, a] of st) { const rr = [0.38, 0.6, 0.82][ring] * u, sx = cx + Math.cos(a) * rr, sy = cy + Math.sin(a) * rr; ctx.fillStyle = "#ffc857"; ctx.shadowColor = "#ffc857"; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 7); ctx.fill(); ctx.shadowBlur = 0; }
+      const a = t / 900, sr = .6 * u, px = cx + Math.cos(a) * sr, py = cy + Math.sin(a) * sr;
+      ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.fillStyle = "#e9ecff"; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(4, 5); ctx.lineTo(0, 2); ctx.lineTo(-4, 5); ctx.closePath(); ctx.fill(); ctx.restore();
+      ctx.font = "bold 13px Segoe UI, sans-serif"; ctx.textAlign = "left"; ctx.fillStyle = "#8e95c4"; ctx.fillText("REKORD", 10, 18);
+      let best = 0; try { best = +localStorage.getItem("orbitBest") || 0; } catch {}
+      ctx.fillStyle = "#ffc857"; ctx.font = "bold 18px Segoe UI, sans-serif"; ctx.fillText(String(best), 10, 38);
+      if (Math.floor(t / 600) % 2) { ctx.textAlign = "center"; ctx.fillStyle = "#ffc857"; ctx.font = "bold 16px Segoe UI, sans-serif"; ctx.fillText(matchMedia("(pointer: coarse)").matches ? "ANTIPPEN ZUM SPIELEN" : "KLICKEN ZUM SPIELEN", cx, H - 12); }
+      tex.needsUpdate = true;
+    } };
+  }
+  function openArcade() {
+    keys = {}; if (document.pointerLockElement) document.exitPointerLock();
+    const ov = $("#ovArcade"); $("#arcadeFrame").src = "orbit-hopper.html"; ov.classList.add("open");
+    setTimeout(() => { try { $("#arcadeFrame").focus(); } catch {} }, 300);
+  }
+  function closeArcade() { $("#ovArcade").classList.remove("open"); $("#arcadeFrame").src = "about:blank"; }
+
+  // Filmplakate zwischen den Regalen
+  function hangPosters(list) {
+    if (posterGroup) { scene.remove(posterGroup); posterGroup.traverse(o => { if (o.material && o.material.map && o.material.map !== shared.frameTex) o.material.map.dispose(); }); }
+    posterGroup = new T.Group(); scene.add(posterGroup);
+    const spots = [];
+    for (let side = 0; side < 4; side++) for (const o of [-2.5, 2.5]) {
+      const d = HALF - .03, a = side * Math.PI / 2;
+      spots.push({ x: side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d, z: side === 0 ? -d : side === 1 ? o : side === 2 ? d : -o, rot: -a });
+    }
+    const frameM = new T.MeshLambertMaterial({ color: 0xd4a94a });
+    spots.forEach((s, i) => {
+      const r = list[i]; if (!r) return;
+      const g = new T.Group();
+      const frame = new T.Mesh(new T.BoxGeometry(.66, .94, .03), frameM); g.add(frame);
+      const mat = new T.MeshBasicMaterial({ color: 0x333333 });
+      const pic = new T.Mesh(new T.PlaneGeometry(.58, .86), mat); pic.position.z = .017; g.add(pic);
+      const glow = new T.Mesh(new T.PlaneGeometry(1.3, 1.6), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: .6 })); glow.position.z = -.01; g.add(glow);
+      const url = r.big ? r.big.replace("/w500/", "/w342/") : r.poster;
+      loader().load(url, t => { t.colorSpace = T.SRGBColorSpace; mat.map = t; mat.color.set(0xffffff); mat.needsUpdate = true; }, undefined, () => { mat.map = fallbackCover(r); mat.color.set(0xffffff); mat.needsUpdate = true; });
+      pic.userData = { r, base: pic.position.z, poster: true }; pickables.push(pic); fixedPicks.push(pic);
+      g.position.set(s.x, 1.75, s.z); g.rotation.y = s.rot; posterGroup.add(g);
+    });
+  }
 
   // ---------- Szene ----------
   function init() {
@@ -1797,6 +1981,7 @@ const Room = (() => {
     neon.position.set(0, 2.5, 0); scene.add(neon); shared.neon = neon;
 
     store = new T.Group(); scene.add(store);
+    buildDecor();
     addEventListener("resize", resize);
     wireControls();
   }
@@ -1856,11 +2041,12 @@ const Room = (() => {
     const c = new T.Mesh(new T.PlaneGeometry(.09, .09), shared.check); c.position.set(CASE_W / 2 - .04, CASE_H / 2 - .04, CASE_D / 2 + .003);
     m.add(c); m.userData.check = c;
   }
-  function mark() { for (const m of pickables) if (Shop.onList(m.userData.r)) markOne(m); }
+  function mark() { for (const m of pickables) if (m.userData.r && !m.userData.poster && Shop.onList(m.userData.r)) markOne(m); }
 
   function clearStore() {
-    for (const m of pickables) { const f = m.material[4]; if (f.map) f.map.dispose(); f.dispose(); }
-    pickables = []; aimed = null;
+    for (const m of pickables) { if (!m.userData.r || m.userData.poster) continue; const f = m.material[4]; if (f.map) f.map.dispose(); f.dispose(); }
+    fixedPicks = fixedPicks.filter(m => !m.userData.poster);
+    pickables = fixedPicks.slice(); aimed = null;
     while (store.children.length) store.remove(store.children[0]);
   }
 
@@ -1898,6 +2084,8 @@ const Room = (() => {
       }
     };
     await Promise.all([worker(), worker(), worker()]);
+    // Plakate: die ersten Titel aus „Gerade beliebt“ (bzw. dem ersten Regal)
+    try { const first = Shop.shelves()[0]; if (first && running) hangPosters((await Shop.fetchShelf(first, 1)).slice(12, 20)); } catch {}
   }
 
   // ---------- Steuerung ----------
@@ -1953,6 +2141,7 @@ const Room = (() => {
       keys[e.code] = true;
       if (e.code === "Escape" && performance.now() - releasedAt > 400) close();
       if (e.code === "Enter" && aimed) select(aimed);
+      if (e.code === "KeyR" && !e.repeat) shuffle();
       if (/^(Arrow|Space)/.test(e.code)) e.preventDefault();
     });
     addEventListener("keyup", e => { keys[e.code] = false; });
@@ -1970,18 +2159,24 @@ const Room = (() => {
       knob.style.transform = `translate(${dx}px,${dy}px)`; joy = { x: dx / r, y: dy / r };
     }
     $("#roomBack").onclick = close;
+    $("#roomShuffle").onclick = () => shuffle();
+    $("#arcadeBack").onclick = closeArcade;
   }
-  function clampPos() { const m = HALF - MARGIN; pos.x = Math.max(-m, Math.min(m, pos.x)); pos.z = Math.max(-m, Math.min(m, pos.z)); }
+  function clampPos() {
+    const m = HALF - MARGIN; pos.x = Math.max(-m, Math.min(m, pos.x)); pos.z = Math.max(-m, Math.min(m, pos.z));
+    for (const c of colliders) { const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + .35; if (d < min && d > 0) { pos.x = c.x + dx / d * min; pos.z = c.z + dz / d * min; } }
+  }
 
   function setAim(m) {
     if (aimed === m) return;
-    if (aimed) aimed.position.z = aimed.userData.base;
+    if (aimed && aimed.userData.r && !aimed.userData.poster) aimed.position.z = aimed.userData.base;
     aimed = m;
     const lab = $("#roomLabel");
-    if (m) { m.position.z = m.userData.base + .07; const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Ansehen</span>`; lab.style.opacity = 1; }
+    if (m && m.userData.arcade) { lab.innerHTML = `🕹 <b>Orbit-Hopper</b> · dein Arcade-Spiel<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Spielen</span>`; lab.style.opacity = 1; return; }
+    if (m) { if (!m.userData.poster) m.position.z = m.userData.base + .07; const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Ansehen</span>`; lab.style.opacity = 1; }
     else lab.style.opacity = 0;
   }
-  function select(m) { setAim(m); keys = {}; Shop.openItem(m.userData.r); }
+  function select(m) { setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r); }
 
   // Am Handy: was in der Bildmitte ist, wird hervorgehoben
   function aimCenter() {
@@ -2014,6 +2209,7 @@ const Room = (() => {
     }
     const bob = (Math.abs(joy.x) + Math.abs(joy.y) + (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.ArrowUp || keys.ArrowDown ? 1 : 0)) ? Math.sin(t / 140) * .012 : 0;
     if (shared.neon) shared.neon.rotation.y = Math.sin(t / 2600) * .25;
+    if (arcade && (Math.floor(t / 33) % 2)) arcade.draw(t);
     camera.position.set(pos.x, EYE + bob, pos.z);
     camera.rotation.set(pitch, yaw, 0);
     aimCenter();
@@ -2032,12 +2228,17 @@ const Room = (() => {
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
       ? "🕹 Links: bewegen · 👆 Wischen: umsehen · Hülle antippen: ansehen"
-      : "🖱 Maus bewegen: umsehen · ⌨ W A S D: gehen · Shift: schneller · Klick auf Hülle: ansehen · Esc: Maus freigeben";
+      : "🖱 Maus bewegen: umsehen · ⌨ W A S D: gehen · Shift: schneller · Klick: ansehen · R: neu mischen · Esc: Maus freigeben";
     $("#roomHelp").classList.add("show"); setTimeout(() => $("#roomHelp").classList.remove("show"), 7000);
     running = true; last = performance.now(); raf = requestAnimationFrame(loop); startPrompt();
     const sig = Shop.filterSig();
     if (sig !== builtSig) { builtSig = sig; pos.x = 0; pos.z = 2.5; yaw = 0; pitch = -.05; await fill(); }
     else { mark(); $("#roomMsg").textContent = ""; }
+  }
+  async function shuffle() {
+    if (!running) return;
+    Shop.reshuffle(); builtSig = Shop.filterSig(); toast("🔀 Die Regale werden neu bestückt …");
+    await fill(); Shop.rebuild();
   }
   function close() {
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
@@ -2049,7 +2250,7 @@ const Room = (() => {
   // Testhilfe: Bildschirmposition der i-ten Hülle
   function _screenOf(i) { const m = pickables[i]; if (!m) return null; const v = new T.Vector3(); m.getWorldPosition(v); v.project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight, z: v.z, count: pickables.length }; }
   function _face(i) { const m = pickables[i]; const v = new T.Vector3(); m.getWorldPosition(v); yaw = Math.atan2(-(v.x - pos.x), -(v.z - pos.z)); pitch = Math.atan2(v.y - EYE, Math.hypot(v.x - pos.x, v.z - pos.z)); }
-  return { open, close, mark, _screenOf, _face };
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face };
 })();
 window.Room = Room;
 
@@ -2084,7 +2285,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "18";
+const APP_VERSION = "19";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
