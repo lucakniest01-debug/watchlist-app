@@ -298,7 +298,11 @@
   .cin-tabs button, .cin-btn { font: inherit; font-size: .85em; color: #f3e9e0; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 2em; padding: .35em 1em; cursor: pointer; }
   .cin-tabs button.on, .cin-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; color: #fff; font-weight: 600; }
   .cin-btn.ghost { background: none; }
-  #cineYT, #cineKBAlign, #cineKBClose { display: none; } #cine.yt-on #cineYT, #cine.kb-on #cineKBAlign, #cine.kb-on #cineKBClose { display: inline-flex; }
+  #cineYT, #cineKBAlign, #cineKBHome, #cineKBClose { display: none; } #cine.yt-on #cineYT, #cine.kb-on #cineKBAlign, #cine.kb-on #cineKBHome, #cine.kb-on #cineKBClose { display: inline-flex; }
+  #cine.kb-on #cineMenu, #cine.kb-on #cineFileBtn { display: none; }
+  .kino-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; background: #0f0f0f; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+  .kino-hint { position: absolute; left: 50%; bottom: 1em; transform: translateX(-50%); background: rgba(0,0,0,.75); color: #fff; padding: .4em 1em; border-radius: 2em; font-size: .9em; transition: opacity .6s; pointer-events: none; }
+  .kino-hint.gone { opacity: 0; }
   .cin-realyt { display: flex; align-items: center; gap: 1em; margin: -.2em 0 .8em; padding: .7em 1em; border-radius: .6em; background: rgba(255,0,51,.12); border: 1px solid rgba(255,0,51,.35); }
   .cin-btn.big { font-size: 1em; padding: .55em 1.4em; background: #ff0033; white-space: nowrap; }
   .cin-tabs button.yt.on { background: #ff0033; }
@@ -510,7 +514,8 @@
       <button class="btn" id="cineLight">💡 Licht</button>
       <button class="btn" id="cineFileBtn">📁 Eigene Videodatei</button>
       <button class="btn" id="cineYT">🌐 Auf YouTube öffnen</button>
-      <button class="btn" id="cineKBAlign">🔄 Neu ausrichten</button>
+      <button class="btn" id="cineKBAlign">← Zurück</button>
+      <button class="btn" id="cineKBHome">⌂ YouTube-Start</button>
       <button class="btn" id="cineKBClose">✖ YouTube schließen</button>
       <input type="file" id="cineFile" accept="video/*" hidden>
     </div>
@@ -2062,7 +2067,7 @@ const Room = (() => {
   const SEAT_BLOCK = { minx: -4.05, maxx: 4.05, minz: -2.45, maxz: 5.45 };
   const STORE_DOOR = { x: 2.5, z: -HALF + .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
-  let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62;
+  let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62, scrPointFn = null, kinoActive = false;
   const RISE = .32, ROW_Z = r => -1.9 + r * 1.25, STEP0 = ROW_Z(1) - .625;
   // Bodenhöhe im Saal (Treppen in den Gängen, Podest hinten)
   const cinFloorY = lz => lz < STEP0 ? 0 : Math.min(5, Math.floor((lz - STEP0) / 1.25) + 1) * RISE;
@@ -2113,15 +2118,16 @@ const Room = (() => {
       ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
       const hit = ray.intersectObject(cinScreen, false)[0]; return hit && hit.uv ? { x: hit.uv.x * 1680, y: (1 - hit.uv.y) * 720 } : null;
     };
+    scrPointFn = scrPoint;
     const boxIn = e => { let x = 0, y = 0, n = e; while (n && n !== scr) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } for (let a = e.parentElement; a && a !== scr; a = a.parentElement) { x -= a.scrollLeft; y -= a.scrollTop; } return { x, y, w: e.offsetWidth, h: e.offsetHeight }; };
     const elAt = pt => { let best = null, area = 1e12; for (const e of scr.querySelectorAll("button, input, a, video")) { const b = boxIn(e); if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h && b.w * b.h < area) { best = e; area = b.w * b.h; } } return best; };
     layer.addEventListener("click", e => {
-      if (e.target !== layer || !seated) return;
+      if (e.target !== layer || !seated || kinoActive) return;
       const pt = scrPoint(e.clientX, e.clientY), t = pt && elAt(pt); if (!t) return;
       if (t.tagName === "INPUT") t.focus(); else if (t.tagName === "VIDEO") { t.paused ? t.play() : t.pause(); } else t.click();
     });
     layer.addEventListener("wheel", e => {
-      if (e.target !== layer || !seated) return;
+      if (e.target !== layer || !seated || kinoActive) return;
       const g = scr.querySelector(".cin-grid"); if (g) { g.scrollTop += e.deltaY; e.preventDefault(); }
     }, { passive: false });
     // Licht, das von der Leinwand auf den Saal fällt
@@ -2312,29 +2318,87 @@ const Room = (() => {
       const kh = s.querySelector("[data-ytkeyhelp]"); if (kh) kh.onclick = () => openUrl("https://console.cloud.google.com/apis/library/youtube.googleapis.com");
       const kf = $("#ytKeyForm"); if (kf) kf.onsubmit = e => { e.preventDefault(); const k = $("#ytKeyIn").value.trim(); if (!k) return; try { localStorage.setItem(YT_KEY, k); } catch {} toast("🔑 YouTube-Schlüssel gespeichert"); ytGo(ytQuery); };
     }
-    // ----- Echtes YouTube im Kino-Browser (Fenster über der Leinwand) -----
-    let kbUrl = "https://www.youtube.com/";
+    // ----- Echtes YouTube direkt in der Leinwand -----
+    // Ein unsichtbares Edge lädt youtube.com; sein Bild wird live in die Leinwand übertragen,
+    // Maus und Tastatur gehen über das DevTools-Protokoll zurück.
+    const KW = 1400, KH = 600;           // Seitengröße im Kino-Browser (Seitenverhältnis der Leinwand)
+    let ws = null, msgId = 0, pend = {}, kbUrl = "https://www.youtube.com/", kimg = null, lastMove = 0;
+    const cdp = (method, params = {}) => new Promise((res, rej) => {
+      if (!ws || ws.readyState !== 1) return rej(new Error("keine Verbindung"));
+      const i = ++msgId; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params }));
+    });
     async function openRealYT(url) {
-      kbUrl = url || kbUrl;
+      kbUrl = url || "https://www.youtube.com/";
       if (MODE !== "server") { window.open(kbUrl, "_blank", "noopener"); return; }
-      if (seated && seated.row > 0) { reseat({ cinema: "seat", x: CIN.x + .5, z: CIN.z + ROW_Z(0), row: 0, col: 4 }); toast("💺 Du rückst in die erste Reihe"); await new Promise(r => setTimeout(r, 900)); }
-      camera.updateMatrixWorld(); const r = screenRect();
-      const bx = Math.max(0, (window.outerWidth - window.innerWidth) / 2), top = Math.max(0, window.outerHeight - window.innerHeight - bx);
-      const x = Math.round(window.screenX + bx + r.left), y = Math.round(window.screenY + top + r.top);
-      try { await api("POST", "/api/kinobrowser", { url: kbUrl, x, y, w: Math.round(r.width), h: Math.round(r.height), place: kbPlace() }); }
-      catch (e) { toast(e.message, true); return; }
+      if (kinoActive && ws) { cdp("Page.navigate", { url: kbUrl }).catch(() => {}); return; }
       stopMedia(); view = "browser"; setLights(true);
-      el().innerHTML = `<div class="cin-msg">🌐 YouTube läuft auf der Leinwand.<br><span class="cin-note">Passt etwas nicht? Unten auf „🔄 Neu ausrichten“ klicken.</span></div>`;
+      el().innerHTML = `<div class="cin-msg"><span class="spin"></span> YouTube wird geladen …</div>`;
+      let info;
+      try { info = await api("POST", "/api/kinobrowser", { url: kbUrl }); }
+      catch (e) { el().innerHTML = `<div class="cin-msg">⚠ ${esc(e.message)}<br><button class="cin-btn" id="kbBack">← Zurück</button></div>`; $("#kbBack").onclick = () => { view = "menu"; render(); }; return; }
+      ws = new WebSocket(info.ws);
+      ws.onmessage = ev => {
+        const m = JSON.parse(ev.data);
+        if (m.id && pend[m.id]) { (m.error ? pend[m.id].rej : pend[m.id].res)(m.error || m.result); delete pend[m.id]; return; }
+        if (m.method === "Page.screencastFrame") {
+          if (kimg) kimg.src = "data:image/jpeg;base64," + m.params.data;
+          ws.send(JSON.stringify({ id: ++msgId, method: "Page.screencastFrameAck", params: { sessionId: m.params.sessionId } }));
+        }
+      };
+      ws.onclose = () => { if (kinoActive) { kinoActive = false; if (view === "browser") { view = "menu"; render(); } } };
+      await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; }).catch(() => {});
+      if (ws.readyState !== 1) { el().innerHTML = `<div class="cin-msg">⚠ Verbindung zum Kino-Browser fehlgeschlagen.</div>`; return; }
+      el().innerHTML = `<img class="kino-frame" alt=""><div class="kino-hint">🖱 Klicken, scrollen und tippen wie gewohnt</div>`;
+      kimg = el().querySelector(".kino-frame"); kinoActive = true;
       $("#cine").classList.add("kb-on");
+      try {
+        await cdp("Page.enable");
+        // Vollbild verhindern (sonst würde das unsichtbare Fenster auf den Bildschirm springen)
+        await cdp("Page.addScriptToEvaluateOnNewDocument", { source: "Element.prototype.requestFullscreen=function(){return Promise.resolve()};Element.prototype.webkitRequestFullscreen=function(){};" });
+        await cdp("Emulation.setDeviceMetricsOverride", { width: KW, height: KH, deviceScaleFactor: 1, mobile: false });
+        await cdp("Page.startScreencast", { format: "jpeg", quality: 78, maxWidth: KW, maxHeight: KH, everyNthFrame: 1 });
+        await cdp("Page.navigate", { url: kbUrl });
+      } catch {}
+      setTimeout(() => { const h = el().querySelector(".kino-hint"); if (h) h.classList.add("gone"); }, 4000);
     }
-    // Lage der Leinwand im Fenster (CSS-Pixel) – das Programm rechnet daraus die genaue Bildschirmposition
-    function kbPlace() { camera.updateMatrixWorld(); const r = screenRect(); return { X: r.left, Y: r.top, W: r.width, H: r.height, VW: innerWidth, VH: innerHeight }; }
-    addEventListener("resize", () => { if ($("#cine").classList.contains("kb-on")) setTimeout(() => api("POST", "/api/kinobrowser/place", kbPlace()).catch(() => {}), 100); });
     function closeRealYT() {
-      if (!$("#cine").classList.contains("kb-on")) return;
-      $("#cine").classList.remove("kb-on");
+      if (!$("#cine").classList.contains("kb-on") && !kinoActive) return;
+      $("#cine").classList.remove("kb-on"); kinoActive = false; kimg = null;
+      try { if (ws) { ws.onclose = null; ws.close(); } } catch {}
+      ws = null; pend = {};
       if (MODE === "server") api("POST", "/api/kinobrowser/close").catch(() => {});
     }
+    // Maus von der Leinwand an die Seite weitergeben
+    const toPage = e => { const pt = scrPointFn && scrPointFn(e.clientX, e.clientY); return pt ? { x: Math.round(pt.x / 1680 * KW), y: Math.round(pt.y / 720 * KH) } : null; };
+    const mouse = (type, e, extra = {}) => { const p = toPage(e); if (!p) return; cdp("Input.dispatchMouseEvent", Object.assign({ type, x: p.x, y: p.y, button: "none", modifiers: (e.shiftKey ? 8 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 1 : 0) }, extra)).catch(() => {}); };
+    const layerEl = () => document.getElementById("cssLayer");
+    document.addEventListener("pointerdown", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; e.preventDefault(); mouse("mousePressed", e, { button: e.button === 2 ? "right" : "left", clickCount: 1 }); }, true);
+    document.addEventListener("pointerup", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; mouse("mouseReleased", e, { button: e.button === 2 ? "right" : "left", clickCount: 1 }); }, true);
+    document.addEventListener("pointermove", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; const n = performance.now(); if (n - lastMove < 33) return; lastMove = n; mouse("mouseMoved", e); }, true);
+    document.addEventListener("wheel", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; e.preventDefault(); mouse("mouseWheel", e, { deltaX: e.deltaX, deltaY: e.deltaY }); }, { capture: true, passive: false });
+    document.addEventListener("contextmenu", e => { if (kinoActive && layerEl() && layerEl().contains(e.target)) e.preventDefault(); }, true);
+    // Tastatur weitergeben (Esc bleibt fürs Kino)
+    const VK = { Enter: 13, Backspace: 8, Tab: 9, Delete: 46, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35, PageUp: 33, PageDown: 34, " ": 32 };
+    function keyToPage(e) {
+      if (!kinoActive || e.key === "Escape") return false;
+      if (e.target.closest && e.target.closest("input, textarea")) return false;
+      const mods = (e.shiftKey ? 8 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 1 : 0) | (e.metaKey ? 4 : 0);
+      const base = { key: e.key, code: e.code, windowsVirtualKeyCode: VK[e.key] || e.keyCode, modifiers: mods };
+      if (e.type === "keydown") {
+        const text = e.key === "Enter" ? "\r" : (e.key.length === 1 && !e.ctrlKey && !e.metaKey ? e.key : undefined);
+        cdp("Input.dispatchKeyEvent", Object.assign({ type: text ? "keyDown" : "rawKeyDown", text }, base)).catch(() => {});
+      } else cdp("Input.dispatchKeyEvent", Object.assign({ type: "keyUp" }, base)).catch(() => {});
+      e.preventDefault(); return true;
+    }
+    addEventListener("keydown", e => { if (kinoActive && seated) keyToPage(e) && e.stopImmediatePropagation(); }, true);
+    addEventListener("keyup", e => { if (kinoActive && seated) keyToPage(e) && e.stopImmediatePropagation(); }, true);
+    addEventListener("paste", e => { if (!kinoActive || !seated) return; const t = e.clipboardData && e.clipboardData.getData("text"); if (t) { cdp("Input.insertText", { text: t }).catch(() => {}); e.preventDefault(); } }, true);
+    const kinoNav = cmd => {
+      if (!kinoActive) return;
+      if (cmd === "back") cdp("Runtime.evaluate", { expression: "history.back()" }).catch(() => {});
+      else if (cmd === "home") cdp("Page.navigate", { url: "https://www.youtube.com/" }).catch(() => {});
+      else if (cmd === "reload") cdp("Page.reload").catch(() => {});
+    };
     async function ytGo(q) {
       q = String(q || "").trim(); ytQuery = q; if (!q) { ytResults = null; renderYT(); return; }
       const link = parseYT(q);
@@ -2424,7 +2488,7 @@ const Room = (() => {
     }
     function menu() { view = "menu"; render(); }
     function back() { if (view === "youtube" || view === "browser") { view = "menu"; render(); return true; } if (view === "trailer") { view = "detail"; render(); return true; } if (view === "file" || view === "detail") { view = "menu"; render(); return true; } return false; }
-    return { show, hide, place, playFile, menu, back, openRealYT, realign: () => openRealYT() };
+    return { show, hide, place, playFile, menu, back, openRealYT, kinoNav };
   })();
 
   // ---------- Szene ----------
@@ -2699,7 +2763,8 @@ const Room = (() => {
     $("#cineLight").onclick = () => setLights(!lightsDim);
     $("#cineFileBtn").onclick = () => $("#cineFile").click();
     $("#cineYT").onclick = e => Cinema.openRealYT(e.currentTarget.dataset.url);
-    $("#cineKBAlign").onclick = () => Cinema.realign();
+    $("#cineKBAlign").onclick = () => Cinema.kinoNav("back");
+    $("#cineKBHome").onclick = () => Cinema.kinoNav("home");
     $("#cineKBClose").onclick = () => Cinema.menu();
     $("#cineFile").onchange = e => { Cinema.playFile(e.target.files[0]); e.target.value = ""; };
     $("#arcadeBack").onclick = closeArcade;
@@ -2830,7 +2895,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema };
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema };
 })();
 window.Room = Room;
 
@@ -2865,7 +2930,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "24";
+const APP_VERSION = "25";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
