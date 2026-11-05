@@ -2077,13 +2077,12 @@ const Room = (() => {
   // ---------- Kinosaal ----------
   // Der Saal liegt weit weg vom Laden (z = -40); eine Tür in der Videothek bringt dich hin.
   const CIN = { x: 0, z: -40 }, CW = 6, CD = 8;            // halbe Breite/Tiefe
-  const SEAT_BLOCK = { minx: -4.05, maxx: 4.05, minz: -2.45, maxz: 5.45 };
   const STORE_DOOR = { x: 2.5, z: -HALF + .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
   let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62, scrPointFn = null, kinoActive = false;
-  const RISE = .32, ROW_Z = r => -1.9 + r * 1.25, STEP0 = ROW_Z(1) - .625;
+  const RISE = .32, GAP = 1.7, ROW_Z = r => -2.4 + r * GAP, STEP0 = ROW_Z(1) - .5;
   // Bodenhöhe im Saal (Treppen in den Gängen, Podest hinten)
-  const cinFloorY = lz => lz < STEP0 ? 0 : Math.min(5, Math.floor((lz - STEP0) / 1.25) + 1) * RISE;
+  const cinFloorY = lz => lz < STEP0 ? 0 : Math.min(5, Math.floor((lz - STEP0) / GAP) + 1) * RISE;
 
   function buildCinema() {
     const g = new T.Group(); g.position.set(CIN.x, 0, CIN.z); scene.add(g);
@@ -2162,7 +2161,7 @@ const Room = (() => {
     const stepMat = new T.MeshLambertMaterial({ map: carpetT });
     const edgeM = new T.MeshBasicMaterial({ color: 0xffb35c });
     for (let r = 1; r <= 5; r++) {
-      const z0 = ROW_Z(r) - .625, depth = CD - z0;
+      const z0 = ROW_Z(r) - .5, depth = CD - z0;
       const step = new T.Mesh(new T.BoxGeometry(CW * 2, RISE, depth), stepMat); step.position.set(0, r * RISE - RISE / 2, z0 + depth / 2); g.add(step);
       const lip = new T.Mesh(new T.PlaneGeometry(CW * 2, .03), edgeM); lip.position.set(0, r * RISE - .02, z0 - .002); g.add(lip);
     }
@@ -2179,7 +2178,7 @@ const Room = (() => {
     }
     // Stufenlichter an den Gängen
     const stepM = new T.MeshBasicMaterial({ color: 0xffb35c });
-    for (let row = 0; row < 6; row++) for (const sx of [-4.35, 4.35]) { const l = new T.Mesh(new T.BoxGeometry(.25, .03, .06), stepM); l.position.set(sx, row * RISE + .02, ROW_Z(row) - .5); g.add(l); }
+    for (let row = 0; row < 6; row++) for (const sx of [-4.35, 4.35]) { const l = new T.Mesh(new T.BoxGeometry(.25, .03, .06), stepM); l.position.set(sx, row * RISE + .02, ROW_Z(row) - .4); g.add(l); }
     // Wandleuchten
     const sconceM = new T.MeshBasicMaterial({ color: 0xffd9a0 });
     for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) {
@@ -2243,11 +2242,15 @@ const Room = (() => {
   }
   function cinemaClamp() {
     const mx = CW - .5; pos.x = Math.max(CIN.x - mx, Math.min(CIN.x + mx, pos.x)); pos.z = Math.max(CIN.z - CD + 1.9, Math.min(CIN.z + CD - .5, pos.z));
-    // Sitzblock umgehen
-    const lx = pos.x - CIN.x, lz = pos.z - CIN.z, b = SEAT_BLOCK, pad = .3;
+    // Sitzreihen umgehen – zwischen den Reihen ist Platz zum Durchgehen
+    const lx = pos.x - CIN.x, lz = pos.z - CIN.z, pad = .22;
+    for (let r = 0; r < 6; r++) {
+    const b = { minx: -4.05, maxx: 4.05, minz: ROW_Z(r) - .28, maxz: ROW_Z(r) + .38 };
     if (lx > b.minx - pad && lx < b.maxx + pad && lz > b.minz - pad && lz < b.maxz + pad) {
       const d = [lx - (b.minx - pad), (b.maxx + pad) - lx, lz - (b.minz - pad), (b.maxz + pad) - lz], k = d.indexOf(Math.min(...d));
       if (k === 0) pos.x = CIN.x + b.minx - pad; else if (k === 1) pos.x = CIN.x + b.maxx + pad; else if (k === 2) pos.z = CIN.z + b.minz - pad; else pos.z = CIN.z + b.maxz + pad;
+      break;
+    }
     }
   }
 
@@ -3002,7 +3005,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema };
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -3037,7 +3040,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "29";
+const APP_VERSION = "30";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
