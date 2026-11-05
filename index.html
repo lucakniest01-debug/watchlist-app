@@ -282,8 +282,13 @@
   #roomCanvas:active { cursor: grabbing; }
   #cine { display: none; }
   #cine.show { display: block; }
-  #room.seated #roomShuffle, #room.seated #joy, #room.seated #cross, #room.seated #roomLabel, #room.seated #roomHelp { display: none !important; }
-  #cineScreen { position: absolute; overflow: hidden; background: #08070b; color: #f3e9e0; border-radius: 2px; box-shadow: 0 0 60px rgba(255,220,180,.18); }
+  #room.seated #roomShuffle, #room.seated #joy, #room.seated #cross, #room.seated #roomLabel, #room.seated #roomHelp, #room.seated #roomStart { display: none !important; }
+  #cssLayer { position: absolute !important; inset: 0; z-index: 0; pointer-events: none; }
+  #roomCanvas { position: absolute; inset: 0; z-index: 1; }
+  #room.seated #roomCanvas { pointer-events: none; }
+  #room.seated #cssLayer { pointer-events: auto; }
+  #cineScreen { width: 1680px; height: 720px; overflow: hidden; background: #08070b; color: #f3e9e0; font-size: 26px; font-family: "Segoe UI", system-ui, sans-serif; }
+  #cineScreen::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 90px rgba(0,0,0,.55); }
   #cineScreen iframe, #cineScreen video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
   #cineBar { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; z-index: 3; }
   #cineBar .btn { background: rgba(23,20,26,.88); backdrop-filter: blur(6px); }
@@ -293,6 +298,20 @@
   .cin-tabs button, .cin-btn { font: inherit; font-size: .85em; color: #f3e9e0; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 2em; padding: .35em 1em; cursor: pointer; }
   .cin-tabs button.on, .cin-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; color: #fff; font-weight: 600; }
   .cin-btn.ghost { background: none; }
+  #cineYT { display: none; } #cine.yt-on #cineYT { display: inline-flex; }
+  .cin-tabs button.yt.on { background: #ff0033; }
+  .cin-yt-form { display: flex; gap: .5em; margin-bottom: .8em; }
+  .cin-yt-form input { flex: 1; font: inherit; font-size: .9em; color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 2em; padding: .45em 1em; outline: none; }
+  .cin-yt-form input:focus { border-color: #ff0033; }
+  .cin-ytbody { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+  .cin-ytbody .cin-grid { flex: 1; }
+  .cin-grid.yt { grid-template-columns: repeat(auto-fill, minmax(12em, 1fr)); }
+  .cin-item.yt img { aspect-ratio: 16/9; }
+  .cin-item.yt i { font-style: normal; font-size: .7em; color: #a99aa2; }
+  .cin-sub { font-size: .8em; color: #c9b8c0; margin-bottom: .5em; }
+  .cin-yt-key { margin: auto; max-width: 34em; text-align: center; display: flex; flex-direction: column; gap: .8em; }
+  .cin-yt-key p { margin: 0; color: #d6c9cf; line-height: 1.5; }
+  .cin-yt-key .cin-actions { justify-content: center; margin: 0; }
   .cin-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr)); gap: .9em; align-content: start; scrollbar-width: thin; }
   .cin-item { background: none; border: none; color: inherit; font: inherit; padding: 0; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: .3em; }
   .cin-item img, .cin-item .noimg { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: .3em; background: #222; display: flex; align-items: center; justify-content: center; font-size: 2em; transition: transform .15s; box-shadow: 0 .3em 1em rgba(0,0,0,.5); }
@@ -316,6 +335,7 @@
   .arcadetop { display: flex; align-items: center; gap: 14px; padding: 8px 12px; background: #0b0f1a; border-bottom: 2px solid #0e7490; color: #2cff8a; font: bold 16px "Courier New", monospace; letter-spacing: 2px; }
   #arcadeFrame { flex: 1; width: 100%; border: 0; background: #0b0f1a; }
   @media (max-width: 700px) { .arcadewrap { border-radius: 0; border: 0; box-shadow: none; height: 100%; } }
+  #roomBack, #roomShuffle, #roomHelp, #roomMsg, #roomLabel, #roomStart, #joy, #cross, #cine { z-index: 3; }
   #roomBack { position: absolute; top: 14px; left: 14px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #roomHelp { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(15,17,21,.82); border: 1px solid var(--line); border-radius: 10px;
     padding: 8px 14px; font-size: 13px; color: var(--muted); opacity: 0; transition: opacity .6s; pointer-events: none; max-width: calc(100vw - 150px); text-align: center; }
@@ -487,6 +507,7 @@
       <button class="btn" id="cineMenu">🎞 Programm</button>
       <button class="btn" id="cineLight">💡 Licht</button>
       <button class="btn" id="cineFileBtn">📁 Eigene Videodatei</button>
+      <button class="btn" id="cineYT">↗ Auf YouTube öffnen</button>
       <input type="file" id="cineFile" accept="video/*" hidden>
     </div>
   </div>
@@ -2037,6 +2058,10 @@ const Room = (() => {
   const SEAT_BLOCK = { minx: -4.05, maxx: 4.05, minz: -2.45, maxz: 5.45 };
   const STORE_DOOR = { x: 2.5, z: -HALF + .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
+  let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62;
+  const RISE = .32, ROW_Z = r => -1.9 + r * 1.25, STEP0 = ROW_Z(1) - .625;
+  // Bodenhöhe im Saal (Treppen in den Gängen, Podest hinten)
+  const cinFloorY = lz => lz < STEP0 ? 0 : Math.min(5, Math.floor((lz - STEP0) / 1.25) + 1) * RISE;
 
   function buildCinema() {
     const g = new T.Group(); g.position.set(CIN.x, 0, CIN.z); scene.add(g);
@@ -2070,6 +2095,33 @@ const Room = (() => {
     cinScreenTex = new T.CanvasTexture(sc); cinScreenTex.colorSpace = T.SRGBColorSpace;
     cinScreen = new T.Mesh(new T.PlaneGeometry(8.4, 3.6), new T.MeshBasicMaterial({ map: cinScreenTex })); cinScreen.position.set(0, 3.1, -CD + .09); g.add(cinScreen);
     cinScreen.userData = { cinema: "screen" }; fixedPicks.push(cinScreen);
+    screenMat = cinScreen.material;
+    holeMat = new T.MeshBasicMaterial({ color: 0x000000, opacity: 0, transparent: false, blending: T.NoBlending });
+    // Leinwand-Inhalt als echtes 3D-Element hinter der Leinwand
+    cssScene = new T.Scene(); cssRenderer = new C3.CSS3DRenderer();
+    const layer = cssRenderer.domElement; layer.id = "cssLayer"; $("#room").insertBefore(layer, $("#roomCanvas"));
+    const scr = $("#cineScreen"); scr.remove();
+    const obj = new C3.CSS3DObject(scr);
+    cinScreen.updateWorldMatrix(true, false); cinScreen.getWorldPosition(obj.position); cinScreen.getWorldQuaternion(obj.quaternion);
+    obj.scale.setScalar(8.4 / 1680); cssScene.add(obj);
+    // Absicherung: Trifft ein Klick die 3D-Leinwand nicht direkt, über die Leinwand-Koordinaten weiterleiten
+    const scrPoint = (cx, cy) => {
+      ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+      const hit = ray.intersectObject(cinScreen, false)[0]; return hit && hit.uv ? { x: hit.uv.x * 1680, y: (1 - hit.uv.y) * 720 } : null;
+    };
+    const boxIn = e => { let x = 0, y = 0, n = e; while (n && n !== scr) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; } for (let a = e.parentElement; a && a !== scr; a = a.parentElement) { x -= a.scrollLeft; y -= a.scrollTop; } return { x, y, w: e.offsetWidth, h: e.offsetHeight }; };
+    const elAt = pt => { let best = null, area = 1e12; for (const e of scr.querySelectorAll("button, input, a, video")) { const b = boxIn(e); if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h && b.w * b.h < area) { best = e; area = b.w * b.h; } } return best; };
+    layer.addEventListener("click", e => {
+      if (e.target !== layer || !seated) return;
+      const pt = scrPoint(e.clientX, e.clientY), t = pt && elAt(pt); if (!t) return;
+      if (t.tagName === "INPUT") t.focus(); else if (t.tagName === "VIDEO") { t.paused ? t.play() : t.pause(); } else t.click();
+    });
+    layer.addEventListener("wheel", e => {
+      if (e.target !== layer || !seated) return;
+      const g = scr.querySelector(".cin-grid"); if (g) { g.scrollTop += e.deltaY; e.preventDefault(); }
+    }, { passive: false });
+    // Licht, das von der Leinwand auf den Saal fällt
+    screenGlow = new T.PointLight(0xbcd6ff, 0, 14, 1.4); screenGlow.position.set(0, 3, -CD + 2.5); g.add(screenGlow);
     drawScreenIdle();
     // Vorhang links/rechts und oben
     const curtT = canvasTex(256, 512, (c, w, h) => {
@@ -2083,9 +2135,17 @@ const Room = (() => {
     const fabric = new T.MeshLambertMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#8f1a2c"; c.fillRect(0, 0, w, h); for (let i = 0; i < 200; i++) { c.fillStyle = `rgba(0,0,0,${Math.random() * .25})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }) });
     const dark = new T.MeshLambertMaterial({ color: 0x1b1b20 });
     const seatGeo = new T.BoxGeometry(.56, .14, .5), backGeo = new T.BoxGeometry(.56, .7, .12), armGeo = new T.BoxGeometry(.06, .2, .5);
+    // Stufen: jede Reihe eine Stufe höher, durchgehend bis zur Rückwand
+    const stepMat = new T.MeshLambertMaterial({ map: carpetT });
+    const edgeM = new T.MeshBasicMaterial({ color: 0xffb35c });
+    for (let r = 1; r <= 5; r++) {
+      const z0 = ROW_Z(r) - .625, depth = CD - z0;
+      const step = new T.Mesh(new T.BoxGeometry(CW * 2, RISE, depth), stepMat); step.position.set(0, r * RISE - RISE / 2, z0 + depth / 2); g.add(step);
+      const lip = new T.Mesh(new T.PlaneGeometry(CW * 2, .03), edgeM); lip.position.set(0, r * RISE - .02, z0 - .002); g.add(lip);
+    }
     for (let row = 0; row < 6; row++) for (let col = 0; col < 8; col++) {
-      const sx = -3.5 + col * 1.0, sz = -1.9 + row * 1.25;
-      const s = new T.Group(); s.position.set(sx, 0, sz);
+      const sx = -3.5 + col * 1.0, sz = ROW_Z(row);
+      const s = new T.Group(); s.position.set(sx, row * RISE, sz);
       const seat = new T.Mesh(seatGeo, fabric); seat.position.set(0, .45, 0); s.add(seat);
       const back = new T.Mesh(backGeo, fabric); back.position.set(0, .82, .26); back.rotation.x = -.15; s.add(back);
       const leg = new T.Mesh(new T.BoxGeometry(.5, .38, .3), dark); leg.position.set(0, .19, .05); s.add(leg);
@@ -2096,7 +2156,7 @@ const Room = (() => {
     }
     // Stufenlichter an den Gängen
     const stepM = new T.MeshBasicMaterial({ color: 0xffb35c });
-    for (let row = 0; row < 7; row++) for (const sx of [-4.35, 4.35]) { const l = new T.Mesh(new T.BoxGeometry(.25, .03, .06), stepM); l.position.set(sx, .02, -2.5 + row * 1.25); g.add(l); }
+    for (let row = 0; row < 6; row++) for (const sx of [-4.35, 4.35]) { const l = new T.Mesh(new T.BoxGeometry(.25, .03, .06), stepM); l.position.set(sx, row * RISE + .02, ROW_Z(row) - .5); g.add(l); }
     // Wandleuchten
     const sconceM = new T.MeshBasicMaterial({ color: 0xffd9a0 });
     for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) {
@@ -2113,10 +2173,10 @@ const Room = (() => {
     const beam = new T.Mesh(beamGeo, new T.MeshBasicMaterial({ color: 0x9fd8ff, transparent: true, opacity: .018, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide }));
     beam.scale.set(2, .85, 1); beam.position.set(0, 3.95, .1); beam.rotation.x = -.1; g.add(beam); shared.beam = beam;
     // Ausgang mit grünem Schild
-    const door = new T.Mesh(new T.PlaneGeometry(1.1, 2.2), new T.MeshLambertMaterial({ color: 0x2a2a30 })); door.position.set(CIN_DOOR.x, 1.1, CIN_DOOR.z - .01); door.rotation.y = Math.PI; g.add(door);
+    const door = new T.Mesh(new T.PlaneGeometry(1.1, 2.2), new T.MeshLambertMaterial({ color: 0x2a2a30 })); door.position.set(CIN_DOOR.x, 5 * RISE + 1.1, CIN_DOOR.z - .01); door.rotation.y = Math.PI; g.add(door);
     door.userData = { cinema: "exit" }; fixedPicks.push(door);
     const exitT = canvasTex(256, 96, (c, w, h) => { c.fillStyle = "#0a7a3b"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 46px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🏃 AUSGANG", w / 2, h / 2 + 2); });
-    const ex = new T.Mesh(new T.PlaneGeometry(.8, .3), new T.MeshBasicMaterial({ map: exitT })); ex.position.set(CIN_DOOR.x, 2.45, CIN_DOOR.z - .02); ex.rotation.y = Math.PI; g.add(ex);
+    const ex = new T.Mesh(new T.PlaneGeometry(.8, .3), new T.MeshBasicMaterial({ map: exitT })); ex.position.set(CIN_DOOR.x, 5 * RISE + 2.45, CIN_DOOR.z - .02); ex.rotation.y = Math.PI; g.add(ex);
     // Neon „KINO“ über der Leinwand
     const kino = canvasTex(512, 160, (c, w, h) => { c.font = "bold 110px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ffb35c"; c.shadowBlur = 30; c.fillStyle = "#ffe2b8"; c.fillText("K I N O", w / 2, h / 2); });
     const ks = new T.Mesh(new T.PlaneGeometry(2.4, .75), new T.MeshBasicMaterial({ map: kino, transparent: true, depthWrite: false })); ks.position.set(0, 5.45, -CD + .35); g.add(ks);
@@ -2170,17 +2230,20 @@ const Room = (() => {
 
   // ---------- Hinsetzen & Leinwand ----------
   function sitDown(info) {
-    if (!info) info = { x: CIN.x, z: CIN.z + 1.85, row: 3, col: 4 };
+    if (!info) info = { x: CIN.x + .5, z: CIN.z + ROW_Z(3), row: 3, col: 4 };
     if (document.pointerLockElement) document.exitPointerLock();
     keys = {}; joy = { x: 0, y: 0 }; setAim(null);
     seated = info; pos.x = info.x; pos.z = info.z + .05;
     const dz = (CIN.z - CD + .1) - pos.z, dx = CIN.x - pos.x;
-    yaw = Math.atan2(-dx, -dz); pitch = Math.atan2(3.1 - 1.15, Math.hypot(dx, dz));
-    $("#room").classList.add("seated"); Cinema.show();
+    yaw = Math.atan2(-dx, -dz); pitch = Math.atan2(3.1 - (info.row * RISE + 1.15), Math.hypot(dx, dz));
+    cinScreen.material = holeMat;
+    camera.updateMatrixWorld(); if (cssRenderer) cssRenderer.render(cssScene, camera);
+    $("#room").classList.add("seated"); $("#roomStart").classList.remove("show"); Cinema.show();
   }
   function standUp() {
     if (!seated) return;
     seated = null; $("#room").classList.remove("seated"); Cinema.hide(); setLights(false);
+    if (cinScreen) { cinScreen.material = screenMat; drawScreenIdle(); }
     pos.z += .9; pitch = 0;
   }
   function setLights(dim) {
@@ -2197,27 +2260,88 @@ const Room = (() => {
 
   // ---------- Kinoprogramm auf der Leinwand ----------
   const Cinema = (() => {
-    let tab = "all", view = "menu", cur = null;
-    const el = () => $("#cineScreen");
+    let tab = "all", view = "menu", cur = null, ytQuery = "", ytResults = null;
+    const scrEl = document.getElementById("cineScreen"), el = () => scrEl;
+    const TABS = [["all", "Alle"], ["film", "Filme"], ["serie", "Serien"], ["anime", "Anime"], ["yt", "▶ YouTube"]];
+    const tabsHtml = () => `<div class="cin-tabs">${TABS.map(([k, l]) => `<button data-t="${k}" class="${tab === k ? "on" : ""} ${k === "yt" ? "yt" : ""}">${l}</button>`).join("")}</div>`;
+    const wireTabs = s => s.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tab = b.dataset.t; ytResults = null; render(); });
+
+    // ----- YouTube -----
+    const YT_KEY = "watchlist-yt-key", YT_RECENT = "watchlist-yt-recent";
+    const ytKey = () => { try { return localStorage.getItem(YT_KEY) || ""; } catch { return ""; } };
+    const ytRecent = () => { try { return JSON.parse(localStorage.getItem(YT_RECENT) || "[]"); } catch { return []; } };
+    function parseYT(s) {
+      s = String(s || "").trim();
+      const list = (s.match(/[?&]list=([\w-]{10,})/) || [])[1];
+      const id = (s.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/) || [])[1] || (/^[\w-]{11}$/.test(s) ? s : null);
+      return id || list ? { id, list } : null;
+    }
+    const ytCard = v => `<button class="cin-item yt" data-yt="${esc(v.id)}" data-title="${esc(v.title)}" data-thumb="${esc(v.thumb)}"><img src="${esc(v.thumb)}" alt=""><span>${esc(v.title)}</span>${v.channel ? `<i>${esc(v.channel)}</i>` : ""}</button>`;
+    function renderYT() {
+      const s = el(), key = ytKey(), rec = ytRecent();
+      let body;
+      if (ytResults === "loading") body = `<div class="cin-msg"><span class="spin"></span> Suche auf YouTube …</div>`;
+      else if (ytResults && ytResults.error) body = `<div class="cin-msg">⚠ ${esc(ytResults.error)}</div>`;
+      else if (ytResults && ytResults.needKey) body = `<div class="cin-yt-key">
+          <p>Für die Suche direkt im Kino braucht YouTube einen <b>kostenlosen API-Schlüssel</b> von Google. <b>Links einfügen</b> funktioniert auch ohne.</p>
+          <div class="cin-actions"><button class="cin-btn primary" data-ytopen>🔎 „${esc(ytQuery)}“ auf YouTube suchen ↗</button><button class="cin-btn" data-ytkeyhelp>🔑 So bekommst du den Schlüssel ↗</button></div>
+          <form id="ytKeyForm" class="cin-yt-form"><input id="ytKeyIn" placeholder="YouTube-API-Schlüssel einfügen (AIza…)" spellcheck="false"><button class="cin-btn">Speichern</button></form></div>`;
+      else if (ytResults && ytResults.items) body = ytResults.items.length ? `<div class="cin-grid yt">${ytResults.items.map(ytCard).join("")}</div>` : `<div class="cin-msg">Keine Videos gefunden.</div>`;
+      else body = rec.length ? `<div class="cin-sub">Zuletzt angesehen</div><div class="cin-grid yt">${rec.map(ytCard).join("")}</div>`
+        : `<div class="cin-msg">Füge oben einen YouTube-Link ein${key ? " oder such nach einem Video" : ""}.<br><span class="cin-note">Tipp: In der Detailansicht eines Titels gibt es „Mehr auf YouTube“.</span></div>`;
+      s.innerHTML = `<div class="cin-menu"><div class="cin-head"><b>▶ YouTube</b>${tabsHtml()}</div>
+        <form id="ytForm" class="cin-yt-form"><input id="ytQ" value="${esc(ytQuery)}" placeholder="YouTube-Link einfügen${key ? " oder suchen" : ""} …" autocomplete="off" spellcheck="false"><button class="cin-btn primary">${key ? "Suchen / Abspielen" : "Abspielen"}</button></form>
+        <div class="cin-ytbody">${body}</div></div>`;
+      wireTabs(s);
+      $("#ytForm").onsubmit = e => { e.preventDefault(); ytGo($("#ytQ").value); };
+      s.querySelectorAll("[data-yt]").forEach(b => b.onclick = () => playYT(b.dataset.yt, b.dataset.title, b.dataset.thumb));
+      const op = s.querySelector("[data-ytopen]"); if (op) op.onclick = () => openUrl("https://www.youtube.com/results?search_query=" + encodeURIComponent(ytQuery));
+      const kh = s.querySelector("[data-ytkeyhelp]"); if (kh) kh.onclick = () => openUrl("https://console.cloud.google.com/apis/library/youtube.googleapis.com");
+      const kf = $("#ytKeyForm"); if (kf) kf.onsubmit = e => { e.preventDefault(); const k = $("#ytKeyIn").value.trim(); if (!k) return; try { localStorage.setItem(YT_KEY, k); } catch {} toast("🔑 YouTube-Schlüssel gespeichert"); ytGo(ytQuery); };
+    }
+    async function ytGo(q) {
+      q = String(q || "").trim(); ytQuery = q; if (!q) { ytResults = null; renderYT(); return; }
+      const link = parseYT(q);
+      if (link) { playYT(link.id, "", "", link.list); return; }
+      if (!ytKey()) { ytResults = { needKey: true }; renderYT(); return; }
+      ytResults = "loading"; renderYT();
+      try {
+        const u = "https://www.googleapis.com/youtube/v3/search?" + new URLSearchParams({ part: "snippet", type: "video", videoEmbeddable: "true", maxResults: "24", q, key: ytKey(), relevanceLanguage: "de", safeSearch: "moderate" });
+        const r = await fetch(u); const d = await r.json();
+        if (!r.ok) throw new Error(d.error && d.error.message ? "YouTube: " + d.error.message : "YouTube-Fehler " + r.status);
+        ytResults = { items: (d.items || []).map(x => ({ id: x.id.videoId, title: x.snippet.title, channel: x.snippet.channelTitle, thumb: (x.snippet.thumbnails.medium || x.snippet.thumbnails.default || {}).url || "" })) };
+      } catch (e) { ytResults = { error: e.message.includes("fetch") ? "YouTube nicht erreichbar" : e.message }; }
+      if (view === "menu" && tab === "yt") renderYT();
+    }
+    async function playYT(id, title, thumb, list) {
+      stopMedia(); view = "youtube"; setLights(true);
+      const src = id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1${list ? "&list=" + encodeURIComponent(list) : ""}`
+        : `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&autoplay=1&playsinline=1`;
+      el().innerHTML = `<iframe src="${src}" title="YouTube" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+      $("#cineYT").dataset.url = id ? "https://www.youtube.com/watch?v=" + id + (list ? "&list=" + list : "") : "https://www.youtube.com/playlist?list=" + list;
+      $("#cine").classList.add("yt-on");
+      if (!id) return;
+      if (!title) { try { const r = await fetch("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + id)); if (r.ok) title = (await r.json()).title; } catch {} }
+      const entry = { id, title: title || "YouTube-Video", thumb: thumb || `https://i.ytimg.com/vi/${id}/mqdefault.jpg` };
+      try { localStorage.setItem(YT_RECENT, JSON.stringify([entry, ...ytRecent().filter(x => x.id !== id)].slice(0, 18))); } catch {}
+    }
     function stopMedia() {
       const f = el().querySelector("iframe, video");
       if (f) { if (f.tagName === "VIDEO") { f.pause(); try { URL.revokeObjectURL(f.src); } catch {} } f.src = "about:blank"; f.remove(); }
     }
     function show() { $("#cine").classList.add("show"); view = "menu"; render(); }
     function hide() { stopMedia(); $("#cine").classList.remove("show"); el().innerHTML = ""; }
-    function place(r) {
-      const s = el(); s.style.left = r.left + "px"; s.style.top = r.top + "px"; s.style.width = r.width + "px"; s.style.height = r.height + "px";
-      s.style.fontSize = Math.max(9, Math.min(18, r.width / 62)) + "px";
-    }
+    function place() {}
     function render() {
-      stopMedia(); setLights(false);
+      stopMedia(); setLights(false); $("#cine").classList.remove("yt-on");
       const s = el();
       if (view === "menu") {
         const list = items.filter(i => tab === "all" || i.kind === tab);
-        s.innerHTML = `<div class="cin-menu"><div class="cin-head"><b>🎬 Kinoprogramm</b><div class="cin-tabs">${[["all", "Alle"], ["film", "Filme"], ["serie", "Serien"], ["anime", "Anime"]].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
+        if (tab === "yt") { renderYT(); return; }
+        s.innerHTML = `<div class="cin-menu"><div class="cin-head"><b>🎬 Kinoprogramm</b><div class="cin-tabs">${TABS.map(([k, l]) => `<button data-t="${k}" class="${tab === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
           <div class="cin-grid">${list.length ? list.map(i => `<button class="cin-item" data-id="${i.id}">${i.poster ? `<img src="${esc(i.poster)}" alt="">` : `<span class="noimg">🎞</span>`}<span>${esc(i.title)}</span></button>`).join("")
             : `<div class="cin-empty">Hier ist noch nichts. Stell dir in der Videothek etwas auf deine Watchlist.</div>`}</div></div>`;
-        s.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+        wireTabs(s);
         s.querySelectorAll("[data-id]").forEach(b => b.onclick = () => { cur = items.find(i => i.id === b.dataset.id); view = "detail"; render(); });
         return;
       }
@@ -2230,13 +2354,14 @@ const Room = (() => {
         s.innerHTML = `<div class="cin-detail">${cur.poster ? `<img class="cin-poster" src="${esc(cur.poster.replace("/w185/", "/w342/"))}" alt="">` : ""}<div class="cin-info">
           <div class="cin-kind">${KINDS[cur.kind] || ""}${cur.year ? " · " + esc(cur.year) : ""}${cur.runtime ? " · ⏱ " + fmtDur(cur.runtime) : ""}${isShow(cur) && (cur.seasons || []).length ? ` · ${prog(cur).w}/${prog(cur).a} Folgen` : ""}</div>
           <h2>${esc(cur.title)}</h2><p>${esc(cur.overview || "")}</p>
-          <div class="cin-actions">${cur.tmdbId ? `<button class="cin-btn primary" id="cinTrailer">▶ Trailer abspielen</button>` : ""}${watch}${mark}<button class="cin-btn ghost" id="cinBack">← Programm</button></div>
+          <div class="cin-actions">${cur.tmdbId ? `<button class="cin-btn primary" id="cinTrailer">▶ Trailer abspielen</button>` : ""}${watch}${mark}<button class="cin-btn" id="cinYTMore">▶ Mehr auf YouTube</button><button class="cin-btn ghost" id="cinBack">← Programm</button></div>
           <div class="cin-note">Ganze Filme und Folgen laufen bei deinem Streamingdienst – die Dienste erlauben kein Abspielen in anderen Programmen.</div></div></div>`;
         const t = $("#cinTrailer"); if (t) t.onclick = () => playTrailer(cur);
         s.querySelectorAll("[data-watch]").forEach(b => b.onclick = () => openUrl((cur.providers && cur.providers.link) || justwatchUrl(cur.title)));
         const sn = $("#cinSeen"); if (sn) sn.onclick = async () => { try { replaceItem(cur, await api("PUT", "/api/items/" + cur.id, { status: "gesehen" })); render(); toast("✓ Als gesehen markiert"); } catch (e) { toast(e.message, true); } };
         const nx = $("#cinNext"); if (nx) nx.onclick = async () => { try { replaceItem(cur, await api("POST", `/api/items/${cur.id}/watched`, { season: n.s, episodes: [n.e], watched: true })); render(); toast(`✓ ${SE(n.s, n.e)} gesehen`); } catch (e) { toast(e.message, true); } };
         $("#cinBack").onclick = () => { view = "menu"; render(); };
+        $("#cinYTMore").onclick = () => { tab = "yt"; view = "menu"; ytResults = null; render(); ytGo(`${cur.title} ${cur.kind === "film" ? "Trailer deutsch" : "Trailer"}`); };
       }
     }
     async function playTrailer(it) {
@@ -2262,13 +2387,13 @@ const Room = (() => {
       toast("▶ " + file.name);
     }
     function menu() { view = "menu"; render(); }
-    function back() { if (view === "trailer") { view = "detail"; render(); return true; } if (view === "file" || view === "detail") { view = "menu"; render(); return true; } return false; }
+    function back() { if (view === "youtube") { view = "menu"; render(); return true; } if (view === "trailer") { view = "detail"; render(); return true; } if (view === "file" || view === "detail") { view = "menu"; render(); return true; } return false; }
     return { show, hide, place, playFile, menu, back };
   })();
 
   // ---------- Szene ----------
   function init() {
-    renderer = new T.WebGLRenderer({ canvas: $("#roomCanvas"), antialias: true });
+    renderer = new T.WebGLRenderer({ canvas: $("#roomCanvas"), antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = T.SRGBColorSpace;
     scene = new T.Scene();
@@ -2330,6 +2455,7 @@ const Room = (() => {
     if (!renderer) return;
     const w = innerWidth, h = innerHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (cssRenderer) cssRenderer.setSize(w, h);
   }
 
   // Ein Regal mit Schild; gibt die Plätze für Hüllen zurück
@@ -2536,6 +2662,7 @@ const Room = (() => {
     $("#cineMenu").onclick = () => Cinema.menu();
     $("#cineLight").onclick = () => setLights(!lightsDim);
     $("#cineFileBtn").onclick = () => $("#cineFile").click();
+    $("#cineYT").onclick = e => openUrl(e.currentTarget.dataset.url);
     $("#cineFile").onchange = e => { Cinema.playFile(e.target.files[0]); e.target.value = ""; };
     $("#arcadeBack").onclick = closeArcade;
   }
@@ -2612,18 +2739,22 @@ const Room = (() => {
     if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .6 && pos.z < -HALF + MARGIN + .12) enterCinema();
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
     if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : .95;
-    camera.position.set(pos.x, seated ? 1.15 : EYE + bob, pos.z);
+    const targetY = seated ? seated.row * RISE + 1.15 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
+    eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
+    camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
+    if (screenGlow) screenGlow.intensity = lightsDim ? 1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3 : 0;
     camera.rotation.set(pitch, yaw, 0);
-    if (seated) { camera.updateMatrixWorld(); Cinema.place(screenRect()); } else aimCenter();
+    if (!seated) aimCenter();
     if (!(t % 30 < 17)) startPrompt();
     renderer.render(scene, camera);
+    if (inCinema && cssRenderer) cssRenderer.render(cssScene, camera);
   }
 
   async function open() {
     if (!settings.apiKey) { toast("Für den Raum brauchst du einen TMDB-Schlüssel (⚙)", true); return; }
     const el = $("#room"); el.classList.add("open"); document.body.classList.add("in-room");
     $("#roomMsg").textContent = "Lade 3D …";
-    try { if (!T) T = await import("./three.module.min.js"); }
+    try { if (!T) T = await import("./three.module.min.js"); if (!C3) C3 = await import("./css3d.js"); }
     catch { $("#roomMsg").textContent = "3D konnte nicht geladen werden."; return; }
     if (!renderer) init();
     resize();
@@ -2653,7 +2784,15 @@ const Room = (() => {
   // Testhilfe: Bildschirmposition der i-ten Hülle
   function _screenOf(i) { const m = pickables[i]; if (!m) return null; const v = new T.Vector3(); m.getWorldPosition(v); v.project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight, z: v.z, count: pickables.length }; }
   function _face(i) { const m = pickables[i]; const v = new T.Vector3(); m.getWorldPosition(v); yaw = Math.atan2(-(v.x - pos.x), -(v.z - pos.z)); pitch = Math.atan2(v.y - EYE, Math.hypot(v.x - pos.x, v.z - pos.z)); }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema };
+  // Testhilfe: sichtbare Bildschirmposition eines Elements auf der Leinwand
+  function _onScreen(sel) {
+    const scr = document.getElementById("cineScreen"), e = scr.querySelector(sel); if (!e) return null;
+    let x = 0, y = 0, n = e; while (n && n !== scr) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    x += e.offsetWidth / 2; y += e.offsetHeight / 2;
+    const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
+    return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
+  }
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema };
 })();
 window.Room = Room;
 
@@ -2688,7 +2827,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "21";
+const APP_VERSION = "22";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
