@@ -2318,15 +2318,18 @@ const Room = (() => {
       kbUrl = url || kbUrl;
       if (MODE !== "server") { window.open(kbUrl, "_blank", "noopener"); return; }
       if (seated && seated.row > 0) { reseat({ cinema: "seat", x: CIN.x + .5, z: CIN.z + ROW_Z(0), row: 0, col: 4 }); toast("💺 Du rückst in die erste Reihe"); await new Promise(r => setTimeout(r, 900)); }
-      camera.updateMatrixWorld(); const r = screenRect(), TITLE = 32;
+      camera.updateMatrixWorld(); const r = screenRect();
       const bx = Math.max(0, (window.outerWidth - window.innerWidth) / 2), top = Math.max(0, window.outerHeight - window.innerHeight - bx);
-      const x = Math.round(window.screenX + bx + r.left), y = Math.round(window.screenY + top + r.top - TITLE);
-      try { await api("POST", "/api/kinobrowser", { url: kbUrl, x, y, w: Math.round(r.width), h: Math.round(r.height + TITLE) }); }
+      const x = Math.round(window.screenX + bx + r.left), y = Math.round(window.screenY + top + r.top);
+      try { await api("POST", "/api/kinobrowser", { url: kbUrl, x, y, w: Math.round(r.width), h: Math.round(r.height), place: kbPlace() }); }
       catch (e) { toast(e.message, true); return; }
       stopMedia(); view = "browser"; setLights(true);
-      el().innerHTML = `<div class="cin-msg">🌐 YouTube läuft im Kino-Browser über der Leinwand.<br><span class="cin-note">Fenster verrutscht oder dahinter verschwunden? Unten auf „🔄 Neu ausrichten“ klicken.</span></div>`;
+      el().innerHTML = `<div class="cin-msg">🌐 YouTube läuft auf der Leinwand.<br><span class="cin-note">Passt etwas nicht? Unten auf „🔄 Neu ausrichten“ klicken.</span></div>`;
       $("#cine").classList.add("kb-on");
     }
+    // Lage der Leinwand im Fenster (CSS-Pixel) – das Programm rechnet daraus die genaue Bildschirmposition
+    function kbPlace() { camera.updateMatrixWorld(); const r = screenRect(); return { X: r.left, Y: r.top, W: r.width, H: r.height, VW: innerWidth, VH: innerHeight }; }
+    addEventListener("resize", () => { if ($("#cine").classList.contains("kb-on")) setTimeout(() => api("POST", "/api/kinobrowser/place", kbPlace()).catch(() => {}), 100); });
     function closeRealYT() {
       if (!$("#cine").classList.contains("kb-on")) return;
       $("#cine").classList.remove("kb-on");
@@ -2862,7 +2865,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "23";
+const APP_VERSION = "24";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
