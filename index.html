@@ -135,6 +135,8 @@
   #ovDetail .modal { max-width: 880px; }
   #ovSettings .mfoot { position: sticky; bottom: 0; background: var(--panel); border-radius: 0 0 16px 16px; }
   #lostBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: #5a1f24; border-top: 1px solid #a34848; color: #ffd9d9; padding: 12px 18px; text-align: center; font-size: 14px; }
+  .res.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .shareinfo { margin-top: 10px; padding: 8px 10px; background: var(--panel2); border-radius: 8px; }
   .syncsec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
   .syncsec h3 { margin: 0 0 8px; font-size: 15px; }
   .qrbox { display: flex; gap: 16px; align-items: flex-start; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -202,6 +204,54 @@
   .pother:focus { border-color: var(--accent); }
   ol.steps { margin: 6px 0 0; padding-left: 20px; color: #c3c8d4; }
   ol.steps li { margin-bottom: 4px; }
+  /* ---------- Videothek ---------- */
+  .viewsw { margin-left: 4px; }
+  .viewsw button { font-weight: 600; }
+  #shop { display: none; }
+  body.view-shop #shop { display: block; }
+  body.view-shop #grid, body.view-shop #empty, body.view-shop #banner, body.view-shop #tabs { display: none !important; }
+  .shopbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .shopbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+  .shelf { margin: 18px 0 8px; }
+  .shelf h3 { margin: 0 0 6px 4px; font-size: 16px; }
+  .rack { position: relative; perspective: 1400px; }
+  /* Regalbrett */
+  .rack::after { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; height: 16px; border-radius: 3px;
+    background: linear-gradient(180deg, #3a2a20 0%, #2a1d16 55%, #1a120d 100%); box-shadow: 0 10px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,220,180,.15); z-index: 0; }
+  .shelf .row { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 14px; overflow-x: auto; padding: 16px 8px 20px; scroll-snap-type: x proximity; position: relative; z-index: 1; scrollbar-width: thin; }
+  .case { position: relative; flex: none; width: 128px; aspect-ratio: 2/3; border: none; padding: 0; background: none; cursor: pointer;
+    transform-style: preserve-3d; transform: rotateY(-14deg); transform-origin: left center; transition: transform .25s ease, filter .25s; scroll-snap-align: start; filter: brightness(.92); }
+  .case:hover, .case:focus-visible { transform: rotateY(0deg) translateY(-10px) scale(1.05); filter: brightness(1.05); z-index: 2; outline: none; }
+  .case .cover { position: absolute; inset: 0; border-radius: 3px 6px 6px 3px; overflow: hidden; box-shadow: 6px 10px 18px rgba(0,0,0,.55); background: #222; }
+  .case .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Glanz der Kunststoffhülle */
+  .case .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 70%, rgba(255,255,255,.06) 100%); }
+  .case .spine { position: absolute; top: 0; bottom: 0; left: 0; width: 14px; transform: rotateY(90deg) translateZ(7px) translateX(-7px); transform-origin: left center;
+    background: linear-gradient(90deg, #111, #2c2c2c 40%, #111); border-radius: 2px; }
+  .case::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index: 1; border-radius: 3px 0 0 3px; }
+  .case .tag { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; background: var(--gesehen); color: #0f1115; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.5); z-index: 3; }
+  .case .ctype { position: absolute; left: 8px; bottom: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; color: #0f1115; z-index: 2; opacity: 0; transition: opacity .2s; }
+  .case:hover .ctype { opacity: 1; }
+  .ctype.film { background: var(--film); } .ctype.serie { background: var(--serie); } .ctype.anime { background: var(--anime); }
+  .loadrow { padding: 60px 20px; }
+  /* Geöffnete Hülle */
+  #ovCase { align-items: center; background: rgba(5,6,9,.82); }
+  .casewrap { position: relative; margin: auto; }
+  .casex { position: absolute; top: -8px; right: -8px; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 50%; width: 36px; height: 36px; color: var(--text); }
+  .flip { width: min(420px, 88vw); aspect-ratio: 2/3; perspective: 1600px; cursor: pointer; }
+  .flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.3,.7,.2,1); }
+  .flip.turned .flipper { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 6px 10px 10px 6px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,.6); }
+  .face.front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .face.back { transform: rotateY(180deg); background: #14171d; border: 1px solid #2a2f3a; cursor: default; }
+  .face.back .bk { position: absolute; inset: 0 0 auto 0; height: 38%; background: center/cover; mask-image: linear-gradient(#000 40%, transparent); -webkit-mask-image: linear-gradient(#000 40%, transparent); opacity: .55; }
+  .backin { position: relative; height: 100%; overflow: auto; padding: 22px 20px 18px; display: flex; flex-direction: column; }
+  .backin h2 { margin: 4px 0 8px; font-size: 21px; line-height: 1.2; } .backin h2 small { color: var(--muted); font-weight: 400; font-size: 15px; }
+  .backin .overview { font-size: 13.5px; }
+  .backin .ph { margin: 4px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  .caseact { margin-top: auto; padding-top: 14px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .casehint { text-align: center; margin-top: 10px; }
+
   /* ---------- Handy ---------- */
   @media (max-width: 700px) {
     body { font-size: 15px; }
@@ -247,6 +297,14 @@
     input[type=checkbox] { width: 20px; height: 20px; }
     .qrbox { flex-direction: column; }
     .mfoot { position: sticky; bottom: 0; background: var(--panel); }
+    .viewsw { order: 11; flex: 1 1 100%; display: flex; margin: 0; }
+    .viewsw button { flex: 1; padding: 8px 6px; }
+    .case { width: 100px; }
+    .shelf .row { gap: 10px; padding: 12px 6px 18px; }
+    .shopbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .shopbar > * { flex: none; }
+    .shopbar .sep { display: none; }
+    #ovCase .overlay, #ovCase.open { display: flex; }
   }
 </style>
 </head>
@@ -254,6 +312,7 @@
 <header>
   <div class="toprow">
     <div class="logo"><img src="icon-32.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">Meine <span>Watchlist</span></div>
+    <div class="seg viewsw" id="viewSw"><button data-v="list" class="active">📋 Meine Liste</button><button data-v="shop">🎬 Videothek</button></div>
     <div class="search"><input id="q" placeholder="Film, Serie oder Anime suchen …" autocomplete="off">
       <div class="suggest" id="suggest"></div></div>
     <div class="spacer"></div>
@@ -268,6 +327,11 @@
 <main>
   <div id="banner"></div>
   <div class="grid" id="grid"></div>
+  <section id="shop">
+    <div class="shopbar" id="shopBar"></div>
+    <div id="shopShelves"></div>
+    <div class="attrib" style="margin-top:24px">Daten und Bilder: TMDB · Streaming-Angebote: JustWatch</div>
+  </section>
   <div class="empty" id="empty" style="display:none"></div>
 </main>
 
@@ -283,6 +347,7 @@
           <input class="inp" id="sq" placeholder="Film, Serie oder Anime suchen … (z. B. Attack on Titan)" style="flex:1">
           <button class="btn primary" id="sgo">Suchen</button>
         </div>
+        <div id="shareInfo"></div>
         <div class="results" id="sres"></div>
       </div>
       <div id="paneManual" style="display:none">
@@ -310,6 +375,11 @@
       <button class="btn" id="dRefresh">⟳ Streaming-Infos aktualisieren</button>
     </div>
   </div>
+</div>
+
+<!-- Videothek: geöffnete Hülle -->
+<div class="overlay" id="ovCase">
+  <div class="casewrap"><button class="x casex" data-close>×</button><div id="caseBox"></div></div>
 </div>
 
 <!-- Einstellungen -->
@@ -433,21 +503,34 @@ const Local = (() => {
     return r.json();
   }
 
+  function toResult(r, mt) {
+    const tv = mt === "tv", date = (tv ? r.first_air_date : r.release_date) || "";
+    const genres = r.genre_ids || (r.genres || []).map(g => g.id);
+    const anim = genres.includes(16);
+    return {
+      tmdbId: r.id, mediaType: mt, overview: r.overview || "",
+      title: tv ? r.name : r.title, year: date.slice(0, 4),
+      poster: r.poster_path ? "https://image.tmdb.org/t/p/w185" + r.poster_path : "",
+      kind: anim && ["ja", "ko", "zh"].includes(r.original_language) ? "anime" : tv ? "serie" : "film",
+    };
+  }
   async function search(query) {
     const raw = await tmdb("/search/multi", { query, language: "de-DE", include_adult: "false" });
-    return (raw.results || []).filter(r => r.media_type === "movie" || r.media_type === "tv").map(r => {
-      const tv = r.media_type === "tv", date = (tv ? r.first_air_date : r.release_date) || "";
-      const anim = (r.genre_ids || []).includes(16);
-      return {
-        tmdbId: r.id, mediaType: r.media_type, overview: r.overview || "",
-        title: tv ? r.name : r.title, year: date.slice(0, 4),
-        poster: r.poster_path ? "https://image.tmdb.org/t/p/w185" + r.poster_path : "",
-        kind: anim && ["ja", "ko", "zh"].includes(r.original_language) ? "anime" : tv ? "serie" : "film",
-      };
-    });
+    return (raw.results || []).filter(r => r.media_type === "movie" || r.media_type === "tv").map(r => toResult(r, r.media_type));
+  }
+  // Einen Titel direkt über seine TMDB- oder IMDb-Nummer finden (für geteilte Links)
+  async function lookup(q) {
+    if (q.get("imdb")) {
+      const r = await tmdb(`/find/${q.get("imdb")}`, { external_source: "imdb_id", language: "de-DE" });
+      if ((r.movie_results || []).length) return toResult(r.movie_results[0], "movie");
+      if ((r.tv_results || []).length) return toResult(r.tv_results[0], "tv");
+      return null;
+    }
+    const mt = q.get("type") === "tv" ? "tv" : "movie";
+    return toResult(await tmdb(`/${mt}/${+q.get("id")}`, { language: "de-DE" }), mt);
   }
 
-  const provCache = new Map();
+  const provCache = new Map(), rawCache = new Map();
   async function providers(mt, id, region) {
     const ck = `${mt}:${id}:${region}`, c = provCache.get(ck);
     if (c && now() - c.at < 6 * 3600e3) return c.p;
@@ -599,6 +682,18 @@ const Local = (() => {
       return { items: s.items, newEpisodes };
     }],
     ["GET", /^\/api\/search$/, async (m, b, q) => q.get("q") ? search(q.get("q")) : []],
+    ["GET", /^\/api\/lookup$/, async (m, b, q) => lookup(q)],
+    ["GET", /^\/api\/tmdb$/, async (m, b, q) => {
+      const path = q.get("path") || "";
+      if (path.includes("..") || !/^\/(discover\/(movie|tv)|trending\/|watch\/providers\/|movie\/|tv\/)/.test(path)) err("Nicht erlaubt");
+      const params = {}; for (const [k, v] of q) if (k !== "path") params[k] = v;
+      const ck = path + "?" + new URLSearchParams(params), c = rawCache.get(ck);
+      if (c && now() - c.at < 3600e3) return c.data;
+      const data = await tmdb(path, params);
+      if (rawCache.size > 500) rawCache.clear();
+      rawCache.set(ck, { data, at: now() });
+      return data;
+    }],
     ["GET", /^\/api\/providers$/, async (m, b, q) => providers(q.get("type"), +q.get("id"), load().settings.region || "DE")],
     ["GET", /^\/api\/settings$/, () => pub()],
     ["POST", /^\/api\/settings$/, async (m, b) => {
@@ -765,6 +860,7 @@ function renderTabs() {
 }
 
 function render() {
+  if (typeof VIEW !== "undefined" && VIEW === "shop") { try { Shop.markCases(); } catch {} }
   renderTabs();
   $("#banner").innerHTML = settings.apiKey ? "" : (MODE === "local" && !Sync.token) ?
     `<div class="banner"><div style="font-size:26px">📱</div><div style="flex:1"><b>Mit deinem PC verbinden</b>
@@ -934,7 +1030,7 @@ function setMode(m) {
 }
 $("#addMode").querySelectorAll("button").forEach(b => b.onclick = () => setMode(b.dataset.m));
 
-let lastResults = [], searchSeq = 0, searchTimer = null;
+let lastResults = [], searchSeq = 0, searchTimer = null, preferHit = null;
 function provLine(p) {
   const sp = streamProvidersOf(p);
   if (!sp.length) {
@@ -955,11 +1051,17 @@ async function doSearch() {
   try {
     const res = await api("GET", "/api/search?q=" + encodeURIComponent(q));
     if (seq !== searchSeq) return; // veraltete Antwort
+    if (preferHit) {
+      const score = r => (preferHit.tmdbId && r.tmdbId === preferHit.tmdbId && r.mediaType === preferHit.mediaType ? 2 : 0) + (preferHit.year && r.year === preferHit.year ? 1 : 0);
+      if (preferHit.tmdbId && !res.some(r => score(r) >= 2)) res.unshift(preferHit);
+      res.sort((a, b) => score(b) - score(a));
+      res.forEach(r => r._best = score(r) > 0 && r === res[0]);
+    }
     lastResults = res;
     if (!res.length) { box.innerHTML = `<div class="hint">Nichts gefunden. Versuch es mit dem englischen oder Originaltitel – oder füge ihn manuell hinzu.</div>`; return; }
     box.innerHTML = res.map((r, idx) => {
       const have = items.some(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
-      return `<div class="res">${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}
+      return `<div class="res ${r._best ? "best" : ""}">${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}
         <div class="info"><b>${esc(r.title)}</b> <span class="hint">${esc(r.year)} · ${r.mediaType === "movie" ? "Film" : "TV"}</span>
           <div class="rprov" id="rp${idx}">${idx < 8 ? `<span class="hint"><span class="spin"></span> Anbieter …</span>` : ""}</div>
           <p>${esc(r.overview)}</p></div>
@@ -979,7 +1081,7 @@ async function doSearch() {
   } catch (e) { if (seq === searchSeq) box.innerHTML = `<div class="hint" style="color:#ff7b7b">${esc(e.message)}</div>`; }
 }
 $("#sgo").onclick = () => { clearTimeout(searchTimer); doSearch(); };
-$("#sq").oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(doSearch, 280); };
+$("#sq").oninput = () => { preferHit = null; $("#shareInfo").innerHTML = ""; clearTimeout(searchTimer); searchTimer = setTimeout(doSearch, 280); };
 $("#sq").onkeydown = e => { if (e.key === "Enter") { clearTimeout(searchTimer); doSearch(); } };
 
 async function addSearchResult(r, kind) {
@@ -1291,8 +1393,264 @@ $("#sSave").onclick = async () => {
   b.disabled = false; b.textContent = "Speichern";
 };
 
+/* ---------- Videothek: Regale zum Stöbern ---------- */
+const Shop = (() => {
+  // Regale: TMDB-Genres für Filme bzw. Serien
+  const SHELVES = [
+    { id: "pop", name: "🔥 Gerade beliebt", movie: {}, tv: {} },
+    { id: "new", name: "✨ Neu erschienen", movie: { sort_by: "primary_release_date.desc", "vote_count.gte": 30 }, tv: { sort_by: "first_air_date.desc", "vote_count.gte": 15 } },
+    { id: "top", name: "⭐ Am besten bewertet", movie: { sort_by: "vote_average.desc", "vote_count.gte": 800 }, tv: { sort_by: "vote_average.desc", "vote_count.gte": 300 } },
+    { id: "anime", name: "🎌 Anime", movie: { with_genres: "16", with_original_language: "ja" }, tv: { with_genres: "16", with_original_language: "ja" }, anime: true },
+    { id: "action", name: "💥 Action & Abenteuer", movie: { with_genres: "28" }, tv: { with_genres: "10759" } },
+    { id: "comedy", name: "😂 Komödie", movie: { with_genres: "35" }, tv: { with_genres: "35" } },
+    { id: "drama", name: "🎭 Drama", movie: { with_genres: "18" }, tv: { with_genres: "18" } },
+    { id: "scifi", name: "🚀 Science-Fiction & Fantasy", movie: { with_genres: "878|14" }, tv: { with_genres: "10765" } },
+    { id: "crime", name: "🕵️ Krimi & Thriller", movie: { with_genres: "80|53" }, tv: { with_genres: "80|9648" } },
+    { id: "horror", name: "👻 Horror", movie: { with_genres: "27" } },
+    { id: "family", name: "🧸 Familie & Animation", movie: { with_genres: "10751|16", without_original_language: "ja" }, tv: { with_genres: "10762|16", without_original_language: "ja" } },
+    { id: "docu", name: "🌍 Dokus", movie: { with_genres: "99" }, tv: { with_genres: "99" } },
+  ];
+  const ENGL = { film: "movie", serie: "tv" };
+  let kind = "all", onlyMine = true, provIds = null, built = false, shelfState = {}, observer = null, caseData = null;
+
+  const pick = (o, ks) => Object.fromEntries(Object.entries(o).filter(([k]) => ks.includes(k)));
+  function toR(r, mt) {
+    const tv = mt === "tv", date = (tv ? r.first_air_date : r.release_date) || "";
+    const g = r.genre_ids || (r.genres || []).map(x => x.id);
+    return {
+      tmdbId: r.id, mediaType: mt, overview: r.overview || "", title: tv ? r.name : r.title, year: date.slice(0, 4),
+      poster: r.poster_path ? "https://image.tmdb.org/t/p/w185" + r.poster_path : "",
+      big: r.poster_path ? "https://image.tmdb.org/t/p/w500" + r.poster_path : "",
+      backdrop: r.backdrop_path ? "https://image.tmdb.org/t/p/w780" + r.backdrop_path : "",
+      vote: r.vote_average || 0,
+      kind: g.includes(16) && ["ja", "ko", "zh"].includes(r.original_language) ? "anime" : tv ? "serie" : "film",
+    };
+  }
+  const tm = (path, params = {}) => api("GET", "/api/tmdb?" + new URLSearchParams(Object.assign({ path }, params)));
+
+  // TMDB-Nummern meiner Dienste (für den Filter „Nur meine Dienste“)
+  async function loadProvIds() {
+    if (provIds) return provIds;
+    const region = settings.region || "DE", ids = new Set();
+    for (const t of ["movie", "tv"]) {
+      try {
+        const r = await tm(`/watch/providers/${t}`, { watch_region: region, language: "de-DE" });
+        for (const p of r.results || []) if ((settings.myServices || []).includes(canon(p.provider_name))) ids.add(p.provider_id);
+      } catch {}
+    }
+    return provIds = [...ids];
+  }
+  const mineActive = () => onlyMine && (settings.myServices || []).length > 0;
+
+  async function fetchShelf(sh, page) {
+    const region = settings.region || "DE", base = { language: "de-DE", include_adult: "false", page, watch_region: region };
+    if (mineActive()) {
+      const ids = await loadProvIds();
+      if (ids.length) Object.assign(base, { with_watch_providers: ids.join("|"), with_watch_monetization_types: "flatrate|free|ads" });
+    }
+    let types = ["movie", "tv"];
+    if (kind === "film") types = ["movie"];
+    if (kind === "serie") types = ["tv"];
+    if (kind === "anime") { if (!sh.anime && sh.id !== "pop" && sh.id !== "new" && sh.id !== "top") return []; }
+    const lists = await Promise.all(types.filter(t => sh[t]).map(async t => {
+      let params = Object.assign({ sort_by: "popularity.desc" }, base, sh[t]);
+      if (kind === "anime") params = Object.assign(params, { with_genres: "16", with_original_language: "ja" });
+      if (sh.id === "pop" && !mineActive() && kind === "all") {
+        const r = await tm(`/trending/${t}/week`, { language: "de-DE", page });
+        return (r.results || []).map(x => toR(x, t));
+      }
+      if (kind === "serie" && t === "tv") params.without_genres = "16";
+      const r = await tm(`/discover/${t}`, params);
+      return (r.results || []).map(x => toR(x, t)).filter(x => kind !== "serie" || x.kind === "serie");
+    }));
+    // Filme und Serien abwechselnd ins Regal stellen
+    const out = [], max = Math.max(0, ...lists.map(l => l.length));
+    for (let i = 0; i < max; i++) for (const l of lists) if (l[i]) out.push(l[i]);
+    return out.filter(x => x.poster);
+  }
+
+  const onList = r => items.find(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
+  function caseHtml(r, key) {
+    const have = onList(r);
+    return `<button class="case ${have ? "have" : ""}" data-key="${key}" title="${esc(r.title)}${r.year ? " (" + r.year + ")" : ""}">
+      <span class="cover"><img loading="lazy" src="${esc(r.poster)}" alt="${esc(r.title)}"></span>
+      <span class="spine"></span>
+      ${have ? `<span class="tag">✓</span>` : ""}
+      <span class="ctype ${r.kind}">${KINDS[r.kind]}</span></button>`;
+  }
+
+  function build() {
+    const box = $("#shopShelves");
+    if (!settings.apiKey) {
+      box.innerHTML = `<div class="noprov" style="margin-top:20px">Für die Videothek brauchst du einen TMDB-Schlüssel. <a class="lnk" onclick="openSettings()">Jetzt einrichten</a></div>`;
+      return;
+    }
+    shelfState = {};
+    if (observer) observer.disconnect();
+    // Nur Regale zeigen, die zur gewählten Art passen
+    const fits = sh => kind === "all" ? true : kind === "anime" ? ["pop", "new", "top"].includes(sh.id) : !!sh[ENGL[kind]] && !(kind === "serie" && sh.id === "anime") && !(kind === "film" && sh.id === "anime");
+    box.innerHTML = SHELVES.filter(fits).map(sh => `<section class="shelf" data-shelf="${sh.id}">
+        <h3>${sh.name}</h3>
+        <div class="rack"><div class="row" data-row="${sh.id}"><div class="hint loadrow"><span class="spin"></span></div></div></div></section>`).join("");
+    observer = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return;
+      const id = e.target.dataset.shelf; observer.unobserve(e.target); loadMore(id);
+    }), { rootMargin: "300px" });
+    box.querySelectorAll(".shelf").forEach(el => observer.observe(el));
+    built = true;
+  }
+
+  async function loadMore(id) {
+    const st = shelfState[id] = shelfState[id] || { page: 0, items: [], busy: false, done: false };
+    if (st.busy || st.done) return;
+    st.busy = true;
+    const sh = SHELVES.find(s => s.id === id), row = document.querySelector(`[data-row="${id}"]`);
+    try {
+      const got = await fetchShelf(sh, st.page + 1);
+      st.page++;
+      const seen = new Set(st.items.map(r => r.mediaType + r.tmdbId)), fresh = got.filter(r => !seen.has(r.mediaType + r.tmdbId));
+      st.items.push(...fresh);
+      if (!got.length || st.page >= 5) st.done = true;
+      if (!row) return;
+      row.querySelector(".loadrow")?.remove();
+      if (!st.items.length) { row.closest(".shelf").style.display = "none"; return; }
+      row.insertAdjacentHTML("beforeend", fresh.map((r, i) => caseHtml(r, `${id}:${st.items.length - fresh.length + i}`)).join(""));
+      if (!row._wired) {
+        row._wired = true;
+        row.addEventListener("click", e => { const c = e.target.closest(".case"); if (c) openCase(c.dataset.key); });
+        row.addEventListener("scroll", () => { if (row.scrollLeft + row.clientWidth > row.scrollWidth - 400) loadMore(id); });
+      }
+    } catch (e) {
+      if (row) row.innerHTML = `<div class="hint" style="color:#ff7b7b">${esc(e.message)}</div>`;
+    } finally { st.busy = false; }
+  }
+
+  // Hülle öffnen: Vorderseite → umdrehen → Rückseite mit Infos
+  async function openCase(key) {
+    const [id, idx] = key.split(":"), r = shelfState[id].items[+idx];
+    caseData = r;
+    const ov = $("#ovCase");
+    $("#caseBox").innerHTML = `
+      <div class="flip"><div class="flipper">
+        <div class="face front"><img src="${esc(r.big || r.poster)}" alt=""></div>
+        <div class="face back">
+          ${r.backdrop ? `<div class="bk" style="background-image:url('${esc(r.backdrop)}')"></div>` : ""}
+          <div class="backin">
+            <div class="row" style="gap:8px;margin-bottom:6px"><span class="badge ${r.kind}">${KINDS[r.kind]}</span>${r.vote ? `<span class="hint">★ ${r.vote.toFixed(1)}</span>` : ""}<span class="hint" id="caseMeta"></span></div>
+            <h2>${esc(r.title)} ${r.year ? `<small>(${esc(r.year)})</small>` : ""}</h2>
+            <p class="overview">${esc(r.overview || "Keine Beschreibung vorhanden.")}</p>
+            <h4 class="ph">📺 Hier läuft's</h4><div class="rprov" id="caseProv"><span class="hint"><span class="spin"></span></span></div>
+            <div class="caseact">
+              <span id="caseAdd"></span>
+              <a class="lnk" id="caseTrailer" style="display:none">▶ Trailer</a>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="hint casehint">Tippe auf die Hülle, um sie umzudrehen</div>`;
+    ov.classList.add("open");
+    const flip = $("#caseBox .flip");
+    flip.onclick = e => { if (!e.target.closest("button, a")) flip.classList.toggle("turned"); };
+    setTimeout(() => flip.classList.add("turned"), 350);
+    renderCaseAdd();
+    // Anbieter, Laufzeit/Staffeln, Trailer nachladen
+    api("GET", `/api/providers?type=${r.mediaType}&id=${r.tmdbId}`).then(p => { if (caseData === r) $("#caseProv").innerHTML = provLine(p); }).catch(() => { if (caseData === r) $("#caseProv").innerHTML = ""; });
+    tm(`/${r.mediaType}/${r.tmdbId}`, { language: "de-DE", append_to_response: "videos" }).then(d => {
+      if (caseData !== r) return;
+      const meta = r.mediaType === "movie" ? (d.runtime ? "⏱ " + fmtDur(d.runtime) : "") : [d.number_of_seasons ? `${d.number_of_seasons} Staffel${d.number_of_seasons === 1 ? "" : "n"}` : "", d.number_of_episodes ? `${d.number_of_episodes} Folgen` : ""].filter(Boolean).join(" · ");
+      $("#caseMeta").textContent = meta ? "· " + meta : "";
+      const vids = ((d.videos || {}).results || []).filter(v => v.site === "YouTube" && /Trailer|Teaser/.test(v.type));
+      let v = vids.find(v => v.iso_639_1 === "de") || vids[0];
+      if (!v) return tm(`/${r.mediaType}/${r.tmdbId}/videos`, {}).then(x => {
+        const l = (x.results || []).filter(v => v.site === "YouTube" && /Trailer|Teaser/.test(v.type)); if (l[0] && caseData === r) showTrailer(l[0].key);
+      });
+      showTrailer(v.key);
+    }).catch(() => {});
+  }
+  function showTrailer(key) { const a = $("#caseTrailer"); if (!a) return; a.dataset.href = "https://www.youtube.com/watch?v=" + key; a.style.display = ""; }
+  function renderCaseAdd() {
+    const r = caseData, have = onList(r), el = $("#caseAdd"); if (!el) return;
+    el.innerHTML = have ? `<button class="btn" id="caseOpen">✓ Auf deiner Liste – öffnen</button>` : `<button class="btn primary" id="caseAddBtn">+ Auf die Watchlist</button>`;
+    if (have) $("#caseOpen").onclick = () => { $("#ovCase").classList.remove("open"); openDetail(have.id); };
+    else $("#caseAddBtn").onclick = async () => {
+      const b = $("#caseAddBtn"); b.disabled = true; b.innerHTML = `<span class="spin"></span>`;
+      try { await addSearchResult(r, r.kind); renderCaseAdd(); markCases(); } catch (e) { toast(e.message, true); b.disabled = false; b.textContent = "+ Auf die Watchlist"; }
+    };
+  }
+  // Häkchen an den Hüllen aktualisieren
+  function markCases() {
+    document.querySelectorAll("#shopShelves .case").forEach(c => {
+      const [id, idx] = c.dataset.key.split(":"), r = shelfState[id] && shelfState[id].items[+idx]; if (!r) return;
+      const have = !!onList(r); if (have === c.classList.contains("have")) return;
+      c.classList.toggle("have", have);
+      const t = c.querySelector(".tag"); if (have && !t) c.insertAdjacentHTML("beforeend", `<span class="tag">✓</span>`); if (!have && t) t.remove();
+    });
+  }
+
+  function renderBar() {
+    const hasMine = (settings.myServices || []).length > 0;
+    $("#shopBar").innerHTML =
+      Object.entries({ all: "Alles", film: "Filme", serie: "Serien", anime: "Anime" }).map(([k, l]) => `<button class="chip ${kind === k ? "active" : ""}" data-k="${k}">${l}</button>`).join("") +
+      `<span class="sep"></span>` +
+      (hasMine ? `<button class="chip ${onlyMine ? "active" : ""}" id="shopMine">⭐ Nur meine Dienste${onlyMine ? ` <span class="hint">(${esc((settings.myServices || []).slice(0, 3).join(", "))}${settings.myServices.length > 3 ? " …" : ""})</span>` : ""}</button>`
+        : `<span class="hint">Tipp: Unter ⚙ deine Dienste wählen, dann zeigt die Videothek nur, was du schauen kannst.</span>`);
+    $("#shopBar").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { kind = b.dataset.k; renderBar(); build(); });
+    const m = $("#shopMine"); if (m) m.onclick = () => { onlyMine = !onlyMine; renderBar(); build(); };
+  }
+
+  function show() {
+    renderBar();
+    const sig = JSON.stringify([settings.apiKey ? 1 : 0, settings.region, settings.myServices]);
+    if (!built || show._sig !== sig) { provIds = null; build(); show._sig = sig; }
+    else markCases();
+  }
+  return { show, markCases };
+})();
+
+/* Umschalten zwischen „Meine Liste“ und „Videothek“ */
+let VIEW = "list";
+function setView(v) {
+  VIEW = v;
+  document.body.classList.toggle("view-shop", v === "shop");
+  document.querySelectorAll("#viewSw button").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+  if (v === "shop") Shop.show(); else render();
+  try { localStorage.setItem("watchlist-view", v); } catch {}
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setView(b.dataset.v));
+
+/* ---------- „Teilen“ aus anderen Apps (Android) ---------- */
+function cleanShared(s) {
+  s = String(s || "").replace(/https?:\/\/\S+/g, " ").split(/\n/).map(x => x.trim()).filter(Boolean)[0] || "";
+  s = s.replace(/\s+[|–—-]\s+.*$/, "");                                   // „Titel – BingeBrowse“, „Titel | Netflix“
+  s = s.replace(/^(schau dir|guck dir|sieh dir|check out|watch|ich empfehle|empfehlung:?)\s+/i, "");
+  s = s.replace(/\s+(auf|bei|on|via)\s+[\w+. ]+(an|ansehen|anschauen)?[!.]*$/i, "").replace(/\s+(an|ansehen|anschauen|jetzt streamen)[!.]*$/i, "");
+  s = s.replace(/\(\s*(19|20)\d{2}\s*\)/g, "").replace(/[„“"«»”]/g, "").replace(/\s+/g, " ").trim();
+  return s.slice(0, 100);
+}
+async function handleShare() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("share_title") && !q.has("share_text") && !q.has("share_url")) return;
+  history.replaceState(null, "", location.pathname);
+  const title = q.get("share_title") || "", text = q.get("share_text") || "", url = q.get("share_url") || "";
+  const all = [title, text, url].join(" ");
+  const year = (all.match(/\((19|20)\d{2}\)/) || [""])[0].slice(1, 5);
+  let query = cleanShared(title) || cleanShared(text);
+  preferHit = year ? { year } : null;
+  const tm = all.match(/themoviedb\.org\/(movie|tv)\/(\d+)/), im = all.match(/imdb\.com\/title\/(tt\d+)/);
+  if (settings.apiKey && (tm || im)) {
+    try {
+      const hit = await api("GET", tm ? `/api/lookup?type=${tm[1]}&id=${tm[2]}` : `/api/lookup?imdb=${im[1]}`);
+      if (hit) { preferHit = hit; query = hit.title; }
+    } catch {}
+  }
+  if (!query) { toast("Im geteilten Inhalt wurde kein Titel gefunden", true); return; }
+  openAdd(query);
+  $("#shareInfo").innerHTML = `<div class="hint shareinfo">📤 Geteilt: „${esc((title || text || url).slice(0, 120))}“ – tippe beim richtigen Treffer auf „+ Hinzufügen“.</div>`;
+}
+
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "14";
+const APP_VERSION = "16";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
@@ -1498,6 +1856,8 @@ function showQR(fresh) {
   try { await load(); } catch (e) { toast(e.message, true); }
   await Sync.loadLocal(); Sync.status();
   if (!(await connectFromHash()) && Sync.token) await Sync.run();
+  try { if (localStorage.getItem("watchlist-view") === "shop" && !location.search.includes("share_")) setView("shop"); } catch {}
+  if (MODE === "local") handleShare();
   // Handy-App automatisch auf den neuesten Stand bringen, wenn die .exe aktualisiert wurde
   if (MODE === "server" && Sync.token && settings.pagesUrl && settings.deployedVersion !== APP_VERSION) {
     api("POST", "/api/deploy").then(r => { settings.pagesUrl = r.url; settings.deployedVersion = APP_VERSION; }).catch(() => {});
