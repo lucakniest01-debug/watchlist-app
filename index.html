@@ -12,6 +12,12 @@
 <meta name="theme-color" content="#0f1115">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+  /* Schieberegler im ganzen Programm: dunkel, abgerundet, mit Farbverlauf beim Drüberfahren */
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #34303b; border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ff5c5c, #ff9f43); border: 3px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-corner { background: transparent; }
   :root {
     --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2a2f3a;
     --text: #e8eaf0; --muted: #8b93a7; --accent: #ff5c5c; --accent2: #ff8a5c;
@@ -263,7 +269,14 @@
   /* Regalbrett */
   .rack::after { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; height: 16px; border-radius: 3px;
     background: linear-gradient(180deg, #3a2a20 0%, #2a1d16 55%, #1a120d 100%); box-shadow: 0 10px 18px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,220,180,.15); z-index: 0; }
-  .shelf .row { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 14px; overflow-x: auto; padding: 16px 8px 20px; scroll-snap-type: x proximity; position: relative; z-index: 1; scrollbar-width: thin; }
+  .shelf .row { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 14px; overflow-x: auto; padding: 16px 8px 20px; scroll-snap-type: x proximity; position: relative; z-index: 1; }
+  /* Schieberegler im Regal: schlanke Leuchtleiste, erscheint beim Drüberfahren */
+  .shelf .row::-webkit-scrollbar { height: 7px; }
+  .shelf .row::-webkit-scrollbar-track { background: transparent; margin: 0 14px; }
+  .shelf .row::-webkit-scrollbar-thumb { background: rgba(255,255,255,.07); border-radius: 10px; transition: background .3s; }
+  .rack:hover .row::-webkit-scrollbar-track { background: rgba(255,255,255,.04); }
+  .rack:hover .row::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #ff5c5c, #ff9f43); box-shadow: 0 0 10px rgba(255,120,80,.6); }
+  .shelf .row::-webkit-scrollbar-thumb:active { background: linear-gradient(90deg, #ff7676, #ffb766); }
   .case { position: relative; flex: none; width: 128px; aspect-ratio: 2/3; border: none; padding: 0; background: none; cursor: pointer;
     transform-style: preserve-3d; transform: rotateY(-14deg); transform-origin: left center; transition: transform .25s ease, filter .25s; scroll-snap-align: start; filter: brightness(.92); }
   .case:hover, .case:focus-visible { transform: rotateY(0deg) translateY(-10px) scale(1.05); filter: brightness(1.05); z-index: 2; outline: none; }
@@ -359,7 +372,7 @@
   .cin-yt-key { margin: auto; max-width: 34em; text-align: center; display: flex; flex-direction: column; gap: .8em; }
   .cin-yt-key p { margin: 0; color: #d6c9cf; line-height: 1.5; }
   .cin-yt-key .cin-actions { justify-content: center; margin: 0; }
-  .cin-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr)); gap: .9em; align-content: start; scrollbar-width: thin; }
+  .cin-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr)); gap: .9em; align-content: start; }
   .cin-item { background: none; border: none; color: inherit; font: inherit; padding: 0; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: .3em; }
   .cin-item img, .cin-item .noimg { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: .3em; background: #222; display: flex; align-items: center; justify-content: center; font-size: 2em; transition: transform .15s; box-shadow: 0 .3em 1em rgba(0,0,0,.5); }
   .cin-item:hover img { transform: scale(1.05); }
@@ -1906,13 +1919,26 @@ const Room = (() => {
     const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t;
   }
   function carpet() {
-    const t = canvasTex(256, 256, (g, w, h) => {
-      g.fillStyle = "#301a2c"; g.fillRect(0, 0, w, h);
-      for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${150 + Math.random() * 80},${90 + Math.random() * 60},${180 + Math.random() * 60},${Math.random() * .12})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-      g.strokeStyle = "rgba(255,140,90,.18)"; g.lineWidth = 3;
-      for (let k = 0; k < 4; k++) { g.beginPath(); g.arc(64 + (k % 2) * 128, 64 + (k >> 1) * 128, 34, 0, Math.PI * 2); g.stroke(); }
+    // Klassischer Kino-/Videotheken-Teppich: dunkler Grund mit bunten Konfetti-Formen
+    const t = canvasTex(512, 512, (g, w, h) => {
+      g.fillStyle = "#1c1029"; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 6000; i++) { g.fillStyle = `rgba(${120 + Math.random() * 80},${70 + Math.random() * 60},${150 + Math.random() * 80},${Math.random() * .09})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      const cols = ["#ff5c7a", "#ffb347", "#4fd1c5", "#9f7aea", "#63b3ed"];
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      const draw = (fn) => { for (const dx of [-w, 0, w]) for (const dy of [-h, 0, h]) { g.save(); g.translate(dx, dy); fn(); g.restore(); } };
+      for (let i = 0; i < 46; i++) {
+        const x = rnd() * w, y = rnd() * h, c = cols[i % cols.length], kind = i % 4, rot = rnd() * 6, sz = 10 + rnd() * 12;
+        draw(() => {
+          g.save(); g.translate(x, y); g.rotate(rot); g.strokeStyle = c; g.fillStyle = c; g.globalAlpha = .55; g.lineWidth = 4; g.lineCap = "round";
+          if (kind === 0) { g.beginPath(); g.arc(0, 0, sz * .6, 0, 7); g.stroke(); }
+          else if (kind === 1) { g.beginPath(); g.moveTo(-sz, 0); for (let k = -sz; k <= sz; k += 4) g.lineTo(k, Math.sin(k / 4) * 5); g.stroke(); }
+          else if (kind === 2) { g.beginPath(); g.moveTo(0, -sz * .7); g.lineTo(sz * .6, sz * .5); g.lineTo(-sz * .6, sz * .5); g.closePath(); g.stroke(); }
+          else { g.fillRect(-sz * .5, -2.5, sz, 5); g.fillRect(-2.5, -sz * .5, 5, sz); }
+          g.restore();
+        });
+      }
     });
-    t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(8, 8); return t;
+    t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(7, 7); return t;
   }
   function wood(dark) {
     return canvasTex(256, 64, (g, w, h) => {
@@ -1960,14 +1986,27 @@ const Room = (() => {
     scene.add(bulbs);
     // Pflanzen in den Ecken
     [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([x, z], i) => plant(x * (HALF - .55), z * (HALF - .55), i % 2));
-    plant(-.9, -3.4, 1); plant(.9, -3.4, 1);
+    plant(-1.55, -3.4, 1); plant(1.55, -3.4, 1);
     // Popcorn-Maschine und Arcade-Automat seitlich vom Eingang
     popcornMachine(-3.4, 4.6, Math.atan2(3.4, -4.6));
     arcadeCabinet(3.4, 4.6, Math.atan2(-3.4, -4.6));
     // Sitzbank vor der Mitte
+    // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
     const bench = new T.Group();
-    const seat = new T.Mesh(new T.BoxGeometry(1.8, .12, .5), new T.MeshLambertMaterial({ color: 0x8a2a3a })); seat.position.y = .45; bench.add(seat);
-    for (const sx of [-.75, .75]) { const leg = new T.Mesh(new T.BoxGeometry(.08, .4, .4), new T.MeshLambertMaterial({ color: 0x222222 })); leg.position.set(sx, .2, 0); bench.add(leg); }
+    const velvet = canvasTex(256, 64, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#b3263d"); gr.addColorStop(.5, "#8e1c30"); gr.addColorStop(1, "#6a1222"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      for (let i = 0; i < 900; i++) { c.fillStyle = `rgba(0,0,0,${Math.random() * .12})`; c.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+      for (let x = 16; x < w; x += 32) for (const y of [h * .32, h * .7]) { const gx = x + (y > h / 2 ? 16 : 0); const r = c.createRadialGradient(gx, y, 0, gx, y, 9); r.addColorStop(0, "rgba(0,0,0,.55)"); r.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = r; c.fillRect(gx - 10, y - 10, 20, 20); c.fillStyle = "#5a0e1c"; c.beginPath(); c.arc(gx, y, 2.2, 0, 7); c.fill(); }
+    });
+    const velvetM = new T.MeshLambertMaterial({ map: velvet }), frameM = new T.MeshLambertMaterial({ map: wood(true) }), metal = new T.MeshLambertMaterial({ color: 0xc9c2b8 });
+    const base = new T.Mesh(new T.BoxGeometry(1.9, .1, .58), frameM); base.position.y = .32; bench.add(base);
+    const cushion = new T.Mesh(new T.BoxGeometry(1.82, .13, .52), velvetM); cushion.position.y = .43; bench.add(cushion);
+    const roll = new T.Mesh(new T.CylinderGeometry(.065, .065, 1.82, 16), velvetM); roll.rotation.z = Math.PI / 2; roll.position.set(0, .44, .26); bench.add(roll);
+    const roll2 = roll.clone(); roll2.position.z = -.26; bench.add(roll2);
+    for (const sx of [-.82, .82]) for (const sz of [-.22, .22]) {
+      const leg = new T.Mesh(new T.CylinderGeometry(.025, .018, .28, 10), metal); leg.position.set(sx, .14, sz); bench.add(leg);
+      const foot = new T.Mesh(new T.CylinderGeometry(.04, .04, .015, 12), metal); foot.position.set(sx, .008, sz); bench.add(foot);
+    }
     bench.position.set(0, 0, -3.4); scene.add(bench); colliders.push({ x: 0, z: -3.4, r: .95 });
   }
   // Blatt-Textur: Blattform mit Verlauf, Mittelrippe und Seitenadern (transparent drumherum)
@@ -2697,7 +2736,14 @@ const Room = (() => {
     // Boden, Decke, Wände
     const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ map: carpet() }));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
-    const ceil = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ color: 0x1b1d24 }));
+    const ceilT = canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = "#2a2730"; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * .25})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+      g.fillStyle = "#121116"; g.fillRect(0, 0, w, 6); g.fillRect(0, 0, 6, h);
+      g.fillStyle = "rgba(255,255,255,.06)"; g.fillRect(6, 6, w - 6, 2); g.fillRect(6, 6, 2, h - 6);
+    });
+    ceilT.wrapS = ceilT.wrapT = T.RepeatWrapping; ceilT.repeat.set(HALF * 2 / 1.2, HALF * 2 / 1.2);
+    const ceil = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ map: ceilT }));
     ceil.rotation.x = Math.PI / 2; ceil.position.y = 3.3; scene.add(ceil);
     const wallT = canvasTex(512, 256, (g, w, h) => {
       const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#1d1a24"); gr.addColorStop(1, "#2a2532"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
@@ -3138,7 +3184,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "31";
+const APP_VERSION = "32";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
