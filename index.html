@@ -2530,7 +2530,7 @@ const Room = (() => {
       if (f) { if (f.tagName === "VIDEO") { f.pause(); try { URL.revokeObjectURL(f.src); } catch {} } f.src = "about:blank"; f.remove(); }
     }
     function show() { $("#cine").classList.add("show"); view = "menu"; render(); }
-    function hide() { closeRealYT(); stopMedia(); clearInterval(streamTimer); $("#cine").classList.remove("show", "st-on"); el().innerHTML = ""; }
+    function hide() { closeRealYT(); stopMedia(); if ($("#cine").classList.contains("st-on") && MODE === "server") api("POST", "/api/kinowindow/close").catch(() => {}); clearInterval(streamTimer); $("#cine").classList.remove("show", "st-on"); el().innerHTML = ""; }
     function place() {}
     function render() {
       closeRealYT(); stopMedia(); setLights(false); $("#cine").classList.remove("yt-on", "st-on"); clearInterval(streamTimer);
@@ -3037,7 +3037,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "28";
+const APP_VERSION = "29";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
