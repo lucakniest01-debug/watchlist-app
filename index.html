@@ -217,6 +217,27 @@
     border: 1px solid #3a2a33; }
   .shophero::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 2px, transparent 2px 46px); pointer-events: none; }
   .herotext { flex: 1; position: relative; z-index: 1; }
+  /* Tipp-Banner mit großem Hintergrundbild */
+  .shophero.spot { min-height: 330px; align-items: flex-end; padding: 34px 36px 40px; border-color: #2c2630; background: #0d0b10; }
+  .spotbg { position: absolute; inset: 0; background-size: cover; background-position: center 25%; opacity: 0; transition: opacity .9s ease, transform 9s ease; transform: scale(1.04); }
+  .spotbg.on { opacity: 1; transform: scale(1); }
+  .spotbg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,8,13,.97) 0%, rgba(10,8,13,.86) 34%, rgba(10,8,13,.25) 70%, rgba(10,8,13,.5) 100%), linear-gradient(0deg, rgba(10,8,13,.95), transparent 45%); }
+  .shophero.spot::after { display: none; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: #ffb199; margin-bottom: 10px; }
+  .shophero.spot .herotext { display: flex; gap: 22px; align-items: flex-end; max-width: 820px; animation: spotIn .6s ease; }
+  .spotposter { width: 132px; flex: none; aspect-ratio: 2/3; border-radius: 8px; object-fit: cover; box-shadow: 0 18px 40px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.08); cursor: pointer; transition: transform .25s; }
+  .spotposter:hover { transform: translateY(-4px) rotate(-1.5deg); }
+  .shophero.spot h2 { font-size: 36px; line-height: 1.1; margin: 0 0 8px; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+  .spotmeta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; color: #d8d0dc; }
+  .spotmeta .star { color: #ffd36b; font-weight: 700; }
+  .shophero.spot p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: #cfc7d4; max-width: 560px; font-size: 14.5px; line-height: 1.5; }
+  .spotbtns { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .spotbtns .btn { padding: 10px 18px; font-size: 14.5px; }
+  .shophero.spot .herobtn { position: absolute; top: 22px; right: 22px; padding: 10px 18px; font-size: 14px; }
+  .spotdots { position: absolute; right: 30px; bottom: 22px; display: flex; gap: 7px; z-index: 2; }
+  .spotdots button { width: 9px; height: 9px; border-radius: 9px; border: none; padding: 0; background: rgba(255,255,255,.3); cursor: pointer; transition: width .3s, background .3s; }
+  .spotdots button.on { width: 26px; background: linear-gradient(90deg, #ff5c5c, #ff9f43); }
+  @keyframes spotIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   .shophero h2 { margin: 0 0 6px; font-size: 26px; letter-spacing: .3px; }
   .shophero p { margin: 0; color: #c9c2cf; max-width: 560px; }
   .herobtn { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 14px 22px; font-size: 16px; border-radius: 14px; box-shadow: 0 10px 30px rgba(255,92,92,.35); }
@@ -229,7 +250,10 @@
   .mixone:hover { border-color: var(--accent); transform: rotate(-20deg); transition: transform .2s; }
   .arrow-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 20px; line-height: 1; padding: 0 0 2px; }
   .arrow-btn:hover { border-color: var(--accent); }
-  .rack { position: relative; perspective: 1400px; border-radius: 14px; background: radial-gradient(ellipse 60% 70% at 50% 0%, rgba(255,200,140,.10), transparent 70%), linear-gradient(#141218, #110f14); }
+  .rack { position: relative; perspective: 1400px; border-radius: 14px; overflow: hidden;
+    background: radial-gradient(ellipse 22% 80% at 15% -10%, rgba(255,214,160,.13), transparent 70%), radial-gradient(ellipse 22% 80% at 50% -10%, rgba(255,214,160,.13), transparent 70%), radial-gradient(ellipse 22% 80% at 85% -10%, rgba(255,214,160,.13), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, transparent 1px 64px), linear-gradient(#17141b, #0f0d12); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 -30px 40px rgba(0,0,0,.35); }
+  .rack::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,226,180,.5) 15%, rgba(255,226,180,.5) 85%, transparent); filter: blur(1px); z-index: 2; }
   .case .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 8px 8px; background: linear-gradient(transparent, rgba(0,0,0,.88)); display: flex; flex-direction: column; gap: 1px;
     opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s; text-align: left; }
   .case .cap b { font-size: 12px; line-height: 1.2; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -245,6 +269,14 @@
   .case:hover, .case:focus-visible { transform: rotateY(0deg) translateY(-10px) scale(1.05); filter: brightness(1.05); z-index: 2; outline: none; }
   .case .cover { position: absolute; inset: 0; border-radius: 3px 6px 6px 3px; overflow: hidden; box-shadow: 6px 10px 18px rgba(0,0,0,.55); background: #222; }
   .case .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .case { -webkit-box-reflect: below 3px linear-gradient(transparent 82%, rgba(255,255,255,.14)); }
+  .case .vote { position: absolute; right: 6px; top: 6px; z-index: 2; font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: rgba(10,10,14,.78); color: #ffd36b; backdrop-filter: blur(4px); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .case.have .vote { display: none; }
+  .case .rk { position: absolute; left: -52px; bottom: -6px; font-size: 118px; font-weight: 900; line-height: 1; color: #0f0d12; -webkit-text-stroke: 3px rgba(255,180,150,.75); letter-spacing: -8px; z-index: -1; pointer-events: none; font-family: "Segoe UI Black", "Segoe UI", system-ui, sans-serif; }
+  .case.ranked { margin-left: 50px; }
+  .case.ranked:first-child { margin-left: 60px; }
+  .skel { flex: none; width: 128px; aspect-ratio: 2/3; border-radius: 4px 7px 7px 4px; background: linear-gradient(100deg, #1b1820 30%, #2a2530 50%, #1b1820 70%); background-size: 300% 100%; animation: shimmer 1.4s linear infinite; transform: rotateY(-14deg); transform-origin: left center; }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
   /* Glanz der Kunststoffhülle */
   .case .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 70%, rgba(255,255,255,.06) 100%); }
   .case .spine { position: absolute; top: 0; bottom: 0; left: 0; width: 14px; transform: rotateY(90deg) translateZ(7px) translateX(-7px); transform-origin: left center;
@@ -275,6 +307,7 @@
 
   /* ---------- 3D-Raum ---------- */
   #room { position: fixed; inset: 0; z-index: 18; display: none; background: #0b0c10; touch-action: none; user-select: none; }
+  #room::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%); }
   #room.open { display: block; }
   body.in-room { overflow: hidden; }
   body.in-room #btnAdd { display: none; }
@@ -418,7 +451,8 @@
     .mfoot { position: sticky; bottom: 0; background: var(--panel); }
     .viewsw { order: 11; flex: 1 1 100%; display: flex; margin: 0; }
     .viewsw button { flex: 1; padding: 8px 6px; }
-    .case { width: 100px; }
+    .case, .skel { width: 100px; } .case .rk { font-size: 88px; left: -38px; } .case.ranked { margin-left: 38px; }
+    .shophero.spot { min-height: 0; padding: 70px 18px 40px; } .shophero.spot h2 { font-size: 24px; } .spotposter { width: 86px; } .shophero.spot .herotext { gap: 14px; }
     .shophero { flex-direction: column; align-items: stretch; padding: 18px; gap: 14px; }
     .shophero h2 { font-size: 21px; } .shophero p { font-size: 14px; }
     .arrow-btn { display: none; }
@@ -450,9 +484,11 @@
   <div id="banner"></div>
   <div class="grid" id="grid"></div>
   <section id="shop">
-    <div class="shophero">
-      <div class="herotext"><h2>🎬 Videothek</h2><p>Stöbere durch die Regale, dreh die Hüllen um und stell, was dich reizt, direkt auf deine Watchlist.</p></div>
+    <div class="shophero" id="shopHero">
+      <div class="spotbg" id="spotBg"></div>
+      <div class="herotext" id="spotText"><div class="kicker">🎬 Videothek</div><h2>Stöbern, umdrehen, merken</h2><p>Stöbere durch die Regale, dreh die Hüllen um und stell, was dich reizt, direkt auf deine Watchlist.</p></div>
       <button class="btn primary herobtn" id="enterRoom">🚶 Raum betreten<small>in 3D durch die Videothek laufen</small></button>
+      <div class="spotdots" id="spotDots"></div>
     </div>
     <div class="shopbar" id="shopBar"></div>
     <div id="shopShelves"></div>
@@ -1625,7 +1661,7 @@ const Shop = (() => {
   // Regal auf der Videothek-Seite neu laden (nach dem Mischen)
   function refreshShelf(id) {
     const row = document.querySelector(`[data-row="${id}"]`); if (!row) return;
-    delete shelfState[id]; row.innerHTML = `<div class="hint loadrow"><span class="spin"></span></div>`; row.scrollLeft = 0; loadMore(id);
+    delete shelfState[id]; row.innerHTML = SKEL; row.scrollLeft = 0; loadMore(id);
   }
   function reshuffle() {
     seeds = {};
@@ -1663,8 +1699,9 @@ const Shop = (() => {
   const fits = sh => kind === "all" ? true : kind === "anime" ? ["pop", "new", "top"].includes(sh.id) : !!sh[ENGL[kind]] && sh.id !== "anime";
   const onList = r => items.find(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
   function caseHtml(r, key) {
-    const have = onList(r);
-    return `<button class="case ${have ? "have" : ""}" data-key="${key}" title="${esc(r.title)}${r.year ? " (" + r.year + ")" : ""}">
+    const have = onList(r), [sid, idx] = key.split(":"), rank = sid === "pop" && +idx < 10 ? +idx + 1 : 0;
+    return `<button class="case ${have ? "have" : ""} ${rank ? "ranked" : ""}" data-key="${key}" title="${esc(r.title)}${r.year ? " (" + r.year + ")" : ""}">
+      ${rank ? `<span class="rk">${rank}</span>` : ""}${r.vote ? `<span class="vote">★ ${r.vote.toFixed(1)}</span>` : ""}
       <span class="cover"><img loading="lazy" src="${esc(r.poster)}" alt="${esc(r.title)}"><span class="cap"><b>${esc(r.title)}</b>${r.year ? `<i>${esc(r.year)}${r.vote ? " · ★ " + r.vote.toFixed(1) : ""}</i>` : ""}</span></span>
       <span class="spine"></span>
       ${have ? `<span class="tag">✓</span>` : ""}
@@ -1683,7 +1720,8 @@ const Shop = (() => {
         <div class="shelfhead"><h3>${sh.name}</h3><span class="spacer"></span>
           <button class="mixone" data-mix="${sh.id}" title="Dieses Regal neu mischen">🔀</button>
           <button class="arrow-btn" data-dir="-1" aria-label="zurück">‹</button><button class="arrow-btn" data-dir="1" aria-label="weiter">›</button></div>
-        <div class="rack"><div class="row" data-row="${sh.id}"><div class="hint loadrow"><span class="spin"></span></div></div></div></section>`).join("");
+        <div class="rack"><div class="row" data-row="${sh.id}">${SKEL}</div></div></section>`).join("");
+    loadSpot();
     observer = new IntersectionObserver(es => es.forEach(e => {
       if (!e.isIntersecting) return;
       const id = e.target.dataset.shelf; observer.unobserve(e.target); loadMore(id);
@@ -1706,7 +1744,7 @@ const Shop = (() => {
       st.items.push(...fresh);
       if (!got.length || st.page >= 5) st.done = true;
       if (!row) return;
-      row.querySelector(".loadrow")?.remove();
+      row.querySelector(".loadrow")?.remove(); row.querySelectorAll(".skel").forEach(x => x.remove());
       if (!st.items.length) { row.closest(".shelf").style.display = "none"; return; }
       row.insertAdjacentHTML("beforeend", fresh.map((r, i) => caseHtml(r, `${id}:${st.items.length - fresh.length + i}`)).join(""));
       if (!row._wired) {
@@ -1717,6 +1755,41 @@ const Shop = (() => {
     } catch (e) {
       if (row) row.innerHTML = `<div class="hint" style="color:#ff7b7b">${esc(e.message)}</div>`;
     } finally { st.busy = false; }
+  }
+
+  const SKEL = `<div class="loadrow" style="display:contents">${'<span class="skel"></span>'.repeat(10)}</div>`;
+  // ----- Tipp-Banner: wechselnde Empfehlungen mit großem Hintergrundbild -----
+  let spot = [], spotI = 0, spotTimer = null, spotSig = "";
+  async function loadSpot() {
+    const sh = SHELVES.filter(fits)[0]; if (!sh) return;
+    const sig = JSON.stringify([kind, mineActive(), settings.myServices, sh.id, offsets[sh.id] || 0]);
+    if (sig === spotSig && spot.length) return; spotSig = sig;
+    let list = []; try { list = await fetchShelf(sh, 1); } catch {}
+    spot = list.filter(r => r.backdrop).slice(0, 6);
+    if (!spot.length) { $("#shopHero").classList.remove("spot"); return; }
+    spotI = 0; showSpot();
+  }
+  function showSpot() {
+    const r = spot[spotI], h = $("#shopHero"); if (!r) return;
+    h.classList.add("spot");
+    const bg = $("#spotBg"); bg.classList.remove("on");
+    const im = new Image(); im.onload = () => { if (spot[spotI] !== r) return; bg.style.backgroundImage = `url('${r.backdrop.replace("/w780/", "/w1280/")}')`; void bg.offsetWidth; bg.classList.add("on"); };
+    im.src = r.backdrop.replace("/w780/", "/w1280/");
+    const have = onList(r);
+    $("#spotText").innerHTML = `${r.poster ? `<img class="spotposter" src="${esc(r.big || r.poster)}" alt="" id="spotPoster">` : ""}
+      <div><div class="kicker">🎬 Tipp aus der Videothek · ${spotI + 1}/${spot.length}</div><h2>${esc(r.title)}</h2>
+      <div class="spotmeta"><span class="badge ${r.kind}">${KINDS[r.kind]}</span>${r.year ? `<span>${esc(r.year)}</span>` : ""}${r.vote ? `<span class="star">★ ${r.vote.toFixed(1)}</span>` : ""}</div>
+      <p>${esc(r.overview || "")}</p>
+      <div class="spotbtns"><button class="btn primary" id="spotOpen">▶ Hülle ansehen</button>${have ? `<button class="btn" disabled>✓ Auf deiner Liste</button>` : `<button class="btn" id="spotAdd">+ Auf die Watchlist</button>`}</div></div>`;
+    $("#spotDots").innerHTML = spot.map((_, i) => `<button class="${i === spotI ? "on" : ""}" data-i="${i}" aria-label="Tipp ${i + 1}"></button>`).join("");
+    $("#spotDots").querySelectorAll("button").forEach(b => b.onclick = () => { spotI = +b.dataset.i; showSpot(); });
+    $("#spotOpen").onclick = () => openItem(r); const sp = $("#spotPoster"); if (sp) sp.onclick = () => openItem(r);
+    const ad = $("#spotAdd"); if (ad) ad.onclick = async () => { ad.disabled = true; ad.innerHTML = `<span class="spin"></span>`; try { await addSearchResult(r, r.kind); markCases(); showSpot(); } catch (e) { toast(e.message, true); ad.disabled = false; ad.textContent = "+ Auf die Watchlist"; } };
+    clearTimeout(spotTimer);
+    spotTimer = setTimeout(function tick() {
+      if (VIEW !== "shop" || $("#shopHero").matches(":hover") || document.querySelector(".overlay.open")) { spotTimer = setTimeout(tick, 2000); return; }
+      spotI = (spotI + 1) % spot.length; showSpot();
+    }, 9000);
   }
 
   // Hülle öffnen: Vorderseite → umdrehen → Rückseite mit Infos
@@ -1818,6 +1891,7 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
 const Room = (() => {
+  let maxAniso = 4, blobTex = null, poolTex = null;
   let T = null, renderer, scene, camera, store, raf = 0, running = false, last = 0, builtSig = "";
   let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
   let fixedPicks = [], colliders = [], arcade = null, posterGroup = null, popcorn = null;
@@ -2603,6 +2677,9 @@ const Room = (() => {
     renderer = new T.WebGLRenderer({ canvas: $("#roomCanvas"), antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.outputColorSpace = T.SRGBColorSpace;
+    // Filmischer Look: weichere Lichter, satte Farben
+    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.5;
+    maxAniso = renderer.capabilities.getMaxAnisotropy();
     scene = new T.Scene();
     scene.background = new T.Color(0x0c0a10);
     scene.fog = new T.Fog(0x0c0a10, 11, 26);
@@ -2612,6 +2689,9 @@ const Room = (() => {
 
     hemi = new T.HemisphereLight(0xffe9d2, 0x1c1426, 0.95); scene.add(hemi);
     const sun = new T.DirectionalLight(0xfff0e0, .45); sun.position.set(3, 8, 2); scene.add(sun);
+    // weicher Schatten unter Möbeln und runder Lichtfleck
+    blobTex = canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(0,0,0,.85)"); gr.addColorStop(.55, "rgba(0,0,0,.45)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+    poolTex = canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.4, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
     glowTex = canvasTex(256, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,120,90,.55)"); gr.addColorStop(.5, "rgba(255,90,90,.15)"); gr.addColorStop(1, "rgba(255,90,90,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 
     // Boden, Decke, Wände
@@ -2619,7 +2699,13 @@ const Room = (() => {
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
     const ceil = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ color: 0x1b1d24 }));
     ceil.rotation.x = Math.PI / 2; ceil.position.y = 3.3; scene.add(ceil);
-    const wallMat = new T.MeshLambertMaterial({ color: 0x23202b });
+    const wallT = canvasTex(512, 256, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#1d1a24"); gr.addColorStop(1, "#2a2532"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      for (let x = 0; x < w; x += 128) { g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(x, 0, 3, h); g.fillStyle = "rgba(255,255,255,.035)"; g.fillRect(x + 3, 0, 2, h); }
+      for (let i = 0; i < 1800; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * .025})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
+    });
+    wallT.wrapS = T.RepeatWrapping; wallT.repeat.set(HALF * 2 / 3.2, 1);
+    const wallMat = new T.MeshLambertMaterial({ map: wallT });
     for (let i = 0; i < 4; i++) {
       const w = new T.Mesh(new T.PlaneGeometry(HALF * 2, 3.3), wallMat);
       const a = i * Math.PI / 2; w.position.set(Math.sin(a) * -HALF, 1.65, Math.cos(a) * -HALF); w.rotation.y = a; scene.add(w);
@@ -2635,6 +2721,9 @@ const Room = (() => {
     const lamp = new T.MeshBasicMaterial({ color: 0xfff6e6 });
     for (let x = -5; x <= 5; x += 5) for (let z = -5; z <= 5; z += 5) {
       const l = new T.Mesh(new T.PlaneGeometry(1.6, .35), lamp); l.rotation.x = Math.PI / 2; l.position.set(x, 3.29, z); scene.add(l);
+      // Lichthof an der Decke und Lichtkegel auf dem Boden
+      const halo = new T.Mesh(new T.PlaneGeometry(3.2, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffe2b8, transparent: true, opacity: .35, depthWrite: false, blending: T.AdditiveBlending })); halo.rotation.x = Math.PI / 2; halo.position.set(x, 3.28, z); scene.add(halo);
+      const pool = new T.Mesh(new T.PlaneGeometry(4.2, 3.2), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .16, depthWrite: false, blending: T.AdditiveBlending })); pool.rotation.x = -Math.PI / 2; pool.position.set(x, .004, z); scene.add(pool);
     }
     // Teppich-Insel mit Logo in der Mitte
     const rug = new T.Mesh(new T.CircleGeometry(2.2, 48), new T.MeshBasicMaterial({ map: canvasTex(512, 512, (g, w, h) => {
@@ -2654,6 +2743,10 @@ const Room = (() => {
 
     store = new T.Group(); scene.add(store);
     buildDecor(); buildCinema(); buildStoreDoor();
+    // Kontaktschatten unter Pflanzen, Bank, Automaten
+    for (const c of colliders) blob(scene, c.x, c.z, c.r * 2.4, c.r * 2.4, .7);
+    // Leuchtende Flächen (Schilder, Neon, Hüllen-Cover) nicht vom Tonemapping abdunkeln lassen
+    scene.traverse(o => { const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []; for (const m of ms) if (m.isMeshBasicMaterial && m.blending !== T.AdditiveBlending) m.toneMapped = false; });
     pickables.push(...fixedPicks.filter(m => m.userData.cinema));
     addEventListener("resize", resize);
     wireControls();
@@ -2667,15 +2760,20 @@ const Room = (() => {
 
   // Ein Regal mit Schild; gibt die Plätze für Hüllen zurück
   const shared = {};
+  function blob(parent, x, z, w, d, op = .6, rot = 0) {
+    const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: blobTex, transparent: true, opacity: op, depthWrite: false, toneMapped: false }));
+    m.rotation.x = -Math.PI / 2; m.rotation.z = rot; m.position.set(x, .006, z); m.renderOrder = -1; parent.add(m); return m;
+  }
   function unit(x, z, rotY, label) {
     const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotY;
+    blob(g, 0, .05, UNIT_W + .9, 1.5, .75);
     shared.wood = shared.wood || new T.MeshLambertMaterial({ map: wood(false) });
     shared.dark = shared.dark || new T.MeshLambertMaterial({ map: wood(true) });
     const back = new T.Mesh(new T.BoxGeometry(UNIT_W, 2.25, .05), shared.dark); back.position.set(0, 1.12, -.2); g.add(back);
     for (const y of BOARD_Y) { const b = new T.Mesh(new T.BoxGeometry(UNIT_W, .035, .4), shared.wood); b.position.set(0, y - .02, 0); g.add(b); }
     const top = new T.Mesh(new T.BoxGeometry(UNIT_W, .04, .42), shared.wood); top.position.set(0, 2.26, 0); g.add(top);
     for (const sx of [-1, 1]) { const s = new T.Mesh(new T.BoxGeometry(.05, 2.3, .42), shared.wood); s.position.set(sx * UNIT_W / 2, 1.13, 0); g.add(s); }
-    const sign = new T.Mesh(new T.PlaneGeometry(3.2, .5), new T.MeshBasicMaterial({ map: signTex(label) })); sign.position.set(0, 2.62, -.17); g.add(sign);
+    const sign = new T.Mesh(new T.PlaneGeometry(3.2, .5), new T.MeshBasicMaterial({ map: signTex(label), toneMapped: false })); sign.position.set(0, 2.62, -.17); g.add(sign);
     shared.btnTex = shared.btnTex || canvasTex(256, 256, (c, w, hh) => {
       const gr = c.createLinearGradient(0, 0, w, hh); gr.addColorStop(0, "#ff4d6d"); gr.addColorStop(1, "#ff9f43");
       c.fillStyle = gr; c.beginPath(); c.arc(w / 2, hh / 2, 120, 0, 7); c.fill();
@@ -2684,14 +2782,14 @@ const Room = (() => {
       c.fillStyle = "#fff"; c.beginPath(); c.moveTo(w / 2 + 50, hh / 2 - 92); c.lineTo(w / 2 + 92, hh / 2 - 40); c.lineTo(w / 2 + 30, hh / 2 - 36); c.fill();
       c.font = "bold 30px Segoe UI, sans-serif"; c.textAlign = "center"; c.fillText("MISCHEN", w / 2, hh / 2 + 92);
     });
-    const btn = new T.Mesh(new T.CircleGeometry(.2, 32), new T.MeshBasicMaterial({ map: shared.btnTex, transparent: true }));
+    const btn = new T.Mesh(new T.CircleGeometry(.2, 32), new T.MeshBasicMaterial({ map: shared.btnTex, transparent: true, toneMapped: false }));
     btn.position.set(UNIT_W / 2 - .18, 2.62, -.15); g.add(btn); g.userData.btn = btn;
     const glow = new T.Mesh(new T.PlaneGeometry(4.6, 1.3), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.62, -.19); g.add(glow);
     // warme LED-Leiste unter dem Deckbrett
-    shared.led = shared.led || new T.MeshBasicMaterial({ color: 0xfff1d6 });
+    shared.led = shared.led || new T.MeshBasicMaterial({ color: 0xfff1d6, toneMapped: false });
     const led = new T.Mesh(new T.BoxGeometry(UNIT_W - .12, .015, .02), shared.led); led.position.set(0, 2.225, .17); g.add(led);
     // leuchtende Vorderkanten der Bretter
-    shared.edge = shared.edge || new T.MeshBasicMaterial({ color: 0xff7a59, transparent: true, opacity: .7 });
+    shared.edge = shared.edge || new T.MeshBasicMaterial({ color: 0xff7a59, transparent: true, opacity: .7, toneMapped: false });
     for (const y of BOARD_Y) { const e = new T.Mesh(new T.PlaneGeometry(UNIT_W - .06, .012), shared.edge); e.position.set(0, y - .02, .201); g.add(e); }
     // Licht pro Regal (nur am PC, am Handy wäre es zu langsam)
     if (!matchMedia("(pointer: coarse)").matches) { const l = new T.PointLight(0xffd9b0, 4.5, 4.5, 1.6); l.position.set(0, 2.05, .9); g.add(l); }
@@ -2706,7 +2804,7 @@ const Room = (() => {
     if (row >= ROWS) return;
     shared.box = shared.box || new T.BoxGeometry(CASE_W, CASE_H, CASE_D);
     shared.plastic = shared.plastic || new T.MeshLambertMaterial({ color: 0x15161a });
-    const front = new T.MeshBasicMaterial({ color: 0x444444 });
+    const front = new T.MeshBasicMaterial({ color: 0x444444, toneMapped: false });
     const mats = [shared.plastic, shared.plastic, shared.plastic, shared.plastic, front, shared.plastic];
     const m = new T.Mesh(shared.box, mats);
     const x = -UNIT_W / 2 + .2 + col * ((UNIT_W - .4) / PER_ROW) + ((UNIT_W - .4) / PER_ROW) / 2;
@@ -2715,14 +2813,14 @@ const Room = (() => {
     m.userData = { r, base: m.position.z, unit: u.idx };
     g.add(m); pickables.push(m); u.cases.push(m);
     const url = r.big ? r.big.replace("/w500/", "/w342/") : r.poster;
-    const apply = t => { t.colorSpace = T.SRGBColorSpace; front.map = t; front.color.set(0xffffff); front.needsUpdate = true; };
+    const apply = t => { t.colorSpace = T.SRGBColorSpace; t.anisotropy = maxAniso; front.map = t; front.color.set(0xffffff); front.needsUpdate = true; };
     if (url) loader().load(url, apply, undefined, () => apply(fallbackCover(r)));
     else apply(fallbackCover(r));
     if (Shop.onList(r)) markOne(m);
   }
   function markOne(m) {
     if (m.userData.check) return;
-    shared.check = shared.check || new T.MeshBasicMaterial({ map: checkTex(), transparent: true });
+    shared.check = shared.check || new T.MeshBasicMaterial({ map: checkTex(), transparent: true, toneMapped: false });
     const c = new T.Mesh(new T.PlaneGeometry(.09, .09), shared.check); c.position.set(CASE_W / 2 - .04, CASE_H / 2 - .04, CASE_D / 2 + .003);
     m.add(c); m.userData.check = c;
   }
@@ -3040,7 +3138,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "30";
+const APP_VERSION = "31";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
