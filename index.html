@@ -301,11 +301,6 @@
   #cineYT, #cineKBAlign, #cineKBHome, #cineKBClose { display: none; } #cine.yt-on #cineYT, #cine.kb-on #cineKBAlign, #cine.kb-on #cineKBHome, #cine.kb-on #cineKBClose { display: inline-flex; }
   #cine.kb-on #cineMenu, #cine.kb-on #cineFileBtn { display: none; }
   #cineKBFull, #cineStreamStop { display: none; } #cine.kb-on #cineKBFull, #cine.st-on #cineStreamStop { display: inline-flex; }
-  #kinoFull { position: fixed; inset: 0; z-index: 45; background: #000; display: none; }
-  #kinoFull.show { display: block; }
-  #kinoFull img { width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; pointer-events: none; }
-  #kinoFullExit { position: absolute; top: 12px; right: 12px; opacity: .25; transition: opacity .2s; background: rgba(20,20,24,.85); }
-  #kinoFullExit:hover { opacity: 1; }
   .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11em, 1fr)); gap: .9em; }
   .st-tile { --c: #444; font: inherit; color: #fff; cursor: pointer; border: 2px solid transparent; border-radius: .6em; padding: 1.4em 1em; display: flex; flex-direction: column; align-items: center; gap: .3em;
     background: linear-gradient(135deg, color-mix(in srgb, var(--c) 70%, #000), color-mix(in srgb, var(--c) 30%, #000)); box-shadow: 0 .4em 1em rgba(0,0,0,.4); transition: transform .15s; }
@@ -315,6 +310,7 @@
   .kino-frame { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; background: #0f0f0f; user-select: none; -webkit-user-drag: none; pointer-events: none; }
   .kino-hint { position: absolute; left: 50%; bottom: 1em; transform: translateX(-50%); background: rgba(0,0,0,.75); color: #fff; padding: .4em 1em; border-radius: 2em; font-size: .9em; transition: opacity .6s; pointer-events: none; }
   .kino-hint.gone { opacity: 0; }
+  #cine.kb-full { opacity: .18; transition: opacity .3s; } #cine.kb-full:hover { opacity: 1; } #cine.kb-full .kino-hint { display: none; }
   .cin-realyt { display: flex; align-items: center; gap: 1em; margin: -.2em 0 .8em; padding: .7em 1em; border-radius: .6em; background: rgba(255,0,51,.12); border: 1px solid rgba(255,0,51,.35); }
   .cin-btn.big { font-size: 1em; padding: .55em 1.4em; background: #ff0033; white-space: nowrap; }
   .cin-tabs button.yt.on { background: #ff0033; }
@@ -545,7 +541,6 @@
 </div>
 
 <!-- Vollbild für YouTube im Kino -->
-<div id="kinoFull"><img id="kinoFullImg" alt=""><button class="btn" id="kinoFullExit">⤢ Zurück ins Kino (Esc)</button></div>
 
 <!-- Videothek: geöffnete Hülle -->
 <div class="overlay" id="ovCase">
@@ -2403,7 +2398,6 @@ const Room = (() => {
         if (m.method === "Page.screencastFrame") {
           const src = "data:image/jpeg;base64," + m.params.data;
           if (kimg) kimg.src = src;
-          if (fullOn) $("#kinoFullImg").src = src;
           ws.send(JSON.stringify({ id: ++msgId, method: "Page.screencastFrameAck", params: { sessionId: m.params.sessionId } }));
         }
       };
@@ -2433,25 +2427,19 @@ const Room = (() => {
         await cdp("Page.startScreencast", { format: "jpeg", quality: 80, maxWidth: w, maxHeight: h, everyNthFrame: 1 });
       } catch {}
     }
-    // Vollbild: die Seite füllt das ganze Watchlist-Fenster (und wenn möglich den ganzen Bildschirm)
+    // Vollbild: das Video füllt die ganze Leinwand (nicht den Bildschirm)
     function enterFull(fromPage) {
       if (fullOn || !kinoActive) return;
-      fullOn = true; $("#kinoFull").classList.add("show");
-      if (kimg && kimg.src) $("#kinoFullImg").src = kimg.src;
-      try { document.documentElement.requestFullscreen().catch(() => {}); } catch {}
-      setTimeout(() => setViewport(Math.max(640, Math.round(innerWidth)), Math.max(360, Math.round(innerHeight))), 250);
-      if (!fromPage) cdp("Runtime.evaluate", { expression: "(document.querySelector('video')||{}).closest && document.querySelector('#movie_player, .html5-video-player, video').requestFullscreen()" }).catch(() => {});
+      fullOn = true; $("#cine").classList.add("kb-full"); $("#cineKBFull").textContent = "⤢ Vollbild aus";
+      if (!fromPage) cdp("Runtime.evaluate", { expression: "(document.querySelector('#movie_player, .html5-video-player, video')||document.documentElement).requestFullscreen()" }).catch(() => {});
     }
     function exitFull(fromPage) {
       if (!fullOn) return;
-      fullOn = false; $("#kinoFull").classList.remove("show");
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      fullOn = false; $("#cine").classList.remove("kb-full"); $("#cineKBFull").textContent = "⛶ Vollbild";
       if (!fromPage) cdp("Runtime.evaluate", { expression: "document.exitFullscreen()" }).catch(() => {});
-      setViewport(KW, KH);
     }
-    document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && fullOn) exitFull(false); });
     function closeRealYT() {
-      if (fullOn) { fullOn = false; $("#kinoFull").classList.remove("show"); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); }
+      if (fullOn) { fullOn = false; $("#cine").classList.remove("kb-full"); $("#cineKBFull").textContent = "⛶ Vollbild"; }
       curW = KW; curH = KH;
       if (!$("#cine").classList.contains("kb-on") && !kinoActive) return;
       $("#cine").classList.remove("kb-on"); kinoActive = false; kimg = null;
@@ -2461,14 +2449,10 @@ const Room = (() => {
     }
     // Maus von der Leinwand an die Seite weitergeben
     const toPage = e => {
-      if (fullOn) {
-        const im = $("#kinoFullImg"), r = im.getBoundingClientRect(), s = Math.min(r.width / curW, r.height / curH), ox = r.left + (r.width - curW * s) / 2, oy = r.top + (r.height - curH * s) / 2;
-        return { x: Math.round((e.clientX - ox) / s), y: Math.round((e.clientY - oy) / s) };
-      }
-      const pt = scrPointFn && scrPointFn(e.clientX, e.clientY); return pt ? { x: Math.round(pt.x / 1680 * KW), y: Math.round(pt.y / 720 * KH) } : null;
+      const pt = scrPointFn && scrPointFn(e.clientX, e.clientY); return pt ? { x: Math.round(pt.x / 1680 * curW), y: Math.round(pt.y / 720 * curH) } : null;
     };
     const mouse = (type, e, extra = {}) => { const p = toPage(e); if (!p) return; cdp("Input.dispatchMouseEvent", Object.assign({ type, x: p.x, y: p.y, button: "none", modifiers: (e.shiftKey ? 8 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 1 : 0) }, extra)).catch(() => {}); };
-    const layerEl = () => ({ contains: t => { const L = document.getElementById("cssLayer"), F = document.getElementById("kinoFull"); return (fullOn && F.contains(t)) || (!fullOn && L && L.contains(t)); } });
+    const layerEl = () => ({ contains: t => { const L = document.getElementById("cssLayer"); return !!(L && L.contains(t)); } });
     document.addEventListener("pointerdown", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; e.preventDefault(); mouse("mousePressed", e, { button: e.button === 2 ? "right" : "left", clickCount: 1 }); }, true);
     document.addEventListener("pointerup", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; mouse("mouseReleased", e, { button: e.button === 2 ? "right" : "left", clickCount: 1 }); }, true);
     document.addEventListener("pointermove", e => { if (!kinoActive || !layerEl() || !layerEl().contains(e.target)) return; const n = performance.now(); if (n - lastMove < 33) return; lastMove = n; mouse("mouseMoved", e); }, true);
@@ -2868,7 +2852,6 @@ const Room = (() => {
     $("#cineKBAlign").onclick = () => Cinema.kinoNav("back");
     $("#cineKBHome").onclick = () => Cinema.kinoNav("home");
     $("#cineKBFull").onclick = () => Cinema.full();
-    $("#kinoFullExit").onclick = () => Cinema.full();
     $("#cineStreamStop").onclick = () => api("POST", "/api/kinowindow/close").catch(() => {}).then(() => Cinema.streamCheck());
     $("#cineKBClose").onclick = () => Cinema.menu();
     $("#cineFile").onchange = e => { Cinema.playFile(e.target.files[0]); e.target.value = ""; };
@@ -3035,7 +3018,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "26";
+const APP_VERSION = "27";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
