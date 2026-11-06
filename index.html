@@ -2514,6 +2514,7 @@ const Room = (() => {
 
   // ---------- Hinsetzen & Leinwand ----------
   function sitDown(info) {
+    zoom.target = FOV;
     if (!info) info = { x: CIN.x + .5, z: CIN.z + ROW_Z(3), row: 3, col: 4 };
     if (document.pointerLockElement) document.exitPointerLock();
     keys = {}; joy = { x: 0, y: 0 }; setAim(null);
@@ -2533,6 +2534,7 @@ const Room = (() => {
   }
   function standUp() {
     if (!seated) return;
+    zoom.target = FOV;
     seated = null; $("#room").classList.remove("seated"); Cinema.hide(); setLights(false);
     if (cinScreen) { cinScreen.material = screenMat; drawScreenIdle(); }
     pos.z += .9; pitch = 0;
@@ -2737,6 +2739,7 @@ const Room = (() => {
     const VK = { Enter: 13, Backspace: 8, Tab: 9, Delete: 46, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Home: 36, End: 35, PageUp: 33, PageDown: 34, " ": 32 };
     function keyToPage(e) {
       if (!kinoActive) return false;
+      if (e.ctrlKey && ["0", "+", "-"].includes(e.key)) return false; // Strg + 0/+/- ist fürs Zoomen im Sessel
       if (e.key === "Escape") { if (fullOn && e.type === "keydown") { exitFull(false); e.preventDefault(); return true; } return false; }
       if (e.target.closest && e.target.closest("input, textarea")) return false;
       const mods = (e.shiftKey ? 8 : 0) | (e.ctrlKey ? 2 : 0) | (e.altKey ? 1 : 0) | (e.metaKey ? 4 : 0);
@@ -3193,6 +3196,18 @@ const Room = (() => {
       showZoom();
     }, { passive: false });
     cv.addEventListener("mousedown", e => { if (e.button === 1) { e.preventDefault(); zoom.target = FOV; showZoom(); } });
+    // Im Kinosessel: Strg + Mausrad zoomt (das normale Mausrad bleibt für die Leinwand)
+    addEventListener("wheel", e => {
+      if (!running || !seated || !e.ctrlKey) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      zoom.target = Math.max(FOV_MIN, Math.min(FOV, zoom.target * (1 + Math.max(-.25, Math.min(.25, e.deltaY * .0012)))));
+      showZoom();
+    }, { capture: true, passive: false });
+    addEventListener("keydown", e => {
+      if (!running || !seated || !e.ctrlKey || !["0", "+", "-"].includes(e.key)) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      zoom.target = e.key === "0" ? FOV : Math.max(FOV_MIN, Math.min(FOV, zoom.target * (e.key === "+" ? .85 : 1.18))); showZoom();
+    }, true);
 
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
@@ -3339,7 +3354,6 @@ const Room = (() => {
     camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
     if (screenGlow) screenGlow.intensity = lightsDim ? 1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3 : 0;
     camera.rotation.set(pitch, yaw, 0);
-    if (seated && zoom.target !== FOV) zoom.target = FOV;
     if (Math.abs(camera.fov - zoom.target) > .01) { camera.fov += (zoom.target - camera.fov) * Math.min(1, dt * 12); camera.updateProjectionMatrix(); }
     if (zoom.hideAt && t > zoom.hideAt) { zoom.hideAt = 0; const z = $("#roomZoom"); if (z) z.classList.remove("show"); }
     if (!seated && (perf.n % 2 === 0)) aimCenter();
@@ -3425,7 +3439,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "36";
+const APP_VERSION = "37";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
