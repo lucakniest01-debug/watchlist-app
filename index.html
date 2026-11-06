@@ -2658,37 +2658,39 @@ const Room = (() => {
     let top;
     if (type === 0) {
       const potM = new T.MeshLambertMaterial({ map: P.planter });
-      const pot = new T.Mesh(new T.CylinderGeometry(.22, .17, .62, 28), potM); pot.position.y = .31; g.add(pot);
+      const pot = new T.Mesh(new T.CylinderGeometry(.22, .17, .62, 28, 1, true), potM); pot.position.y = .31; g.add(pot);
       const rim = new T.Mesh(new T.TorusGeometry(.215, .018, 8, 32), new T.MeshLambertMaterial({ color: 0x55585f })); rim.rotation.x = Math.PI / 2; rim.position.y = .62; g.add(rim);
       top = .6;
     } else {
       const potM = new T.MeshLambertMaterial({ map: P.pot });
-      const pot = new T.Mesh(new T.CylinderGeometry(.24, .17, .44, 28), potM); pot.position.y = .22; g.add(pot);
+      const pot = new T.Mesh(new T.CylinderGeometry(.24, .17, .44, 28, 1, true), potM); pot.position.y = .22; g.add(pot);
       const rim = new T.Mesh(new T.TorusGeometry(.24, .028, 8, 32), potM); rim.rotation.x = Math.PI / 2; rim.position.y = .44; g.add(rim);
       top = .42;
     }
-    const soil = new T.Mesh(new T.CircleGeometry(type ? .23 : .2, 24), soilM); soil.rotation.x = -Math.PI / 2; soil.position.y = top; g.add(soil);
+    const soil = new T.Mesh(new T.CircleGeometry(type ? .23 : .2, 24), soilM); soil.rotation.x = -Math.PI / 2; soil.position.y = top - .03; g.add(soil);
+    const inner = new T.Mesh(new T.CylinderGeometry(type ? .235 : .212, type ? .23 : .205, .06, 28, 1, true), new T.MeshLambertMaterial({ color: 0x1a120c, side: T.BackSide })); inner.position.y = top - .005; g.add(inner);
+    for (let i = 0; i < 9; i++) { const pb = new T.Mesh(new T.SphereGeometry(.012 + rnd() * .01, 6, 4), new T.MeshLambertMaterial({ color: 0x8a8378 })); const a = rnd() * 7, r = rnd() * (type ? .19 : .16); pb.position.set(Math.cos(a) * r, top - .025, Math.sin(a) * r); pb.scale.y = .6; g.add(pb); }
     const leafM = new T.MeshLambertMaterial({ map: type ? P.mon : P.frond, transparent: true, alphaTest: .45, side: T.DoubleSide });
     const stemM = new T.MeshLambertMaterial({ color: 0x4a7a32 });
     if (type === 0) {
       // Palmwedel in mehreren Kränzen, äußere stärker überhängend
-      const n = 13;
+      const n = 19;
       for (let i = 0; i < n; i++) {
-        const holder = new T.Group(); holder.position.y = top - .02; holder.rotation.y = i / n * Math.PI * 2 * 2.39 + rnd() * .3; g.add(holder);
-        const inner = i < 4, len = inner ? 1.15 + rnd() * .25 : .85 + rnd() * .3;
+        const holder = new T.Group(); const ba = rnd() * 7, br = rnd() * .07; holder.position.set(Math.cos(ba) * br, top - .03, Math.sin(ba) * br); holder.rotation.y = i * 2.399 + rnd() * .3; g.add(holder);
+        const inner = i < 5, len = inner ? 1.1 + rnd() * .35 : .7 + rnd() * .45;
         const f = new T.Mesh(bentLeaf(.58, len, inner ? .9 + rnd() * .4 : 1.6 + rnd() * .5, .35), leafM);
         f.rotation.x = inner ? .1 + rnd() * .2 : .35 + rnd() * .35; holder.add(f);
       }
     } else {
       // Monstera: Blätter auf langen Stielen, nach außen geneigt
-      const n = 8;
+      const n = 11;
       for (let i = 0; i < n; i++) {
-        const holder = new T.Group(); holder.position.y = top - .02; holder.rotation.y = i / n * Math.PI * 2 + rnd() * .5; g.add(holder);
-        const sl = .35 + rnd() * .4, tilt = .2 + rnd() * .45;
-        const stem = new T.Mesh(new T.CylinderGeometry(.007, .01, sl, 5), stemM); stem.position.set(0, sl / 2, 0);
+        const holder = new T.Group(); const ba = rnd() * 7, br = .03 + rnd() * .09; holder.position.set(Math.cos(ba) * br, top - .03, Math.sin(ba) * br); holder.rotation.y = i * 2.399 + rnd() * .4; g.add(holder);
+        const sl = .25 + rnd() * .5, tilt = .15 + rnd() * .55;
+        const stem = new T.Mesh(new T.CylinderGeometry(.009, .014, sl, 6), stemM); stem.position.set(0, sl / 2, 0);
         const sh = new T.Group(); sh.rotation.x = tilt; sh.add(stem); holder.add(sh);
-        const sz = .36 + rnd() * .16, leaf = new T.Mesh(bentLeaf(sz, sz * 1.05, .5 + rnd() * .3, .18, 8), leafM);
-        leaf.position.set(0, sl, 0); leaf.rotation.x = .35 + rnd() * .3; leaf.rotation.y = (rnd() - .5) * .5; sh.add(leaf);
+        const sz = .3 + rnd() * .22, leaf = new T.Mesh(bentLeaf(sz, sz * 1.05, .6 + rnd() * .4, .2, 8), leafM);
+        leaf.position.set(0, sl - .01, 0); leaf.rotation.x = .5 + rnd() * .5; leaf.rotation.y = (rnd() - .5) * .5; sh.add(leaf);
       }
     }
     mergeByMaterial(g, [leafM, stemM]);
@@ -4117,7 +4119,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "52";
+const APP_VERSION = "53";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
