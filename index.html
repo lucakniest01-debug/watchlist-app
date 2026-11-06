@@ -2793,8 +2793,7 @@ const Room = (() => {
     posterGroup = new T.Group(); posterGroup.visible = !inCinema; scene.add(posterGroup);
     const spots = [];
     for (let side = 0; side < 4; side++) for (const o of [-2.5, 2.5]) {
-      if (side === 0 && o === 2.5) continue; // dort ist die Kino-Tür
-      if (side === 2 && o === 2.5) continue; // dort ist der Ausgang
+      if (side % 2 === 0) continue; // Vorder-/Rückwand: dort stehen die Regale dicht, mit Kino-Tür und Ausgang
       const d = HALF - .03, a = side * Math.PI / 2;
       spots.push({ x: side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d, z: side === 0 ? -d : side === 1 ? o : side === 2 ? d : -o, rot: -a });
     }
@@ -2835,7 +2834,7 @@ const Room = (() => {
   // ---------- Kinosaal ----------
   // Der Saal liegt weit weg vom Laden (z = -40); eine Tür in der Videothek bringt dich hin.
   const CIN = { x: 0, z: -40 }, CW = 6, CD = 8;            // halbe Breite/Tiefe
-  const STORE_DOOR = { x: 2.5, z: -HALF + .02 }, EXIT_DOOR = { x: -2.5, z: HALF - .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
+  const STORE_DOOR = { x: 2.05, z: -HALF + .02 }, EXIT_DOOR = { x: -2.05, z: HALF - .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
   let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62, scrPointFn = null, kinoActive = false;
   const RISE = .32, GAP = 1.7, ROW_Z = r => -2.4 + r * GAP, STEP0 = ROW_Z(1) - .5;
@@ -2984,24 +2983,32 @@ const Room = (() => {
   // Tür in der Videothek (statt eines Plakats)
   function buildStoreDoor() {
     const g = new T.Group(); g.position.set(STORE_DOOR.x, 0, STORE_DOOR.z); scene.add(g);
-    const frame = new T.Mesh(new T.BoxGeometry(1.1, 2.4, .06), new T.MeshLambertMaterial({ color: 0x3a2a20 })); frame.position.y = 1.2; g.add(frame);
-    const doorT = canvasTex(128, 256, (c, w, h) => {
-      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#2b0d18"); gr.addColorStop(1, "#140810"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
-      c.strokeStyle = "#ffb35c"; c.lineWidth = 4; c.strokeRect(12, 12, w - 24, h - 24);
-      c.fillStyle = "#ffb35c"; c.beginPath(); c.arc(w - 26, h / 2, 6, 0, 7); c.fill();
-      c.font = "bold 22px Segoe UI, sans-serif"; c.textAlign = "center"; c.fillText("SAAL 1", w / 2, 60);
+    const frame = new T.Mesh(new T.BoxGeometry(1.5, 2.5, .06), new T.MeshLambertMaterial({ color: 0x3a2a20 })); frame.position.y = 1.25; g.add(frame);
+    // zweiflügelige, gepolsterte Kinotür mit Bullaugen und goldenen Griffen
+    const doorT = canvasTex(256, 448, (c, w, h) => {
+      for (const x0 of [0, w / 2]) {
+        const gr = c.createLinearGradient(x0, 0, x0 + w / 2, 0); gr.addColorStop(0, "#3a0f1e"); gr.addColorStop(.5, "#5a1729"); gr.addColorStop(1, "#2a0a15"); c.fillStyle = gr; c.fillRect(x0, 0, w / 2, h);
+        c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 2; for (let y = 120; y < h - 20; y += 40) for (let x = x0 + 16; x < x0 + w / 2 - 8; x += 26) { c.beginPath(); c.arc(x, y, 1.6, 0, 7); c.stroke(); }
+        c.strokeStyle = "#ffb35c"; c.lineWidth = 4; c.strokeRect(x0 + 10, 10, w / 2 - 20, h - 20);
+        c.fillStyle = "#0d0a10"; c.beginPath(); c.arc(x0 + w / 4, 70, 26, 0, 7); c.fill(); c.strokeStyle = "#c9a24a"; c.lineWidth = 5; c.stroke();
+        c.fillStyle = "rgba(255,200,140,.25)"; c.beginPath(); c.arc(x0 + w / 4 - 8, 62, 8, 0, 7); c.fill();
+      }
+      c.fillStyle = "#000"; c.fillRect(w / 2 - 2, 0, 4, h);
+      c.fillStyle = "#e8b94a"; c.fillRect(w / 2 - 16, h * .5, 8, 60); c.fillRect(w / 2 + 8, h * .5, 8, 60);
+      c.font = "bold 26px Segoe UI, sans-serif"; c.textAlign = "center"; c.fillStyle = "#ffb35c"; c.fillText("SAAL 1", w / 2, 140);
     });
-    const door = new T.Mesh(new T.PlaneGeometry(.95, 2.25), new T.MeshLambertMaterial({ map: doorT })); door.position.set(0, 1.15, .04); g.add(door);
+    const door = new T.Mesh(new T.PlaneGeometry(1.34, 2.36), new T.MeshLambertMaterial({ map: doorT })); door.position.set(0, 1.2, .04); g.add(door);
     door.userData = { cinema: "enter" }; fixedPicks.push(door);
     const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#14080e"; c.fillRect(0, 0, w, h); c.font = "bold 100px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ff4d6d"; c.shadowBlur = 26; c.fillStyle = "#ffd0d8"; c.fillText("🎬 KINO", w / 2, h / 2 + 6); });
-    const sign = new T.Mesh(new T.PlaneGeometry(1.2, .38), new T.MeshBasicMaterial({ map: signT })); sign.position.set(0, 2.62, .05); g.add(sign);
-    const glow = new T.Mesh(new T.PlaneGeometry(2, 1.2), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.62, .03); g.add(glow);
+    const sign = new T.Mesh(new T.PlaneGeometry(1.4, .44), new T.MeshBasicMaterial({ map: signT, toneMapped: false })); sign.position.set(0, 2.76, .05); g.add(sign);
+    const glow = new T.Mesh(new T.PlaneGeometry(2, 1.2), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.76, .03); g.add(glow);
+    const mat = new T.Mesh(new T.PlaneGeometry(1.5, .7), new T.MeshLambertMaterial({ color: 0x3a1420 })); mat.rotation.x = -Math.PI / 2; mat.position.set(0, .006, .45); g.add(mat);
   }
 
   // Ausgang an der Rückwand: hindurchgehen oder anklicken verlässt die Videothek
   function buildExitDoor() {
     const g = new T.Group(); g.position.set(EXIT_DOOR.x, 0, EXIT_DOOR.z); g.rotation.y = Math.PI; scene.add(g);
-    const frame = new T.Mesh(new T.BoxGeometry(.86, 2.3, .06), new T.MeshLambertMaterial({ color: 0x2b2f36 })); frame.position.y = 1.15; g.add(frame);
+    const frame = new T.Mesh(new T.BoxGeometry(1.5, 2.5, .06), new T.MeshLambertMaterial({ color: 0x2b2f36 })); frame.position.y = 1.25; g.add(frame);
     const doorT = canvasTex(256, 512, (c, w, h) => {
       // zweiflügelige Glastür mit Blick nach draußen (Abendhimmel)
       const sky = c.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#1b2a4a"); sky.addColorStop(.55, "#e0785a"); sky.addColorStop(.62, "#2a1f2e"); sky.addColorStop(1, "#141018");
@@ -3013,12 +3020,12 @@ const Room = (() => {
       c.strokeStyle = "#c9ced6"; c.lineWidth = 12; c.strokeRect(6, 6, w - 12, h - 12); c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
       c.fillStyle = "#c9ced6"; c.fillRect(w / 2 - 34, h * .5, 10, 70); c.fillRect(w / 2 + 24, h * .5, 10, 70);
     });
-    const door = new T.Mesh(new T.PlaneGeometry(.76, 2.2), new T.MeshBasicMaterial({ map: doorT, toneMapped: false })); door.position.set(0, 1.1, .04); g.add(door);
+    const door = new T.Mesh(new T.PlaneGeometry(1.36, 2.38), new T.MeshBasicMaterial({ map: doorT, toneMapped: false })); door.position.set(0, 1.19, .04); g.add(door);
     door.userData = { exit: true }; fixedPicks.push(door);
     const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#06140c"; c.fillRect(0, 0, w, h); c.font = "bold 84px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#22c55e"; c.shadowBlur = 26; c.fillStyle = "#d9ffe6"; c.fillText("AUSGANG", w / 2, h / 2 + 6); c.shadowBlur = 0; c.strokeStyle = "#22c55e"; c.lineWidth = 8; c.strokeRect(6, 6, w - 12, h - 12); });
-    const sign = new T.Mesh(new T.PlaneGeometry(.84, .26), new T.MeshBasicMaterial({ map: signT, toneMapped: false })); sign.position.set(0, 2.48, .05); g.add(sign);
-    const glow = new T.Mesh(new T.PlaneGeometry(1.4, .8), new T.MeshBasicMaterial({ map: glowTex, color: 0x66ff99, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.48, .03); g.add(glow);
-    const mat = new T.Mesh(new T.PlaneGeometry(.9, .6), new T.MeshLambertMaterial({ color: 0x22262c })); mat.rotation.x = -Math.PI / 2; mat.position.set(0, .006, .4); g.add(mat);
+    const sign = new T.Mesh(new T.PlaneGeometry(1.2, .37), new T.MeshBasicMaterial({ map: signT, toneMapped: false })); sign.position.set(0, 2.76, .05); g.add(sign);
+    const glow = new T.Mesh(new T.PlaneGeometry(2, 1.1), new T.MeshBasicMaterial({ map: glowTex, color: 0x66ff99, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.76, .03); g.add(glow);
+    const mat = new T.Mesh(new T.PlaneGeometry(1.5, .7), new T.MeshLambertMaterial({ color: 0x22262c })); mat.rotation.x = -Math.PI / 2; mat.position.set(0, .006, .4); g.add(mat);
   }
   function exitStore() {
     pos.x = EXIT_DOOR.x; pos.z = HALF - 2.2; yaw = 0; pitch = -.05; keys = {};
@@ -3655,7 +3662,8 @@ const Room = (() => {
   // 12 Plätze: je 3 Regale an jeder Wand, zur Raummitte gedreht
   function slots() {
     const out = [], d = HALF - .35;
-    for (let side = 0; side < 4; side++) for (const o of [-5, 0, 5]) {
+    // Vorder- und Rückwand: Regale zusammengerückt, damit vor Kino-Tür und Ausgang 2 m Platz frei bleiben
+    for (let side = 0; side < 4; side++) for (const o of (side % 2 === 0 ? [-5.3, -1.0, 5.1] : [-5, 0, 5])) {
       const a = side * Math.PI / 2;
       // Wand vor dir (z=-d), rechts (x=d), hinten (z=d), links (x=-d)
       const x = side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d;
@@ -3931,9 +3939,9 @@ const Room = (() => {
     }
     for (const u of units) { const b = u.btn; if (u.busy) b.rotation.z -= dt * 8; else if (b.rotation.z) b.rotation.z = 0; }
     // Türen: einfach hindurchgehen
-    if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .6 && pos.z < -HALF + MARGIN + .12) enterCinema();
+    if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) enterCinema();
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
-    if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .45 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
+    if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
     if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : .95;
     const targetY = seated ? seated.row * RISE + 1.15 : benchSit ? 1.18 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
@@ -4042,7 +4050,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "50";
+const APP_VERSION = "51";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
