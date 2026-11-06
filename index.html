@@ -388,21 +388,11 @@
   .tok-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #ccc; }
   .ph-empty { text-align: center; opacity: .7; font-size: 13px; padding: 30px 6px; }
   @media (pointer: coarse) { #phone { width: 240px; right: 4%; } .ph-body { height: 480px; } }
-  /* Popcorn-Tüte in der Hand */
-  #popHand { position: absolute; left: 6%; bottom: -10px; z-index: 6; width: 150px; height: 190px; transform: translateY(120%) rotate(-8deg); transition: transform .5s cubic-bezier(.2,.9,.25,1.2); cursor: pointer; }
-  #popHand.show { transform: translateY(0) rotate(-6deg); }
-  #popHand.munch .pop-bucket { animation: munch .25s ease; }
-  @keyframes munch { 50% { transform: translateY(-10px) rotate(3deg) scale(1.04); } }
-  .pop-bucket { position: absolute; left: 10px; right: 10px; bottom: 0; height: 150px; clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%); border-radius: 6px;
-    background: repeating-linear-gradient(90deg, #e3242b 0 18px, #fff 18px 34px); box-shadow: inset 0 -20px 30px rgba(0,0,0,.25); overflow: hidden; }
-  .pop-fill { position: absolute; left: 0; right: 0; top: 0; height: 100%; transition: height .3s; }
-  .pop-top { position: absolute; left: 6px; right: 6px; bottom: 140px; height: 54px; z-index: 0; border-radius: 40px 40px 6px 6px;
-    background: radial-gradient(circle at 18% 60%, #fff6d8 0 13px, transparent 14px), radial-gradient(circle at 40% 35%, #fff1c4 0 15px, transparent 16px), radial-gradient(circle at 62% 55%, #ffe9a8 0 14px, transparent 15px), radial-gradient(circle at 82% 40%, #fff6d8 0 13px, transparent 14px), radial-gradient(circle at 50% 75%, #ffeab0 0 18px, transparent 19px); }
-  #popHand .pop-top { position: absolute; bottom: 136px; left: 14px; right: 14px; transition: opacity .3s, transform .3s; }
-  #popHand.empty .pop-top { opacity: 0; transform: translateY(20px); }
-  .pop-label { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); background: #ffd23f; color: #b8121b; font-weight: 900; border-radius: 30px; padding: 4px 10px; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,.3); white-space: nowrap; }
-  .pop-label b { margin-left: 4px; }
-  .pop-crumb { position: absolute; top: 10px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px #000; font-size: 14px; pointer-events: none; animation: crumb .9s ease-out forwards; }
+  /* Popcorn-Anzeige (die Tüte selbst ist ein 3D-Modell) */
+  #popHand { position: absolute; left: 18px; bottom: 18px; z-index: 6; padding: 7px 14px; border-radius: 20px; background: rgba(184,18,27,.88); color: #fff; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); opacity: 0; transform: translateY(20px); transition: opacity .3s, transform .3s; pointer-events: none; }
+  #popHand.show { opacity: 1; transform: none; pointer-events: auto; }
+  #popHand span { opacity: .8; font-size: 12px; }
+  .pop-crumb { position: absolute; bottom: 30px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px #000; font-size: 15px; pointer-events: none; animation: crumb .9s ease-out forwards; white-space: nowrap; }
   @keyframes crumb { to { transform: translateY(-70px); opacity: 0; } }
   #roomZoom { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 4; pointer-events: none; padding: 6px 14px; border-radius: 20px; background: rgba(10,10,14,.7); color: #fff; font-weight: 700; font-size: 15px; opacity: 0; transition: opacity .3s; backdrop-filter: blur(6px); }
   #roomZoom.show { opacity: 1; }
@@ -642,7 +632,7 @@
 
 <!-- 3D-Raum -->
 <div id="room"><div id="roomZoom"></div>
-  <div id="popHand" title="Popcorn essen (F)"><div class="pop-top"></div><div class="pop-bucket"><div class="pop-fill"></div><div class="pop-label">🍿<b class="pop-n">0</b></div></div></div>
+  <div id="popHand" title="Popcorn essen (F)">🍿 <b class="pop-n">0</b> <span>· F essen</span></div>
   <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-island"></div>
     <div class="ph-status" id="phStatus"><b id="phClock">9:41</b><span>📶 5G 🔋</span></div>
     <div class="ph-screen" id="phScreen"></div>
@@ -2027,35 +2017,79 @@ const Room = (() => {
   }
   // ---------- Popcorn: am Automaten holen, mit F (oder Klick auf die Tüte) essen ----------
   const Popcorn = (() => {
-    let left = 0, busy = false;
+    const MAX = 30, PIECES = 46;
+    let left = 0, busy = false, model = null, pieces = null, show = 0, munch = 0;
     const el = () => $("#popHand");
-    function draw() {
-      const e = el(); if (!e) return;
-      e.querySelector(".pop-n").textContent = left;
-      e.querySelector(".pop-fill").style.height = Math.round(left / 30 * 100) + "%";
-      e.classList.toggle("empty", left <= 0);
+    // 3D-Tüte, die du vor dir in der Hand hältst (hängt an der Kamera)
+    function build() {
+      if (model) return;
+      model = new T.Group();
+      const stripes = canvasTex(256, 128, (c, w, h) => {
+        for (let i = 0; i < 16; i++) { c.fillStyle = i % 2 ? "#ffffff" : "#d91e2a"; c.fillRect(i * w / 16, 0, w / 16 + 1, h); }
+        const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.25)"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+        c.fillStyle = "#ffd23f"; c.beginPath(); c.ellipse(w * .25, h * .55, 30, 20, 0, 0, 7); c.fill(); c.ellipse(w * .75, h * .55, 30, 20, 0, 0, 7); c.fill();
+        c.fillStyle = "#b8121b"; c.font = "bold 18px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("POP", w * .25, h * .56); c.fillText("CORN", w * .75, h * .56);
+      });
+      stripes.wrapS = T.RepeatWrapping;
+      const side = new T.MeshLambertMaterial({ map: stripes, emissive: 0x2a2a2a, side: T.DoubleSide });
+      const cup = new T.Mesh(new T.CylinderGeometry(.075, .052, .15, 32, 1, true), side); model.add(cup);
+      const bottom = new T.Mesh(new T.CircleGeometry(.052, 32), new T.MeshLambertMaterial({ color: 0xb8121b })); bottom.rotation.x = Math.PI / 2; bottom.position.y = -.075; model.add(bottom);
+      const rim = new T.Mesh(new T.TorusGeometry(.075, .004, 6, 40), new T.MeshLambertMaterial({ color: 0xffffff, emissive: 0x333333 })); rim.rotation.x = Math.PI / 2; rim.position.y = .075; model.add(rim);
+      const fill = new T.Mesh(new T.CircleGeometry(.073, 32), new T.MeshLambertMaterial({ color: 0xf3d58a, emissive: 0x3a2c10 })); fill.rotation.x = -Math.PI / 2; fill.position.y = .07; model.add(fill); model.userData.fill = fill;
+      // Popcorn-Häufchen
+      const geo = new T.IcosahedronGeometry(.011, 1), mat = new T.MeshLambertMaterial({ color: 0xfff1c4, emissive: 0x4a3c18 });
+      pieces = new T.InstancedMesh(geo, mat, PIECES); const m = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), v = new T.Vector3(), sc = new T.Vector3();
+      for (let i = 0; i < PIECES; i++) {
+        const r = Math.sqrt(Math.random()) * .066, a = Math.random() * 7, hgt = .072 + (1 - r / .07) * .045 * Math.random() + Math.random() * .012;
+        v.set(Math.cos(a) * r, hgt, Math.sin(a) * r); e.set(Math.random() * 6, Math.random() * 6, 0); q.setFromEuler(e); const k = .8 + Math.random() * .6; sc.set(k, k * (.8 + Math.random() * .4), k);
+        m.compose(v, q, sc); pieces.setMatrixAt(i, m);
+      }
+      pieces.userData.full = []; for (let i = 0; i < PIECES; i++) { const mm = new T.Matrix4(); pieces.getMatrixAt(i, mm); pieces.userData.full.push(mm); }
+      model.add(pieces);
+      model.traverse(o => { o.frustumCulled = false; o.renderOrder = 10; });
+      model.visible = false; model.scale.setScalar(.85);
+      camera.add(model); if (!camera.parent) scene.add(camera);
     }
+    function fillTo(n) {
+      if (!pieces) return;
+      const showN = Math.ceil(n / MAX * PIECES), zero = new T.Matrix4().makeScale(0, 0, 0);
+      for (let i = 0; i < PIECES; i++) pieces.setMatrixAt(i, i < showN ? pieces.userData.full[i] : zero);
+      pieces.instanceMatrix.needsUpdate = true;
+      model.userData.fill.position.y = .02 + .05 * (n / MAX); model.userData.fill.scale.setScalar(.75 + .25 * (n / MAX)); model.userData.fill.visible = n > 0;
+    }
+    function badge() { const e = el(); if (!e) return; e.querySelector(".pop-n").textContent = left; e.classList.toggle("show", left > 0); }
     function get() {
       if (busy) return;
       if (left > 20) { toast("🍿 Deine Tüte ist noch fast voll!"); return; }
-      busy = true; if (popcorn) popcorn.pop = 1.6;
+      build(); busy = true; if (popcorn) popcorn.pop = 1.6;
       $("#roomLabel").innerHTML = "🍿 Das Popcorn poppt …"; $("#roomLabel").style.opacity = 1;
       setTimeout(() => {
-        busy = false; left = 30; draw(); el().classList.add("show"); $("#roomLabel").style.opacity = 0;
-        toast(`🍿 Frisches Popcorn! ${matchMedia("(pointer: coarse)").matches ? "Tippe auf die Tüte" : "Taste F oder Klick auf die Tüte"} zum Essen`);
+        busy = false; left = MAX; fillTo(left); model.visible = true; show = 0; badge(); $("#roomLabel").style.opacity = 0;
+        toast(`🍿 Frisches Popcorn! ${matchMedia("(pointer: coarse)").matches ? "Tippe unten links" : "Taste F"} zum Essen`);
       }, 1500);
     }
     function eat() {
       if (left <= 0) return;
-      left--; draw();
-      const e = el(); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
-      const c = document.createElement("span"); c.className = "pop-crumb"; c.textContent = ["😋", "🍿", "mampf", "knusper"][Math.floor(Math.random() * 4)];
-      c.style.left = (20 + Math.random() * 60) + "%"; e.appendChild(c); setTimeout(() => c.remove(), 900);
-      if (left === 0) { toast("🍿 Leer! Am Automaten gibt's Nachschub."); setTimeout(() => { if (left === 0) el().classList.remove("show"); }, 2500); }
+      left--; fillTo(left); badge(); munch = 1;
+      const e = el(), c = document.createElement("span"); c.className = "pop-crumb"; c.textContent = ["😋", "🍿", "mampf", "knusper"][Math.floor(Math.random() * 4)];
+      c.style.left = (10 + Math.random() * 60) + "%"; e.appendChild(c); setTimeout(() => c.remove(), 900);
+      if (left === 0) toast("🍿 Leer! Am Automaten gibt's Nachschub.");
     }
-    function hide() { const e = el(); if (e) e.classList.remove("show"); left = 0; }
+    // Animation: hereinschwingen, leichtes Mitwippen, beim Essen anheben
+    function tick(dt, t, walking) {
+      if (!model) return;
+      const want = left > 0 || (munch > 0);
+      show += ((want ? 1 : 0) - show) * Math.min(1, dt * (want ? 6 : 3));
+      model.visible = show > .02;
+      if (!model.visible) return;
+      munch = Math.max(0, munch - dt * 3);
+      const m = Math.sin(munch * Math.PI), bob = walking ? Math.sin(t / 140) * .008 : Math.sin(t / 900) * .003;
+      model.position.set(-.25 + m * .1, -.215 - (1 - show) * .35 + m * .1 + bob, -.46 + m * .1);
+      model.rotation.set(.28 + m * .45, .3, .1 + m * .15);
+    }
+    function hide() { left = 0; badge(); if (model) { model.visible = false; show = 0; } }
     document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#popHand")) eat(); });
-    return { get, eat, hide, has: () => left > 0 };
+    return { get, eat, hide, tick, has: () => left > 0 };
   })();
 
   // ---------- Handy (erscheint auf der Sitzbank) ----------
@@ -3740,7 +3774,7 @@ const Room = (() => {
     // Nur den Bereich zeichnen, in dem man gerade ist (Laden oder Kino)
     if (shared.lastIn !== inCinema) {
       shared.lastIn = inCinema;
-      for (const c of scene.children) { if (c.isLight) continue; c.visible = c === shared.cinGroup ? inCinema : !inCinema; }
+      for (const c of scene.children) { if (c.isLight || c.isCamera) continue; c.visible = c === shared.cinGroup ? inCinema : !inCinema; }
     }
     // Auflösung automatisch anpassen, wenn es ruckelt
     perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
@@ -3749,6 +3783,7 @@ const Room = (() => {
       if (avg > 1 / 48 && perf.pr > .6) { perf.pr = Math.max(.6, +(perf.pr - .15).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
+    Popcorn.tick(dt, t, !!bob);
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -3878,7 +3913,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "44";
+const APP_VERSION = "45";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
