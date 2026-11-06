@@ -1919,6 +1919,18 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 const Room = (() => {
   let maxAniso = 4, blobTex = null, poolTex = null;
   const perf = { acc: 0, n: 0, prev: 0, pr: 1, max: 1, cool: 0 };
+  // Auf der Sitzbank in der Videothek Platz nehmen
+  let benchSit = false;
+  function sitBench() {
+    if (benchSit) return;
+    benchSit = true; keys = {}; joy = { x: 0, y: 0 }; setAim(null);
+    pos.x = 0; pos.z = -3.38; yaw = Math.PI; pitch = -.08;
+    toast(`🛋 Gemütlich! Umschauen mit der Maus · ${matchMedia("(pointer: coarse)").matches ? "Joystick" : "W A S D oder Leertaste"} zum Aufstehen`);
+  }
+  function standBench() {
+    if (!benchSit) return;
+    benchSit = false; pos.x = 0; pos.z = -3.4 + 1.25; yaw = Math.PI;
+  }
   const FOV = 68, FOV_MIN = 20, zoom = { target: 68, hideAt: 0 };
   function showZoom() {
     const el = $("#roomZoom"); if (!el) return;
@@ -2030,6 +2042,7 @@ const Room = (() => {
       const foot = new T.Mesh(new T.CylinderGeometry(.04, .04, .015, 12), metal); foot.position.set(sx, .008, sz); bench.add(foot);
     }
     bench.position.set(0, 0, -3.4); scene.add(bench); colliders.push({ x: 0, z: -3.4, r: .95 });
+    bench.traverse(o => { if (o.isMesh) { o.userData.bench = true; fixedPicks.push(o); } });
   }
   // Blatt-Textur: Blattform mit Verlauf, Mittelrippe und Seitenadern (transparent drumherum)
   function leafTex(hue) {
@@ -3161,7 +3174,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -3273,6 +3286,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.bench) { if (benchSit) { lab.style.opacity = 0; return; } lab.innerHTML = `🛋 <b>Sitzbank</b><span class="hint"> – ${tap} zum Hinsetzen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.exit) { lab.innerHTML = `🚪 <b>Ausgang</b> · Videothek verlassen<span class="hint"> – ${tap} oder hindurchgehen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.dice) { if (dice && dice.spinning) return; lab.innerHTML = `🎲 <b>Zufalls-Tipp</b> · Film, Serie oder Anime<span class="hint"> – ${tap} zum Drücken</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.arcade) { lab.innerHTML = `🕹 <b>Arcade</b> · deine 8 Spiele<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Spielen</span>`; lab.style.opacity = 1; return; }
@@ -3288,6 +3302,7 @@ const Room = (() => {
     }
     if (m.userData.dice) { pressDice(); return; }
     if (m.userData.exit) { exitStore(); return; }
+    if (m.userData.bench) { sitBench(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -3308,7 +3323,8 @@ const Room = (() => {
     if (!running) return;
     raf = requestAnimationFrame(loop);
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
-    if (!document.querySelector(".overlay.open") && !seated) {
+    if (benchSit && (keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || keys.Space || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standBench();
+    if (!document.querySelector(".overlay.open") && !seated && !benchSit) {
       let f = 0, s = 0;
       if (keys.KeyW || keys.ArrowUp) f += 1; if (keys.KeyS || keys.ArrowDown) f -= 1;
       if (keys.KeyD) s += 1; if (keys.KeyA) s -= 1;
@@ -3349,7 +3365,7 @@ const Room = (() => {
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
     if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .45 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
     if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : .95;
-    const targetY = seated ? seated.row * RISE + 1.15 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
+    const targetY = seated ? seated.row * RISE + 1.15 : benchSit ? 1.18 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
     camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
     if (screenGlow) screenGlow.intensity = lightsDim ? 1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3 : 0;
@@ -3386,7 +3402,7 @@ const Room = (() => {
     await fill(); Shop.rebuild();
   }
   function close() {
-    standUp();
+    standUp(); benchSit = false;
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
     if (document.pointerLockElement) document.exitPointerLock();
     $("#roomStart").classList.remove("show");
@@ -3404,7 +3420,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -3439,7 +3455,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "37";
+const APP_VERSION = "38";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
