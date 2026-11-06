@@ -355,6 +355,10 @@
   .ph-chips button.on { background: #fff; color: #111; font-weight: 700; }
   .ph-input { width: 100%; box-sizing: border-box; border: none; border-radius: 12px; padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,.14); color: #fff; outline: none; margin-bottom: 10px; }
   .ph-input::placeholder { color: rgba(255,255,255,.55); }
+  .ph-screen.tok { padding: 0; background: #000; overflow: hidden; }
+  .ph-screen.tok + .ph-home { background: rgba(255,255,255,.5); }
+  .tok-frame { position: absolute; left: 0; right: 0; top: 46px; bottom: 0; width: 100%; height: calc(100% - 46px); object-fit: fill; user-select: none; -webkit-user-drag: none; cursor: pointer; }
+  .tok-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #ccc; }
   .ph-empty { text-align: center; opacity: .7; font-size: 13px; padding: 30px 6px; }
   @media (pointer: coarse) { #phone { width: 240px; right: 4%; } .ph-body { height: 480px; } }
   #roomZoom { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 4; pointer-events: none; padding: 6px 14px; border-radius: 20px; background: rgba(10,10,14,.7); color: #fff; font-weight: 700; font-size: 15px; opacity: 0; transition: opacity .3s; backdrop-filter: blur(6px); }
@@ -594,7 +598,7 @@
 <!-- 3D-Raum -->
 <div id="room"><div id="roomZoom"></div>
   <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-island"></div>
-    <div class="ph-status"><b id="phClock">9:41</b><span>📶 5G 🔋</span></div>
+    <div class="ph-status" id="phStatus"><b id="phClock">9:41</b><span>📶 5G 🔋</span></div>
     <div class="ph-screen" id="phScreen"></div>
     <div class="ph-home" id="phHome" title="Startbildschirm"></div></div>
     <div class="ph-tip" id="phTip"></div></div>
@@ -1981,9 +1985,10 @@ const Room = (() => {
     const coarse = () => matchMedia("(pointer: coarse)").matches;
     const tick = () => { const d = new Date(); $("#phClock").textContent = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); if (app === "home") { const t = scr().querySelector(".ph-time"); if (t) t.textContent = $("#phClock").textContent; } };
     function show() { app = "home"; render(); el().classList.add("show"); peek(!!document.pointerLockElement); tick(); clearInterval(clockT); clockT = setInterval(tick, 10000); }
-    function hide() { el().classList.remove("show", "peek"); clearInterval(clockT); }
+    function hide() { el().classList.remove("show", "peek"); clearInterval(clockT); if (app === "tiktok") { Tok.close(); app = "home"; } }
     function peek(on) { el().classList.toggle("peek", on && !coarse()); $("#phTip").textContent = coarse() ? "" : on ? "H: Handy hochnehmen" : "Klick in den Raum zum Umschauen · H: Handy weglegen · W: Aufstehen"; }
     const APPS = [
+      ["tiktok", "♪", "TikTok", "linear-gradient(135deg,#111 40%,#25f4ee 0,#25f4ee 55%,#fe2c55 0)"],
       ["list", "📋", "Watchlist", "linear-gradient(135deg,#ff5c5c,#ff9f43)"],
       ["search", "🔍", "Suchen", "linear-gradient(135deg,#3b82f6,#06b6d4)"],
       ["dice", "🎲", "Zufall", "linear-gradient(135deg,#a855f7,#ec4899)"],
@@ -2035,15 +2040,83 @@ const Room = (() => {
       if (k === "arcade") { openArcade(); return; }
       if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
       if (k === "exit") { standBench(); exitStore(); return; }
+      if (k === "tiktok") { app = k; Tok.open(); return; }
       app = k; render();
     }
     document.addEventListener("click", e => {
       const ph = e.target.closest && e.target.closest("#phone"); if (!ph) return;
       const a = e.target.closest("[data-app]"), g = e.target.closest("[data-go]"), it = e.target.closest("[data-item]"), f = e.target.closest("[data-f]");
-      if (a) open(a.dataset.app); else if (g) { app = g.dataset.go; render(); }
+      if (e.target.closest(".tok-frame")) return;
+      if (a) open(a.dataset.app); else if (g) { if (app === "tiktok") Tok.close(); app = g.dataset.go; render(); }
       else if (it) openDetail(it.dataset.item); else if (f) { listFilter = f.dataset.f; render(); }
-      else if (e.target.id === "phHome") { app = "home"; render(); }
+      else if (e.target.id === "phHome") { if (app === "tiktok") Tok.close(); app = "home"; render(); }
     });
+    const busy = () => app === "tiktok" && Tok.active() && el().classList.contains("show") && !el().classList.contains("peek");
+    // ----- TikTok: echtes Edge (unsichtbar) im Handy-Format, Bild wird ins Handy übertragen -----
+    const Tok = (() => {
+      const W = 400, H = 770, UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
+      let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false;
+      const cdp = (method, params = {}) => new Promise((res, rej) => { if (!ws || ws.readyState !== 1) return rej(new Error("weg")); const i = ++id; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params })); });
+      async function open() {
+        const s = scr(); s.classList.add("tok");
+        s.innerHTML = `<div class="tok-load"><span class="spin"></span> TikTok wird geöffnet …</div>`;
+        if (MODE !== "server") { window.open("https://www.tiktok.com/", "_blank", "noopener"); app = "home"; s.classList.remove("tok"); render(); return; }
+        let info; try { info = await api("POST", "/api/kinobrowser", { url: window.__tokUrl || "https://www.tiktok.com/foryou" }); } catch (e) { s.innerHTML = `<div class="ph-empty">⚠ ${esc(e.message)}</div>`; return; }
+        if (app !== "tiktok") { api("POST", "/api/kinobrowser/close").catch(() => {}); return; }
+        ws = new WebSocket(info.ws);
+        ws.onmessage = ev => {
+          const m = JSON.parse(ev.data);
+          if (m.id && pend[m.id]) { (m.error ? pend[m.id].rej : pend[m.id].res)(m.error || m.result); delete pend[m.id]; return; }
+          if (m.method === "Page.screencastFrame") { if (img) img.src = "data:image/jpeg;base64," + m.params.data; ws.send(JSON.stringify({ id: ++id, method: "Page.screencastFrameAck", params: { sessionId: m.params.sessionId } })); }
+        };
+        ws.onclose = () => { if (on) { on = false; if (app === "tiktok") { app = "home"; scr().classList.remove("tok"); render(); } } };
+        await new Promise(res => { ws.onopen = res; ws.onerror = res; });
+        if (ws.readyState !== 1) { s.innerHTML = `<div class="ph-empty">⚠ Verbindung fehlgeschlagen</div>`; return; }
+        s.innerHTML = `<img class="tok-frame" alt="">`; img = s.querySelector(".tok-frame"); on = true;
+        try {
+          await cdp("Page.enable");
+          await cdp("Emulation.setUserAgentOverride", { userAgent: UA, platform: "Android" });
+          await cdp("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: true });
+          await cdp("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+          await cdp("Page.startScreencast", { format: "jpeg", quality: 75, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
+          await cdp("Page.navigate", { url: window.__tokUrl || "https://www.tiktok.com/foryou" });
+        } catch {}
+      }
+      function close() {
+        const was = on || ws; on = false; img = null; scr().classList.remove("tok");
+        try { if (ws) { ws.onclose = null; ws.close(); } } catch {} ws = null; pend = {};
+        if (was && MODE === "server") api("POST", "/api/kinobrowser/close").catch(() => {});
+      }
+      const pt = e => { if (!img) return null; const r = img.getBoundingClientRect(); return { x: Math.round((e.clientX - r.left) / r.width * W), y: Math.round((e.clientY - r.top) / r.height * H) }; };
+      const touch = (type, e) => { const p = pt(e); if (!p) return; cdp("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: p.x, y: p.y }] }).catch(() => {}); };
+      const swipe = (dir, e) => { const p = (e && pt(e)) || { x: W / 2, y: H / 2 }; cdp("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: 0, deltaY: dir * Math.round(H * .9) }).catch(() => {}); };
+      const onTok = e => on && e.target && e.target.classList && e.target.classList.contains("tok-frame");
+      document.addEventListener("pointerdown", e => { if (!onTok(e)) return; e.preventDefault(); down = true; touch("touchStart", e); }, true);
+      document.addEventListener("pointermove", e => { if (!down || !on) return; const n = performance.now(); if (n - lastMove < 30) return; lastMove = n; touch("touchMove", e); }, true);
+      document.addEventListener("pointerup", e => { if (!down) return; down = false; touch("touchEnd", e); }, true);
+      let wheelAt = 0;
+      document.addEventListener("wheel", e => { if (!onTok(e)) return; e.preventDefault(); const n = performance.now(); if (n - wheelAt < 450) return; wheelAt = n; swipe(e.deltaY > 0 ? 1 : -1, e); }, { capture: true, passive: false });
+      // Tastatur (nur wenn das Handy oben ist)
+      const VKC = { Enter: 13, Backspace: 8, Tab: 9, Delete: 46, ArrowLeft: 37, ArrowRight: 39, " ": 32 };
+      function key(e) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") { if (e.type === "keydown") swipe(e.key === "ArrowDown" ? 1 : -1); return; }
+        if (e.type === "keydown" && e.key.length === 1 && !e.ctrlKey && !e.altKey) { cdp("Input.insertText", { text: e.key }).catch(() => {}); return; }
+        const code = VKC[e.key]; if (!code) return;
+        cdp("Input.dispatchKeyEvent", { type: e.type === "keydown" ? "rawKeyDown" : "keyUp", windowsVirtualKeyCode: code, key: e.key, code: e.code }).catch(() => {});
+        if (e.type === "keydown" && e.key === "Enter") cdp("Input.dispatchKeyEvent", { type: "char", text: "\r" }).catch(() => {});
+      }
+      return { open, close, key, active: () => on };
+    })();
+    // Tasten ans TikTok weitergeben, solange das Handy oben ist (Esc = zurück zum Startbildschirm)
+    addEventListener("keydown", e => {
+      if (!running || !busy() || e.target.closest("input, textarea")) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (e.key === "Escape") { Tok.close(); app = "home"; render(); return; }
+      if (e.code === "KeyH" && e.altKey) return;
+      Tok.key(e);
+    }, true);
+    addEventListener("keyup", e => { if (running && busy()) { e.stopImmediatePropagation(); Tok.key(e); } }, true);
+    addEventListener("paste", e => { if (!running || !busy()) return; const t = e.clipboardData && e.clipboardData.getData("text"); if (t) { e.preventDefault(); } }, true);
     return { show, hide, peek, render };
   })();
   const FOV = 68, FOV_MIN = 20, zoom = { target: 68, hideAt: 0 };
@@ -3573,7 +3646,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "39";
+const APP_VERSION = "40";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
