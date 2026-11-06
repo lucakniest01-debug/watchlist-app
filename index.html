@@ -321,6 +321,8 @@
 
   /* ---------- 3D-Raum ---------- */
   #room { position: fixed; inset: 0; z-index: 18; display: none; background: #0b0c10; touch-action: none; user-select: none; }
+  #roomZoom { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 4; pointer-events: none; padding: 6px 14px; border-radius: 20px; background: rgba(10,10,14,.7); color: #fff; font-weight: 700; font-size: 15px; opacity: 0; transition: opacity .3s; backdrop-filter: blur(6px); }
+  #roomZoom.show { opacity: 1; }
   #room::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%); }
   #room.open { display: block; }
   body.in-room { overflow: hidden; }
@@ -554,7 +556,7 @@
 </div>
 
 <!-- 3D-Raum -->
-<div id="room">
+<div id="room"><div id="roomZoom"></div>
   <canvas id="roomCanvas"></canvas>
   <button class="btn" id="roomBack">← Zurück</button>
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
@@ -1917,6 +1919,12 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 const Room = (() => {
   let maxAniso = 4, blobTex = null, poolTex = null;
   const perf = { acc: 0, n: 0, prev: 0, pr: 1, max: 1, cool: 0 };
+  const FOV = 68, FOV_MIN = 20, zoom = { target: 68, hideAt: 0 };
+  function showZoom() {
+    const el = $("#roomZoom"); if (!el) return;
+    const f = FOV / zoom.target; el.textContent = f < 1.05 ? "🔍 1×" : `🔍 ${f.toFixed(1).replace(".", ",")}×`;
+    el.classList.add("show"); zoom.hideAt = performance.now() + 1200;
+  }
   let T = null, renderer, scene, camera, store, raf = 0, running = false, last = 0, builtSig = "";
   let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
   let fixedPicks = [], colliders = [], arcade = null, posterGroup = null, popcorn = null, dice = null;
@@ -3131,7 +3139,8 @@ const Room = (() => {
     });
     document.addEventListener("mousemove", e => {
       if (!locked()) return;
-      yaw -= e.movementX * .0024 * sens; pitch = Math.max(-1.25, Math.min(1.25, pitch - e.movementY * .0024 * sens));
+      const zs = camera.fov / FOV; // beim Hineinzoomen ruhiger umsehen
+      yaw -= e.movementX * .0024 * sens * zs; pitch = Math.max(-1.25, Math.min(1.25, pitch - e.movementY * .0024 * sens * zs));
     });
     $("#roomStart").onclick = () => lockReq();
     cv.addEventListener("pointerdown", e => { if (lockable && e.pointerType === "mouse") return; drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: 0 }; cv.setPointerCapture(e.pointerId); });
@@ -3149,7 +3158,13 @@ const Room = (() => {
       drag = null;
     };
     cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", () => drag = null);
-    cv.addEventListener("wheel", e => { const f = -Math.sign(e.deltaY) * .5; pos.x += -Math.sin(yaw) * f; pos.z += -Math.cos(yaw) * f; clampPos(); e.preventDefault(); }, { passive: false });
+    // Mausrad: zoomen (Mittelklick setzt zurück)
+    cv.addEventListener("wheel", e => {
+      e.preventDefault(); if (seated) return;
+      zoom.target = Math.max(FOV_MIN, Math.min(FOV, zoom.target * (1 + Math.max(-.25, Math.min(.25, e.deltaY * .0012)))));
+      showZoom();
+    }, { passive: false });
+    cv.addEventListener("mousedown", e => { if (e.button === 1) { e.preventDefault(); zoom.target = FOV; showZoom(); } });
 
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
@@ -3293,6 +3308,9 @@ const Room = (() => {
     camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
     if (screenGlow) screenGlow.intensity = lightsDim ? 1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3 : 0;
     camera.rotation.set(pitch, yaw, 0);
+    if (seated && zoom.target !== FOV) zoom.target = FOV;
+    if (Math.abs(camera.fov - zoom.target) > .01) { camera.fov += (zoom.target - camera.fov) * Math.min(1, dt * 12); camera.updateProjectionMatrix(); }
+    if (zoom.hideAt && t > zoom.hideAt) { zoom.hideAt = 0; const z = $("#roomZoom"); if (z) z.classList.remove("show"); }
     if (!seated && (perf.n % 2 === 0)) aimCenter();
     if (!(t % 30 < 17)) startPrompt();
     renderer.render(scene, camera);
@@ -3310,7 +3328,7 @@ const Room = (() => {
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
       ? "🕹 Links: bewegen · 👆 Wischen: umsehen · Hülle antippen: ansehen"
-      : "🖱 Maus: umsehen · W A S D: gehen · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
+      : "🖱 Maus: umsehen · W A S D: gehen · Rad: zoomen · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
     $("#roomHelp").classList.add("show"); setTimeout(() => $("#roomHelp").classList.remove("show"), 7000);
     running = true; last = performance.now(); raf = requestAnimationFrame(loop); startPrompt();
     const sig = Shop.filterSig();
@@ -3376,7 +3394,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "34";
+const APP_VERSION = "35";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
