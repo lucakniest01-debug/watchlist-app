@@ -2293,11 +2293,18 @@ const Room = (() => {
     // ----- TikTok: echtes Edge (unsichtbar) im Handy-Format, Bild wird ins Handy übertragen -----
     const Tok = (() => {
       const W = 400, H = 770, UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
-      let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false;
+      let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false, cur = "", desk = false, z = 1;
+      // Manche Seiten (WebUntis) haben keine Handy-Ansicht: dort als schmale Desktop-Seite mit Maus statt Touch
+      const PROFILE = { untis: { desk: true, zoom: 1.15 }, lzweb: { zoom: 1 } };
+      const zKey = a => "watchlist-phone-zoom-" + a;
+      const cssW = () => Math.round(W / z), cssH = () => Math.round(H / z);
+      const metrics = () => cdp("Emulation.setDeviceMetricsOverride", { width: cssW(), height: cssH(), deviceScaleFactor: z, mobile: !desk }).catch(() => {});
       const cdp = (method, params = {}) => new Promise((res, rej) => { if (!ws || ws.readyState !== 1) return rej(new Error("weg")); const i = ++id; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params })); });
       async function open(url) {
         url = window.__tokUrl || url; const myApp = app, name = { insta: "Instagram", tiktok: "TikTok", lzweb: "Lernzentrale", untis: "WebUntis" }[myApp] || "App";
         if (on || ws) close();
+        cur = myApp; const pf = PROFILE[myApp] || {}; desk = !!pf.desk;
+        z = +(localStorage.getItem(zKey(myApp)) || pf.zoom || 1) || 1;
         const s = scr(); s.classList.add("tok");
         s.innerHTML = `<div class="tok-load"><span class="spin"></span> ${name} wird geöffnet …</div>`;
         if (MODE !== "server") { window.open(url, "_blank", "noopener"); app = "home"; s.classList.remove("tok"); render(); return; }
@@ -2315,9 +2322,9 @@ const Room = (() => {
         s.innerHTML = `<img class="tok-frame" alt="">`; img = s.querySelector(".tok-frame"); on = true;
         try {
           await cdp("Page.enable");
-          await cdp("Emulation.setUserAgentOverride", { userAgent: UA, platform: "Android" });
-          await cdp("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: true });
-          await cdp("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+          if (!desk) await cdp("Emulation.setUserAgentOverride", { userAgent: UA, platform: "Android" });
+          await metrics();
+          if (!desk) await cdp("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
           await cdp("Page.startScreencast", { format: "jpeg", quality: 75, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
           await cdp("Page.navigate", { url });
         } catch {}
@@ -2327,15 +2334,28 @@ const Room = (() => {
         try { if (ws) { ws.onclose = null; ws.close(); } } catch {} ws = null; pend = {};
         if (was && MODE === "server") api("POST", "/api/kinobrowser/close").catch(() => {});
       }
-      const pt = e => { if (!img) return null; const r = img.getBoundingClientRect(); return { x: Math.round((e.clientX - r.left) / r.width * W), y: Math.round((e.clientY - r.top) / r.height * H) }; };
-      const touch = (type, e) => { const p = pt(e); if (!p) return; cdp("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: p.x, y: p.y }] }).catch(() => {}); };
-      const swipe = (dir, e) => { const p = (e && pt(e)) || { x: W / 2, y: H / 2 }; cdp("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: 0, deltaY: dir * Math.round(H * .9) }).catch(() => {}); };
+      const pt = e => { if (!img) return null; const r = img.getBoundingClientRect(); return { x: Math.round((e.clientX - r.left) / r.width * cssW()), y: Math.round((e.clientY - r.top) / r.height * cssH()) }; };
+      const MT = { touchStart: "mousePressed", touchMove: "mouseMoved", touchEnd: "mouseReleased" };
+      const touch = (type, e) => {
+        const p = pt(e); if (!p) return;
+        if (desk) { cdp("Input.dispatchMouseEvent", { type: MT[type], x: p.x, y: p.y, button: type === "touchMove" && !down ? "none" : "left", buttons: down ? 1 : 0, clickCount: 1 }).catch(() => {}); return; }
+        cdp("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x: p.x, y: p.y }] }).catch(() => {});
+      };
+      function zoomBy(f) {
+        z = Math.max(.5, Math.min(2.5, +(z * f).toFixed(2))); try { localStorage.setItem(zKey(cur), z); } catch {}
+        metrics(); const el = $("#roomZoom"); if (el) { el.textContent = `📱 ${String(Math.round(z * 100))} %`; el.classList.add("show"); clearTimeout(zoomBy.t); zoomBy.t = setTimeout(() => el.classList.remove("show"), 1100); }
+      }
+      const swipe = (dir, e) => { const p = (e && pt(e)) || { x: cssW() / 2, y: cssH() / 2 }; cdp("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: 0, deltaY: dir * Math.round(H * .9) }).catch(() => {}); };
       const onTok = e => on && e.target && e.target.classList && e.target.classList.contains("tok-frame");
       document.addEventListener("pointerdown", e => { if (!onTok(e)) return; e.preventDefault(); down = true; touch("touchStart", e); }, true);
-      document.addEventListener("pointermove", e => { if (!down || !on) return; const n = performance.now(); if (n - lastMove < 30) return; lastMove = n; touch("touchMove", e); }, true);
+      document.addEventListener("pointermove", e => { if (!on || (!down && !(desk && onTok(e)))) return; const n = performance.now(); if (n - lastMove < 30) return; lastMove = n; touch("touchMove", e); }, true);
       document.addEventListener("pointerup", e => { if (!down) return; down = false; touch("touchEnd", e); }, true);
       let wheelAt = 0;
-      document.addEventListener("wheel", e => { if (!onTok(e)) return; e.preventDefault(); const n = performance.now(); if (n - wheelAt < 450) return; wheelAt = n; swipe(e.deltaY > 0 ? 1 : -1, e); }, { capture: true, passive: false });
+      document.addEventListener("wheel", e => {
+        if (!onTok(e)) return; e.preventDefault();
+        if (e.ctrlKey) { e.stopImmediatePropagation(); zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1); return; }
+        if (desk) { const p = pt(e); cdp("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: e.deltaX, deltaY: e.deltaY }).catch(() => {}); return; }
+        const n = performance.now(); if (n - wheelAt < 450) return; wheelAt = n; swipe(e.deltaY > 0 ? 1 : -1, e); }, { capture: true, passive: false });
       // Tastatur (nur wenn das Handy oben ist)
       const VKC = { Enter: 13, Backspace: 8, Tab: 9, Delete: 46, ArrowLeft: 37, ArrowRight: 39, " ": 32 };
       function key(e) {
@@ -3920,7 +3940,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "46";
+const APP_VERSION = "47";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
