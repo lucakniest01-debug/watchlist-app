@@ -355,12 +355,55 @@
   .ph-chips button.on { background: #fff; color: #111; font-weight: 700; }
   .ph-input { width: 100%; box-sizing: border-box; border: none; border-radius: 12px; padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,.14); color: #fff; outline: none; margin-bottom: 10px; }
   .ph-input::placeholder { color: rgba(255,255,255,.55); }
+  /* Lernzentrale im Handy (Farben wie das PC-Programm) */
+  .ph-screen.lz-on { background: #0e1220; padding-bottom: 0; display: flex; flex-direction: column; }
+  .ph-screen.lz-on .lzapp { flex: 1; padding-bottom: 12px; }
+  .lzapp { font-size: 13px; }
+  .lzapp h5 { margin: 14px 2px 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: #97a1b8; }
+  .lz-hello { font-size: 15px; font-weight: 700; margin: -4px 2px 10px; }
+  .lz-card { background: #171d31; border: 1px solid #283050; border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; }
+  .lz-center { text-align: center; padding: 16px 10px; }
+  .lz-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lz-mut { color: #97a1b8; font-size: 11.5px; }
+  .lz-big { font-size: 28px; font-weight: 800; line-height: 1.15; }
+  .lz-huge { font-size: 56px; font-weight: 800; line-height: 1.05; color: #f5c518; }
+  .lz-big.good, .lz-pill.good { color: #4ade80; } .lz-big.warn, .lz-pill.warn { color: #fbbf24; } .lz-big.bad, .lz-pill.bad { color: #f87171; }
+  .lz-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; margin-bottom: 6px; border-radius: 12px; background: #171d31; border: 1px solid #283050; color: #e8ecf5; text-align: left; font: inherit; cursor: default; }
+  button.lz-row { cursor: pointer; } button.lz-row:hover { background: #1d2440; }
+  .lz-row > span:not(.lz-dot):not(.lz-pill) { flex: 1; min-width: 0; }
+  .lz-row b { display: block; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .lz-row small { color: #97a1b8; font-size: 11px; }
+  .lz-row em { font-style: normal; font-size: 11px; font-weight: 700; color: #97a1b8; white-space: nowrap; } .lz-row em.bad { color: #f87171; } .lz-row em.warn { color: #fbbf24; }
+  .lz-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .lz-pill { flex: none; min-width: 42px; text-align: center; font-weight: 800; font-size: 13px; padding: 3px 6px; border-radius: 8px; background: #232c52; color: #e8ecf5; }
+  .lz-sub { color: #97a1b8; margin: -6px 2px 10px; font-size: 12px; }
+  .lz-md { background: #171d31; border-radius: 14px; padding: 4px 12px 10px; line-height: 1.5; }
+  .lz-md h4 { margin: 10px 0 4px; font-size: 14px; color: #7b96ff; } .lz-md p { margin: 6px 0; } .lz-md ul { margin: 4px 0; padding-left: 18px; }
+  .lz-md mark { background: #f5c518; color: #141826; border-radius: 3px; padding: 0 2px; }
+  .lz-nav { position: sticky; bottom: 0; margin: 0 -16px; display: flex; padding: 6px 6px 26px; background: rgba(10,13,24,.96); border-top: 1px solid #222b48; }
+  .lz-nav button { flex: 1; background: none; border: none; color: #7f89a5; font-size: 9.5px; display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer; }
+  .lz-nav button i { font-style: normal; font-size: 17px; } .lz-nav button.on { color: #f5c518; }
   .ph-screen.tok { padding: 0; background: #000; overflow: hidden; }
   .ph-screen.tok + .ph-home { background: rgba(255,255,255,.5); }
   .tok-frame { position: absolute; left: 0; right: 0; top: 46px; bottom: 0; width: 100%; height: calc(100% - 46px); object-fit: fill; user-select: none; -webkit-user-drag: none; cursor: pointer; }
   .tok-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #ccc; }
   .ph-empty { text-align: center; opacity: .7; font-size: 13px; padding: 30px 6px; }
   @media (pointer: coarse) { #phone { width: 240px; right: 4%; } .ph-body { height: 480px; } }
+  /* Popcorn-Tüte in der Hand */
+  #popHand { position: absolute; left: 6%; bottom: -10px; z-index: 6; width: 150px; height: 190px; transform: translateY(120%) rotate(-8deg); transition: transform .5s cubic-bezier(.2,.9,.25,1.2); cursor: pointer; }
+  #popHand.show { transform: translateY(0) rotate(-6deg); }
+  #popHand.munch .pop-bucket { animation: munch .25s ease; }
+  @keyframes munch { 50% { transform: translateY(-10px) rotate(3deg) scale(1.04); } }
+  .pop-bucket { position: absolute; left: 10px; right: 10px; bottom: 0; height: 150px; clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%); border-radius: 6px;
+    background: repeating-linear-gradient(90deg, #e3242b 0 18px, #fff 18px 34px); box-shadow: inset 0 -20px 30px rgba(0,0,0,.25); overflow: hidden; }
+  .pop-fill { position: absolute; left: 0; right: 0; top: 0; height: 100%; transition: height .3s; }
+  .pop-top { position: absolute; left: 6px; right: 6px; bottom: 140px; height: 54px; z-index: 0; border-radius: 40px 40px 6px 6px;
+    background: radial-gradient(circle at 18% 60%, #fff6d8 0 13px, transparent 14px), radial-gradient(circle at 40% 35%, #fff1c4 0 15px, transparent 16px), radial-gradient(circle at 62% 55%, #ffe9a8 0 14px, transparent 15px), radial-gradient(circle at 82% 40%, #fff6d8 0 13px, transparent 14px), radial-gradient(circle at 50% 75%, #ffeab0 0 18px, transparent 19px); }
+  #popHand .pop-top { position: absolute; bottom: 136px; left: 14px; right: 14px; transition: opacity .3s, transform .3s; }
+  #popHand.empty .pop-top { opacity: 0; transform: translateY(20px); }
+  .pop-label { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); background: #ffd23f; color: #b8121b; font-weight: 900; border-radius: 30px; padding: 4px 10px; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,.3); white-space: nowrap; }
+  .pop-label b { margin-left: 4px; }
+  .pop-crumb { position: absolute; top: 10px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px #000; font-size: 14px; pointer-events: none; animation: crumb .9s ease-out forwards; }
+  @keyframes crumb { to { transform: translateY(-70px); opacity: 0; } }
   #roomZoom { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 4; pointer-events: none; padding: 6px 14px; border-radius: 20px; background: rgba(10,10,14,.7); color: #fff; font-weight: 700; font-size: 15px; opacity: 0; transition: opacity .3s; backdrop-filter: blur(6px); }
   #roomZoom.show { opacity: 1; }
   #room::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%); }
@@ -599,6 +642,7 @@
 
 <!-- 3D-Raum -->
 <div id="room"><div id="roomZoom"></div>
+  <div id="popHand" title="Popcorn essen (F)"><div class="pop-top"></div><div class="pop-bucket"><div class="pop-fill"></div><div class="pop-label">🍿<b class="pop-n">0</b></div></div></div>
   <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-island"></div>
     <div class="ph-status" id="phStatus"><b id="phClock">9:41</b><span>📶 5G 🔋</span></div>
     <div class="ph-screen" id="phScreen"></div>
@@ -1981,6 +2025,39 @@ const Room = (() => {
     benchSit = false; pos.x = 0; pos.z = -3.4 + 1.25; yaw = Math.PI;
     Phone.hide();
   }
+  // ---------- Popcorn: am Automaten holen, mit F (oder Klick auf die Tüte) essen ----------
+  const Popcorn = (() => {
+    let left = 0, busy = false;
+    const el = () => $("#popHand");
+    function draw() {
+      const e = el(); if (!e) return;
+      e.querySelector(".pop-n").textContent = left;
+      e.querySelector(".pop-fill").style.height = Math.round(left / 30 * 100) + "%";
+      e.classList.toggle("empty", left <= 0);
+    }
+    function get() {
+      if (busy) return;
+      if (left > 20) { toast("🍿 Deine Tüte ist noch fast voll!"); return; }
+      busy = true; if (popcorn) popcorn.pop = 1.6;
+      $("#roomLabel").innerHTML = "🍿 Das Popcorn poppt …"; $("#roomLabel").style.opacity = 1;
+      setTimeout(() => {
+        busy = false; left = 30; draw(); el().classList.add("show"); $("#roomLabel").style.opacity = 0;
+        toast(`🍿 Frisches Popcorn! ${matchMedia("(pointer: coarse)").matches ? "Tippe auf die Tüte" : "Taste F oder Klick auf die Tüte"} zum Essen`);
+      }, 1500);
+    }
+    function eat() {
+      if (left <= 0) return;
+      left--; draw();
+      const e = el(); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
+      const c = document.createElement("span"); c.className = "pop-crumb"; c.textContent = ["😋", "🍿", "mampf", "knusper"][Math.floor(Math.random() * 4)];
+      c.style.left = (20 + Math.random() * 60) + "%"; e.appendChild(c); setTimeout(() => c.remove(), 900);
+      if (left === 0) { toast("🍿 Leer! Am Automaten gibt's Nachschub."); setTimeout(() => { if (left === 0) el().classList.remove("show"); }, 2500); }
+    }
+    function hide() { const e = el(); if (e) e.classList.remove("show"); left = 0; }
+    document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#popHand")) eat(); });
+    return { get, eat, hide, has: () => left > 0 };
+  })();
+
   // ---------- Handy (erscheint auf der Sitzbank) ----------
   const Phone = (() => {
     const el = () => $("#phone"), scr = () => $("#phScreen");
@@ -2006,7 +2083,7 @@ const Room = (() => {
     const bar = t => `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>${t}</h3></div>`;
     const thumb = p => p ? `<img src="${esc(p)}" alt="">` : `<span class="noimg"></span>`;
     function render() {
-      const s = scr();
+      const s = scr(); if (app !== "lz") { s.onclick = null; s.classList.remove("lz-on"); }
       if (app === "home") {
         const d = new Date(), h = d.getHours(), greet = h < 11 ? "Guten Morgen" : h < 18 ? "Hallo" : "Guten Abend";
         const seen = items.filter(i => i.status === "gesehen").length;
@@ -2024,21 +2101,7 @@ const Room = (() => {
         const q = $("#phQ"); setTimeout(() => q.focus(), 50);
         let tmr = null; q.oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => runSearch(q.value.trim()), 300); };
       } else if (app === "lz") {
-        const u = lzUrl();
-        s.innerHTML = bar("Lernzentrale") + `<div style="text-align:center;margin:6px 0 16px"><img src="lernzentrale.png" alt="" style="width:76px;height:76px;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.4)"><div style="font-size:12px;opacity:.75;margin-top:6px">Noten · Skripte · Stundenplan · Chat</div></div>
-          ${u ? `<button class="ph-row" id="lzOpen" style="justify-content:center;font-weight:700;background:#3058de">📱 Handy-App öffnen</button>` : ""}
-          <button class="ph-row" id="lzPc" style="justify-content:center">💻 Am PC starten</button>
-          <div style="font-size:12px;opacity:.8;margin:14px 2px 6px">${u ? "Adresse der Handy-App:" : "Für die Handy-App: Adresse deiner Lernzentrale-Seite mit <b>/app</b> am Ende eintragen (z. B. <i>deine-seite.netlify.app/app</i>):"}</div>
-          <input class="ph-input" id="lzUrl" placeholder="deine-seite.netlify.app/app" value="${esc(u.replace(/^https:\/\//, ""))}" autocomplete="off">
-          <button class="ph-row" id="lzSave" style="justify-content:center">💾 Speichern</button>
-          <div class="ph-empty" id="lzMsg" style="padding:8px"></div>`;
-        const save = () => { const v = lzNorm($("#lzUrl").value); try { v ? localStorage.setItem("watchlist-lz-url", v) : localStorage.removeItem("watchlist-lz-url"); } catch {} render(); if (v) toast("📚 Lernzentrale-Adresse gespeichert"); };
-        $("#lzSave").onclick = save; $("#lzUrl").onkeydown = e => { if (e.key === "Enter") save(); };
-        const o = $("#lzOpen"); if (o) o.onclick = () => open("lzweb");
-        $("#lzPc").onclick = async () => {
-          const m = $("#lzMsg"); m.innerHTML = `<span class="spin"></span>`;
-          try { await api("POST", "/api/lernzentrale"); m.textContent = "✓ Die Lernzentrale startet am PC …"; } catch (e) { m.textContent = "⚠ " + e.message; }
-        };
+        LZ.render(s);
       } else if (app === "next") {
         const up = items.filter(i => i.nextAir && i.nextAir.airDate).sort((a, b) => a.nextAir.airDate.localeCompare(b.nextAir.airDate));
         s.innerHTML = bar("Neue Folgen") + (up.length ? up.map(i => `<button class="ph-row" data-item="${esc(i.id)}">${thumb(i.poster)}<span><b>${esc(i.title)}</b><small>${SE(i.nextAir.season, i.nextAir.episode)}${i.nextAir.name ? " „" + esc(i.nextAir.name) + "“" : ""}<br>📅 ${fmtDate(i.nextAir.airDate)}</small></span></button>`).join("") : `<div class="ph-empty">Keine angekündigten Folgen für deine Serien.</div>`);
@@ -2062,6 +2125,7 @@ const Room = (() => {
       if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
       if (k === "exit") { standBench(); exitStore(); return; }
       if (WEBAPP[k]) { app = k; Tok.open(WEBAPP[k]); return; }
+      if (k === "lz") { app = k; LZ.load(); render(); return; }
       if (k === "lzweb") { const u = lzUrl(); if (!u) { app = "lz"; render(); return; } app = k; Tok.open(u); return; }
       app = k; render();
     }
@@ -2077,6 +2141,113 @@ const Room = (() => {
     // Lernzentrale: Handy-Version (Webseite) im Handy oder das PC-Programm starten
     const lzUrl = () => { try { return localStorage.getItem("watchlist-lz-url") || ""; } catch { return ""; } };
     function lzNorm(u) { u = String(u || "").trim(); if (!u) return ""; if (!/^https:\/\//i.test(u)) u = "https://" + u.replace(/^http:\/\//i, ""); return u; }
+    // ----- Lernzentrale: liest deine Daten vom PC (Noten, Skripte, Klassenarbeiten, Ferien) -----
+    const LZ = (() => {
+      let data = null, err = "", loading = false, tab = "home", sub = null, script = null;
+      const DAY = 864e5, today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+      const dt = iso => { const d = new Date(String(iso).slice(0, 10) + "T00:00:00"); return isNaN(d) ? null : d; };
+      const days = d => Math.round((d - today()) / DAY);
+      const fmtD = d => d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+      const nf = n => n == null ? "–" : n.toFixed(2).replace(".", ",");
+      const lvl = n => n == null ? "" : n <= 2.5 ? "good" : n <= 4 ? "warn" : "bad";
+      const TYPES = { klausur: "Klausur", test: "Test", muendlich: "Mündlich", projekt: "Projekt" };
+      const KINDS = { klassenarbeit: "Klassenarbeit", test: "Test", referat: "Referat", sonstiges: "Termin" };
+      async function load() {
+        loading = true; err = ""; tab = "home"; sub = null; script = null;
+        try { data = await api("GET", "/api/lernzentrale/data"); } catch (e) { data = null; err = e.message; }
+        loading = false; if (app === "lz") render();
+      }
+      const subj = id => (data.subjects || []).find(x => x.id === id) || { id, code: "?", name: id || "Allgemein", color: "#7f89a5" };
+      function avg(sid) { let s = 0, w = 0; for (const g of data.grades || []) if (g.subject === sid) { const ww = +g.weight || 1; s += +g.value * ww; w += ww; } return w ? s / w : null; }
+      function overall() { const a = (data.subjects || []).map(x => avg(x.id)).filter(x => x != null); return a.length ? a.reduce((p, c) => p + c, 0) / a.length : null; }
+      function exams() {
+        const out = [], seen = new Set();
+        for (const e of ((data.untis_exams || {}).items || [])) { const d = dt(e.date); if (!d) continue; const m = (data.subjects || []).find(x => x.untis && (x.untis === e.subject || x.code === e.subject)); out.push({ d, label: m ? m.name : (e.subject || e.name || "Prüfung"), color: m ? m.color : "#7f89a5", kind: (e.type && e.type.length > 2) ? e.type : "Klassenarbeit", topic: e.text || "" }); seen.add(d.getTime() + (m ? m.id : e.subject)); }
+        for (const x of data.exams || []) { const d = dt(x.date); if (!d) continue; const m = (data.subjects || []).find(s => s.id === x.subject); if (seen.has(d.getTime() + (m ? m.id : ""))) continue; out.push({ d, label: m ? m.name : (x.title || "Klassenarbeit"), color: m ? m.color : "#7f89a5", kind: KINDS[x.kind] || "Klassenarbeit", topic: x.topic || "" }); }
+        return out.filter(e => days(e.d) >= 0).sort((a, b) => a.d - b.d);
+      }
+      function ferien() {
+        const c = data.ferien_cache; if (!c) return null;
+        const items = [];
+        for (const x of c.untis || []) { const a = dt(x.start), b = dt(x.end); if (a && b && (b - a) / DAY >= 2) items.push({ name: x.name, a, b }); }
+        for (const x of c.ferien || []) { const a = dt(x.start), b = dt(x.end); if (!a || !b) continue; if (items.some(i => a <= i.b && i.a <= b)) continue; if ((b - a) / DAY >= 2) items.push({ name: x.name, a, b }); }
+        items.sort((p, q) => p.a - q.a);
+        const t = today(), now = items.find(i => i.a <= t && t <= i.b), next = items.find(i => i.a > t);
+        const holidays = (c.feiertage || []).map(h => ({ name: h.name, d: dt(h.date) })).filter(h => h.d && h.d >= t).sort((p, q) => p.d - q.d).slice(0, 4);
+        return { now, next, items: items.filter(i => i.b >= t), holidays };
+      }
+      const pill = n => `<span class="lz-pill ${lvl(n)}">${nf(n)}</span>`;
+      const inDays = n => n === 0 ? "heute" : n === 1 ? "morgen" : `in ${n} Tagen`;
+      const urg = n => n <= 3 ? "bad" : n <= 7 ? "warn" : "";
+      function md(t) {
+        const out = []; let list = false;
+        for (let line of String(t || "").split("\n")) {
+          let h = esc(line).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/==(.+?)==/g, "<mark>$1</mark>");
+          if (/^\s*[-*•]\s+/.test(line)) { if (!list) { out.push("<ul>"); list = true; } out.push("<li>" + h.replace(/^\s*[-*•]\s+/, "") + "</li>"); continue; }
+          if (list) { out.push("</ul>"); list = false; }
+          if (/^#{1,6}\s/.test(line)) out.push("<h4>" + h.replace(/^#+\s*/, "") + "</h4>"); else if (line.trim()) out.push("<p>" + h + "</p>");
+        }
+        if (list) out.push("</ul>"); return out.join("");
+      }
+      function render(s) {
+        s = s || scr();
+        const head = t => `<div class="ph-bar"><button class="ph-back" data-lzback>‹</button><h3>${t}</h3></div>`;
+        const nav = `<div class="lz-nav">${[["home", "🏠", "Start"], ["noten", "📊", "Noten"], ["skripte", "📄", "Skripte"], ["arbeiten", "📝", "Arbeiten"], ["ferien", "🏖", "Ferien"]].map(([k, i, l]) => `<button data-lztab="${k}" class="${tab === k ? "on" : ""}"><i>${i}</i>${l}</button>`).join("")}</div>`;
+        let body = "";
+        if (loading) body = `<div class="ph-empty"><span class="spin"></span> Lade deine Lernzentrale …</div>`;
+        else if (!data) body = `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>Lernzentrale</h3></div>
+          <div style="text-align:center;margin:10px 0 14px"><img src="lernzentrale.png" alt="" style="width:72px;height:72px;border-radius:18px"></div>
+          <div class="ph-empty" style="padding:6px 4px 14px">${esc(err || "Keine Daten gefunden")}.<br>Starte die Lernzentrale einmal am PC – danach siehst du hier deine Noten, Skripte und Termine.</div>
+          <button class="ph-row" data-lzpc style="justify-content:center">💻 Lernzentrale am PC starten</button><div class="ph-empty" id="lzMsg" style="padding:6px"></div>`;
+        else if (script) {
+          body = head(esc(script.name || "Skript")) + `<div class="lz-sub">${esc(subj(script.subject).name)}</div><div class="lz-md">${script.summary ? md(script.summary) : `<p class="lz-mut">Noch keine Zusammenfassung – die erstellst du am PC.</p>`}</div>`;
+        } else if (sub) {
+          const gs = (data.grades || []).filter(g => g.subject === sub.id).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+          const sc = (data.scripts || []).filter(x => x.subject === sub.id);
+          body = head(esc(sub.name)) + `<div class="lz-card" style="border-left:4px solid ${esc(sub.color || "#5b7cff")}"><span class="lz-mut">Schnitt</span><div class="lz-big ${lvl(avg(sub.id))}">${nf(avg(sub.id))}</div><span class="lz-mut">${gs.length} Note${gs.length === 1 ? "" : "n"}</span></div>
+            <h5>Noten</h5>${gs.length ? gs.map(g => `<div class="lz-row">${pill(+g.value)}<span><b>${TYPES[g.type] || esc(g.type || "Note")}${+g.weight && +g.weight !== 1 ? ` · zählt ×${esc(String(g.weight))}` : ""}</b><small>${g.date ? fmtD(dt(g.date)) : ""}${g.note ? " · " + esc(g.note) : ""}</small></span></div>`).join("") : `<p class="lz-mut">Noch keine Noten.</p>`}
+            <h5>Skripte</h5>${sc.length ? sc.map(x => `<button class="lz-row" data-lzscript="${esc(x.id)}">📄<span><b>${esc(x.name || "Skript")}</b><small>${x.summary ? "Zusammenfassung ansehen" : "ohne Zusammenfassung"}</small></span></button>`).join("") : `<p class="lz-mut">Keine Skripte.</p>`}`;
+        } else if (tab === "home") {
+          const o = overall(), ex = exams().slice(0, 3), f = ferien(), h = new Date().getHours();
+          const last = (data.grades || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 3);
+          body = `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>Lernzentrale</h3></div>
+            <div class="lz-hello">${h < 11 ? "Guten Morgen" : h < 18 ? "Hallo" : "Guten Abend"}! 📚</div>
+            <div class="lz-grid2"><div class="lz-card"><span class="lz-mut">Gesamtschnitt</span><div class="lz-big ${lvl(o)}">${nf(o)}</div></div>
+            <div class="lz-card"><span class="lz-mut">${f && f.now ? esc(f.now.name) : "Ferien"}</span><div class="lz-big">${f ? f.now ? Math.max(0, days(f.now.b)) + 1 : f.next ? days(f.next.a) : "–" : "–"}</div><span class="lz-mut">${f ? f.now ? "Tage frei" : f.next ? "Tage bis " + esc(f.next.name) : "" : "keine Daten"}</span></div></div>
+            <h5>Nächste Arbeiten</h5>${ex.length ? ex.map(e => `<div class="lz-row"><span class="lz-dot" style="background:${esc(e.color)}"></span><span><b>${esc(e.label)}</b><small>${esc(e.kind)} · ${fmtD(e.d)}</small></span><em class="${urg(days(e.d))}">${inDays(days(e.d))}</em></div>`).join("") : `<p class="lz-mut">Keine anstehenden Arbeiten 🎉</p>`}
+            <h5>Letzte Noten</h5>${last.length ? last.map(g => `<div class="lz-row">${pill(+g.value)}<span><b>${esc(subj(g.subject).name)}</b><small>${TYPES[g.type] || ""}${g.date ? " · " + fmtD(dt(g.date)) : ""}</small></span></div>`).join("") : `<p class="lz-mut">Noch keine Noten.</p>`}
+            <button class="ph-row" data-lzpc style="justify-content:center;margin-top:10px">💻 Am PC öffnen (Noten eintragen)</button><div class="ph-empty" id="lzMsg" style="padding:4px"></div>`;
+        } else if (tab === "noten") {
+          body = `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>Noten</h3></div><div class="lz-card"><span class="lz-mut">Gesamtschnitt</span><div class="lz-big ${lvl(overall())}">${nf(overall())}</div></div>` +
+            (data.subjects || []).map(x => { const n = (data.grades || []).filter(g => g.subject === x.id).length; return `<button class="lz-row" data-lzsub="${esc(x.id)}"><span class="lz-dot" style="background:${esc(x.color || "#5b7cff")}"></span><span><b>${esc(x.name)}</b><small>${esc(x.code || "")} · ${n} Note${n === 1 ? "" : "n"}</small></span>${pill(avg(x.id))}</button>`; }).join("");
+        } else if (tab === "skripte") {
+          const sc = (data.scripts || []).slice().sort((a, b) => String(b.created).localeCompare(String(a.created)));
+          body = `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>Skripte</h3></div>` + (sc.length ? sc.map(x => `<button class="lz-row" data-lzscript="${esc(x.id)}"><span class="lz-dot" style="background:${esc(subj(x.subject).color || "#5b7cff")}"></span><span><b>${esc(x.name || "Skript")}</b><small>${esc(subj(x.subject).name)}${x.summary ? " · ✓ Zusammenfassung" : ""}</small></span></button>`).join("") : `<p class="lz-mut">Noch keine Skripte.</p>`);
+        } else if (tab === "arbeiten") {
+          const ex = exams();
+          body = `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>Klassenarbeiten</h3></div>` + (ex.length ? ex.map(e => `<div class="lz-row"><span class="lz-dot" style="background:${esc(e.color)}"></span><span><b>${esc(e.label)}</b><small>${esc(e.kind)} · ${fmtD(e.d)}${e.topic ? " · " + esc(e.topic) : ""}</small></span><em class="${urg(days(e.d))}">${inDays(days(e.d))}</em></div>`).join("") : `<p class="lz-mut">Keine anstehenden Arbeiten 🎉</p>`);
+        } else if (tab === "ferien") {
+          const f = ferien();
+          body = `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>Ferien</h3></div>` + (!f ? `<p class="lz-mut">Noch keine Ferien geladen – öffne einmal „Ferien“ in der Lernzentrale am PC.</p>` :
+            `<div class="lz-card lz-center">${f.now ? `<span class="lz-mut">${esc(f.now.name)}</span><div class="lz-huge">${Math.max(0, days(f.now.b)) + 1}</div><span class="lz-mut">Tage noch frei 🏖</span>` : f.next ? `<span class="lz-mut">Bis zu den ${esc(f.next.name)}</span><div class="lz-huge">${days(f.next.a)}</div><span class="lz-mut">Tage · ab ${fmtD(f.next.a)}</span>` : `<span class="lz-mut">Keine Ferien gefunden</span>`}</div>
+            <h5>Alle Ferien</h5>${f.items.map(i => `<div class="lz-row">🏖<span><b>${esc(i.name)}</b><small>${fmtD(i.a)} – ${fmtD(i.b)}</small></span><em>${days(i.a) > 0 ? inDays(days(i.a)) : "jetzt"}</em></div>`).join("")}
+            ${f.holidays.length ? `<h5>Feiertage</h5>` + f.holidays.map(h => `<div class="lz-row">🎉<span><b>${esc(h.name)}</b><small>${fmtD(h.d)}</small></span><em>${inDays(days(h.d))}</em></div>`).join("") : ""}`);
+        }
+        s.innerHTML = `<div class="lzapp">${body}</div>${data && !loading && !sub && !script ? nav : ""}`;
+        s.classList.toggle("lz-on", true);
+        s.onclick = e => {
+          const t = e.target.closest("[data-lztab],[data-lzsub],[data-lzscript],[data-lzback],[data-lzpc]"); if (!t) return;
+          e.stopPropagation();
+          if (t.dataset.lztab) { tab = t.dataset.lztab; sub = null; script = null; }
+          else if (t.dataset.lzsub) sub = subj(t.dataset.lzsub);
+          else if (t.dataset.lzscript) script = (data.scripts || []).find(x => x.id === t.dataset.lzscript) || null;
+          else if (t.hasAttribute("data-lzback")) { if (script) script = null; else sub = null; }
+          else if (t.hasAttribute("data-lzpc")) { const m = $("#lzMsg"); if (m) m.innerHTML = `<span class="spin"></span>`; api("POST", "/api/lernzentrale").then(() => { const m2 = $("#lzMsg"); if (m2) m2.textContent = "✓ Die Lernzentrale startet am PC …"; }).catch(er => { const m2 = $("#lzMsg"); if (m2) m2.textContent = "⚠ " + er.message; }); return; }
+          render(); scr().scrollTop = 0;
+        };
+      }
+      return { load, render };
+    })();
     const busy = () => WEBAPP[app] && Tok.active() && el().classList.contains("show") && !el().classList.contains("peek");
     // ----- TikTok: echtes Edge (unsichtbar) im Handy-Format, Bild wird ins Handy übertragen -----
     const Tok = (() => {
@@ -2359,7 +2530,9 @@ const Room = (() => {
     for (const sx of [-.33, .33]) { const post = new T.Mesh(new T.BoxGeometry(.03, .62, .03), gold); post.position.set(sx, 1.25, .25); g.add(post); }
     const lamp = new T.PointLight(0xffc96b, 2.2, 2.5, 1.8); lamp.position.set(0, 1.45, 0); g.add(lamp);
     g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .55 });
-    popcorn = g;
+    for (const part of [cart, glass, roof, sign]) { part.userData.popcorn = true; fixedPicks.push(part); }
+    const base = []; for (let i = 0; i < 260; i++) { const mm = new T.Matrix4(); corn.getMatrixAt(i, mm); base.push(mm); }
+    popcorn = { g, corn, base, pop: 0 };
   }
 
   // ---------- Arcade-Automat: Lucas Arcade (Hauptmenü mit allen Spielen) ----------
@@ -3390,7 +3563,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -3442,6 +3615,7 @@ const Room = (() => {
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
       if (e.code === "Escape" && document.pointerLockElement) { document.exitPointerLock(); releasedAt = performance.now(); return; }
+      if (e.code === "KeyF" && !e.repeat && Popcorn.has()) { Popcorn.eat(); return; }
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
       if (benchSit && e.code === "KeyH" && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
       if (benchSit && e.code === "Escape") { if (performance.now() - releasedAt > 400) standBench(); return; }
@@ -3506,6 +3680,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.popcorn) { lab.innerHTML = `🍿 <b>Popcorn-Automat</b><span class="hint"> – ${tap} für eine Tüte Popcorn</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.bench) { if (benchSit) { lab.style.opacity = 0; return; } lab.innerHTML = `🛋 <b>Sitzbank</b><span class="hint"> – ${tap} zum Hinsetzen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.exit) { lab.innerHTML = `🚪 <b>Ausgang</b> · Videothek verlassen<span class="hint"> – ${tap} oder hindurchgehen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.dice) { if (dice && dice.spinning) return; lab.innerHTML = `🎲 <b>Zufalls-Tipp</b> · Film, Serie oder Anime<span class="hint"> – ${tap} zum Drücken</span>`; lab.style.opacity = 1; return; }
@@ -3523,6 +3698,7 @@ const Room = (() => {
     if (m.userData.dice) { pressDice(); return; }
     if (m.userData.exit) { exitStore(); return; }
     if (m.userData.bench) { sitBench(); return; }
+    if (m.userData.popcorn) { Popcorn.get(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -3572,6 +3748,16 @@ const Room = (() => {
       const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
       if (avg > 1 / 48 && perf.pr > .6) { perf.pr = Math.max(.6, +(perf.pr - .15).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
+    }
+    if (popcorn && popcorn.pop > 0) {
+      popcorn.pop = Math.max(0, popcorn.pop - dt);
+      const mm = new T.Matrix4(), v = new T.Vector3();
+      for (let i = 0; i < 260; i += 2) {
+        v.setFromMatrixPosition(popcorn.base[i]);
+        if (popcorn.pop > 0) v.y += Math.abs(Math.sin(t / 60 + i * 1.7)) * .22 * Math.min(1, popcorn.pop);
+        mm.makeTranslation(v.x, v.y, v.z); popcorn.corn.setMatrixAt(i, mm);
+      }
+      popcorn.corn.instanceMatrix.needsUpdate = true;
     }
     if (dice) {
       dice.press = Math.max(0, dice.press - dt * 3.5);
@@ -3625,7 +3811,7 @@ const Room = (() => {
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
       ? "🕹 Links: bewegen · 👆 Wischen: umsehen · Hülle antippen: ansehen"
-      : "🖱 Maus: umsehen · W A S D: gehen · Rad: zoomen · 🚪 Ausgang hinten · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
+      : "🖱 Maus: umsehen · W A S D: gehen · Rad: zoomen · F: Popcorn essen · 🚪 Ausgang hinten · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
     $("#roomHelp").classList.add("show"); setTimeout(() => $("#roomHelp").classList.remove("show"), 7000);
     running = true; last = performance.now(); raf = requestAnimationFrame(loop); startPrompt();
     const sig = Shop.filterSig();
@@ -3638,7 +3824,7 @@ const Room = (() => {
     await fill(); Shop.rebuild();
   }
   function close() {
-    standUp(); benchSit = false; Phone.hide();
+    standUp(); benchSit = false; Phone.hide(); Popcorn.hide();
     if (fullByUs || document.fullscreenElement) goFull(false);
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
     if (document.pointerLockElement) document.exitPointerLock();
@@ -3657,7 +3843,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -3692,7 +3878,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "43";
+const APP_VERSION = "44";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
