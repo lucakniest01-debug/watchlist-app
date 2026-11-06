@@ -321,6 +321,42 @@
 
   /* ---------- 3D-Raum ---------- */
   #room { position: fixed; inset: 0; z-index: 18; display: none; background: #0b0c10; touch-action: none; user-select: none; }
+  /* Handy auf der Sitzbank */
+  #phone { position: absolute; right: 7%; bottom: 14px; z-index: 6; width: 300px; transform: translateY(110%) rotate(4deg); transition: transform .45s cubic-bezier(.2,.9,.25,1.1); pointer-events: none; }
+  #phone.show { transform: translateY(0) rotate(-2deg); pointer-events: auto; }
+  #phone.show.peek { transform: translateY(74%) rotate(3deg); pointer-events: none; }
+  #phone.show.peek .ph-tip { top: -30px; }
+  .ph-body { position: relative; height: min(600px, calc(100vh - 150px)); border-radius: 46px; padding: 12px; background: linear-gradient(145deg, #3b3b42, #141418); box-shadow: 0 30px 80px rgba(0,0,0,.75), inset 0 0 0 2px #55555e, inset 0 0 0 5px #0b0b0d; }
+  .ph-island { position: absolute; top: 22px; left: 50%; width: 96px; height: 26px; margin-left: -48px; border-radius: 20px; background: #000; z-index: 3; }
+  .ph-status { position: absolute; top: 22px; left: 34px; right: 30px; display: flex; justify-content: space-between; font-size: 13px; color: #fff; z-index: 2; }
+  .ph-status span { font-size: 11px; letter-spacing: .5px; }
+  .ph-screen { position: absolute; inset: 12px; border-radius: 36px; overflow: hidden auto; padding: 58px 16px 34px; color: #fff; scrollbar-width: none;
+    background: radial-gradient(circle at 20% 10%, #ff5c7a 0, transparent 45%), radial-gradient(circle at 90% 80%, #7c3aed 0, transparent 50%), linear-gradient(160deg, #2b1236, #0e0c1a); }
+  .ph-screen::-webkit-scrollbar { display: none; }
+  .ph-home { position: absolute; bottom: 20px; left: 50%; width: 110px; height: 5px; margin-left: -55px; border-radius: 4px; background: rgba(255,255,255,.75); cursor: pointer; z-index: 3; }
+  .ph-tip { position: absolute; left: -40px; right: -40px; top: -30px; text-align: center; font-size: 12px; color: #ddd; text-shadow: 0 1px 4px #000; }
+  .ph-time { text-align: center; font-size: 54px; font-weight: 200; line-height: 1; margin-top: 6px; }
+  .ph-date { text-align: center; font-size: 13px; opacity: .85; margin: 4px 0 14px; }
+  .ph-widget { background: rgba(255,255,255,.12); backdrop-filter: blur(10px); border-radius: 20px; padding: 12px 14px; font-size: 12.5px; margin-bottom: 16px; line-height: 1.45; }
+  .ph-widget b { font-size: 13.5px; }
+  .ph-apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 8px; }
+  .ph-app { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10.5px; color: #fff; background: none; border: none; cursor: pointer; padding: 0; }
+  .ph-app i { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-style: normal; box-shadow: 0 4px 12px rgba(0,0,0,.35); transition: transform .15s; }
+  .ph-app:hover i { transform: scale(1.08); } .ph-app:active i { transform: scale(.92); }
+  .ph-bar { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; }
+  .ph-bar h3 { margin: 0; font-size: 20px; flex: 1; }
+  .ph-back { background: rgba(255,255,255,.15); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+  .ph-row { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.08); margin-bottom: 8px; cursor: pointer; width: 100%; border: none; color: #fff; text-align: left; font: inherit; }
+  .ph-row:hover { background: rgba(255,255,255,.16); }
+  .ph-row img, .ph-row .noimg { width: 38px; height: 57px; border-radius: 6px; object-fit: cover; flex: none; background: #333; }
+  .ph-row b { display: block; font-size: 13px; line-height: 1.25; } .ph-row small { font-size: 11px; opacity: .75; }
+  .ph-chips { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .ph-chips button { border: none; border-radius: 20px; padding: 5px 10px; font-size: 11.5px; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+  .ph-chips button.on { background: #fff; color: #111; font-weight: 700; }
+  .ph-input { width: 100%; box-sizing: border-box; border: none; border-radius: 12px; padding: 10px 12px; font-size: 14px; background: rgba(255,255,255,.14); color: #fff; outline: none; margin-bottom: 10px; }
+  .ph-input::placeholder { color: rgba(255,255,255,.55); }
+  .ph-empty { text-align: center; opacity: .7; font-size: 13px; padding: 30px 6px; }
+  @media (pointer: coarse) { #phone { width: 240px; right: 4%; } .ph-body { height: 480px; } }
   #roomZoom { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 4; pointer-events: none; padding: 6px 14px; border-radius: 20px; background: rgba(10,10,14,.7); color: #fff; font-weight: 700; font-size: 15px; opacity: 0; transition: opacity .3s; backdrop-filter: blur(6px); }
   #roomZoom.show { opacity: 1; }
   #room::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%); }
@@ -557,6 +593,11 @@
 
 <!-- 3D-Raum -->
 <div id="room"><div id="roomZoom"></div>
+  <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-island"></div>
+    <div class="ph-status"><b id="phClock">9:41</b><span>📶 5G 🔋</span></div>
+    <div class="ph-screen" id="phScreen"></div>
+    <div class="ph-home" id="phHome" title="Startbildschirm"></div></div>
+    <div class="ph-tip" id="phTip"></div></div>
   <canvas id="roomCanvas"></canvas>
   <button class="btn" id="roomBack">← Zurück</button>
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
@@ -1925,12 +1966,86 @@ const Room = (() => {
     if (benchSit) return;
     benchSit = true; keys = {}; joy = { x: 0, y: 0 }; setAim(null);
     pos.x = 0; pos.z = -3.38; yaw = Math.PI; pitch = -.08;
-    toast(`🛋 Gemütlich! Umschauen mit der Maus · ${matchMedia("(pointer: coarse)").matches ? "Joystick" : "W A S D oder Leertaste"} zum Aufstehen`);
+    if (document.pointerLockElement) document.exitPointerLock();
+    Phone.show(); startPrompt();
   }
   function standBench() {
     if (!benchSit) return;
     benchSit = false; pos.x = 0; pos.z = -3.4 + 1.25; yaw = Math.PI;
+    Phone.hide();
   }
+  // ---------- Handy (erscheint auf der Sitzbank) ----------
+  const Phone = (() => {
+    const el = () => $("#phone"), scr = () => $("#phScreen");
+    let app = "home", clockT = null, listFilter = "all", searchSeq = 0;
+    const coarse = () => matchMedia("(pointer: coarse)").matches;
+    const tick = () => { const d = new Date(); $("#phClock").textContent = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); if (app === "home") { const t = scr().querySelector(".ph-time"); if (t) t.textContent = $("#phClock").textContent; } };
+    function show() { app = "home"; render(); el().classList.add("show"); peek(!!document.pointerLockElement); tick(); clearInterval(clockT); clockT = setInterval(tick, 10000); }
+    function hide() { el().classList.remove("show", "peek"); clearInterval(clockT); }
+    function peek(on) { el().classList.toggle("peek", on && !coarse()); $("#phTip").textContent = coarse() ? "" : on ? "H: Handy hochnehmen" : "Klick in den Raum zum Umschauen · H: Handy weglegen · W: Aufstehen"; }
+    const APPS = [
+      ["list", "📋", "Watchlist", "linear-gradient(135deg,#ff5c5c,#ff9f43)"],
+      ["search", "🔍", "Suchen", "linear-gradient(135deg,#3b82f6,#06b6d4)"],
+      ["dice", "🎲", "Zufall", "linear-gradient(135deg,#a855f7,#ec4899)"],
+      ["next", "📅", "Neue Folgen", "linear-gradient(135deg,#22c55e,#14b8a6)"],
+      ["kino", "🎬", "Kino", "linear-gradient(135deg,#7f1d1d,#dc2626)"],
+      ["arcade", "🕹", "Arcade", "linear-gradient(135deg,#0ea5e9,#1e3a8a)"],
+      ["mix", "🔀", "Mischen", "linear-gradient(135deg,#f59e0b,#ef4444)"],
+      ["exit", "🚪", "Ausgang", "linear-gradient(135deg,#16a34a,#065f46)"],
+    ];
+    const bar = t => `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>${t}</h3></div>`;
+    const thumb = p => p ? `<img src="${esc(p)}" alt="">` : `<span class="noimg"></span>`;
+    function render() {
+      const s = scr();
+      if (app === "home") {
+        const d = new Date(), h = d.getHours(), greet = h < 11 ? "Guten Morgen" : h < 18 ? "Hallo" : "Guten Abend";
+        const seen = items.filter(i => i.status === "gesehen").length;
+        const nx = items.filter(i => i.nextAir && i.nextAir.airDate).sort((a, b) => a.nextAir.airDate.localeCompare(b.nextAir.airDate))[0];
+        s.innerHTML = `<div class="ph-time">${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</div>
+          <div class="ph-date">${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div>
+          <div class="ph-widget"><b>${greet}! 🍿</b><br>${items.length} Titel auf deiner Watchlist · ${seen} gesehen${nx ? `<br>📅 Nächste Folge: <b>${esc(nx.title)}</b> ${SE(nx.nextAir.season, nx.nextAir.episode)} am ${fmtDate(nx.nextAir.airDate)}` : ""}</div>
+          <div class="ph-apps">${APPS.map(([k, ic, name, bg]) => `<button class="ph-app" data-app="${k}"><i style="background:${bg}">${ic}</i>${name}</button>`).join("")}</div>`;
+      } else if (app === "list") {
+        const f = listFilter === "all" ? items : items.filter(i => i.status === listFilter);
+        s.innerHTML = bar("Watchlist") + `<div class="ph-chips">${[["all", "Alle"], ...Object.entries(STATUS)].map(([k, l]) => `<button data-f="${k}" class="${listFilter === k ? "on" : ""}">${l}</button>`).join("")}</div>` +
+          (f.length ? f.map(i => `<button class="ph-row" data-item="${esc(i.id)}">${thumb(i.poster)}<span><b>${esc(i.title)}</b><small>${KINDS[i.kind] || ""}${i.year ? " · " + esc(i.year) : ""} · ${STATUS[i.status] || ""}</small></span></button>`).join("") : `<div class="ph-empty">Hier ist noch nichts.</div>`);
+      } else if (app === "search") {
+        s.innerHTML = bar("Suchen") + `<input class="ph-input" id="phQ" placeholder="Film, Serie oder Anime …" autocomplete="off"><div id="phRes"><div class="ph-empty">Tippe einen Titel ein 🔍</div></div>`;
+        const q = $("#phQ"); setTimeout(() => q.focus(), 50);
+        let tmr = null; q.oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => runSearch(q.value.trim()), 300); };
+      } else if (app === "next") {
+        const up = items.filter(i => i.nextAir && i.nextAir.airDate).sort((a, b) => a.nextAir.airDate.localeCompare(b.nextAir.airDate));
+        s.innerHTML = bar("Neue Folgen") + (up.length ? up.map(i => `<button class="ph-row" data-item="${esc(i.id)}">${thumb(i.poster)}<span><b>${esc(i.title)}</b><small>${SE(i.nextAir.season, i.nextAir.episode)}${i.nextAir.name ? " „" + esc(i.nextAir.name) + "“" : ""}<br>📅 ${fmtDate(i.nextAir.airDate)}</small></span></button>`).join("") : `<div class="ph-empty">Keine angekündigten Folgen für deine Serien.</div>`);
+      }
+    }
+    async function runSearch(q) {
+      const box = $("#phRes"); if (!box) return;
+      if (q.length < 2) { box.innerHTML = `<div class="ph-empty">Tippe einen Titel ein 🔍</div>`; return; }
+      if (!settings.apiKey) { box.innerHTML = `<div class="ph-empty">Dafür brauchst du einen TMDB-Schlüssel (⚙).</div>`; return; }
+      const seq = ++searchSeq; box.innerHTML = `<div class="ph-empty"><span class="spin"></span></div>`;
+      try {
+        const res = (await api("GET", "/api/search?q=" + encodeURIComponent(q))).slice(0, 12); if (seq !== searchSeq) return;
+        box.innerHTML = res.length ? res.map((r, k) => `<button class="ph-row" data-res="${k}">${thumb(r.poster)}<span><b>${esc(r.title)}</b><small>${KINDS[r.kind] || ""}${r.year ? " · " + esc(r.year) : ""}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}</small></span></button>`).join("") : `<div class="ph-empty">Nichts gefunden.</div>`;
+        box.querySelectorAll("[data-res]").forEach(b => b.onclick = () => { const r = res[+b.dataset.res]; Shop.openItem(Object.assign({ big: r.poster ? r.poster.replace("/w185/", "/w500/") : "", backdrop: "", vote: 0 }, r)); });
+      } catch (e) { if (seq === searchSeq) box.innerHTML = `<div class="ph-empty">⚠ ${esc(e.message)}</div>`; }
+    }
+    function open(k) {
+      if (k === "dice") { pressDice(); return; }
+      if (k === "kino") { standBench(); enterCinema(); return; }
+      if (k === "arcade") { openArcade(); return; }
+      if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
+      if (k === "exit") { standBench(); exitStore(); return; }
+      app = k; render();
+    }
+    document.addEventListener("click", e => {
+      const ph = e.target.closest && e.target.closest("#phone"); if (!ph) return;
+      const a = e.target.closest("[data-app]"), g = e.target.closest("[data-go]"), it = e.target.closest("[data-item]"), f = e.target.closest("[data-f]");
+      if (a) open(a.dataset.app); else if (g) { app = g.dataset.go; render(); }
+      else if (it) openDetail(it.dataset.item); else if (f) { listFilter = f.dataset.f; render(); }
+      else if (e.target.id === "phHome") { app = "home"; render(); }
+    });
+    return { show, hide, peek, render };
+  })();
   const FOV = 68, FOV_MIN = 20, zoom = { target: 68, hideAt: 0 };
   function showZoom() {
     const el = $("#roomZoom"); if (!el) return;
@@ -3178,6 +3293,7 @@ const Room = (() => {
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
+      if (benchSit) Phone.peek(on);
       if (!on) { releasedAt = performance.now(); setAim(null); }
       startPrompt();
     });
@@ -3225,6 +3341,8 @@ const Room = (() => {
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
+      if (benchSit && e.code === "KeyH" && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
+      if (benchSit && e.code === "Escape") { if (performance.now() - releasedAt > 400) standBench(); return; }
       keys[e.code] = true;
       if (e.code === "Escape" && performance.now() - releasedAt > 400) close();
       if (e.code === "Enter" && aimed) select(aimed);
@@ -3315,7 +3433,7 @@ const Room = (() => {
   }
   // Startkarte „Klicken zum Umsehen“ (nur Maus)
   function startPrompt() {
-    const show = running && !seated && matchMedia("(pointer: fine)").matches && document.pointerLockElement !== $("#roomCanvas") && !document.querySelector(".overlay.open");
+    const show = running && !seated && !benchSit && matchMedia("(pointer: fine)").matches && document.pointerLockElement !== $("#roomCanvas") && !document.querySelector(".overlay.open");
     $("#roomStart").classList.toggle("show", show);
   }
 
@@ -3402,7 +3520,7 @@ const Room = (() => {
     await fill(); Shop.rebuild();
   }
   function close() {
-    standUp(); benchSit = false;
+    standUp(); benchSit = false; Phone.hide();
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
     if (document.pointerLockElement) document.exitPointerLock();
     $("#roomStart").classList.remove("show");
@@ -3455,7 +3573,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "38";
+const APP_VERSION = "39";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
