@@ -346,22 +346,42 @@
   #phone.show { transform: translateY(0) rotate(-2deg); pointer-events: auto; }
   #phone.show.peek { transform: translateY(74%) rotate(3deg); pointer-events: none; }
   #phone.show.peek .ph-tip { top: -30px; }
-  .ph-body { position: relative; height: min(600px, calc(100vh - 150px)); border-radius: 46px; padding: 12px; background: linear-gradient(145deg, #3b3b42, #141418); box-shadow: 0 30px 80px rgba(0,0,0,.75), inset 0 0 0 2px #55555e, inset 0 0 0 5px #0b0b0d; }
-  .ph-island { position: absolute; top: 22px; left: 50%; width: 96px; height: 26px; margin-left: -48px; border-radius: 20px; background: #000; z-index: 3; }
-  .ph-status { position: absolute; top: 22px; left: 34px; right: 30px; display: flex; justify-content: space-between; font-size: 13px; color: #fff; z-index: 2; }
-  .ph-status span { font-size: 11px; letter-spacing: .5px; }
-  .ph-screen { position: absolute; inset: 12px; border-radius: 36px; overflow: hidden auto; padding: 58px 16px 34px; color: #fff; scrollbar-width: none;
-    background: radial-gradient(circle at 20% 10%, #ff5c7a 0, transparent 45%), radial-gradient(circle at 90% 80%, #7c3aed 0, transparent 50%), linear-gradient(160deg, #2b1236, #0e0c1a); }
+  /* Titan-Rahmen, schwarzer Glasrand, Tasten an der Seite */
+  .ph-body { position: relative; height: min(600px, calc(100vh - 150px)); border-radius: 50px; padding: 12px;
+    background: linear-gradient(135deg, #9a9ca6 0%, #4a4b53 18%, #1d1e23 45%, #2c2d33 70%, #8a8c96 100%);
+    box-shadow: 0 40px 90px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.08), inset 0 0 0 2px rgba(255,255,255,.18), inset 0 0 0 6px #050506; }
+  .ph-btns { position: absolute; inset: 0; pointer-events: none; }
+  .ph-btns::before { content: ""; position: absolute; right: -4px; top: 150px; width: 4px; height: 70px; border-radius: 0 3px 3px 0; background: linear-gradient(90deg, #5d5f68, #2b2c31); }
+  .ph-btns::after { content: ""; position: absolute; left: -4px; top: 120px; width: 4px; height: 44px; border-radius: 3px 0 0 3px; background: linear-gradient(270deg, #5d5f68, #2b2c31); box-shadow: 0 56px 0 #3a3b41, 0 -40px 0 -1px #3a3b41; }
+  .ph-island { position: absolute; top: 22px; left: 50%; width: 96px; height: 27px; margin-left: -48px; border-radius: 20px; background: #000; z-index: 3; box-shadow: 0 0 0 1px rgba(255,255,255,.04); }
+  .ph-island i { position: absolute; right: 13px; top: 8px; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #3b4a7a, #0b0d18 60%); box-shadow: inset 0 0 2px rgba(120,150,255,.6); }
+  .ph-status { position: absolute; top: 24px; left: 38px; right: 32px; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; color: #fff; z-index: 2; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .ph-icons { display: flex; align-items: center; gap: 5px; } .ph-icons svg { fill: #fff; }
+  .ph-bat { width: 22px; height: 11px; border-radius: 3px; border: 1px solid rgba(255,255,255,.7); padding: 1px; position: relative; }
+  .ph-bat::after { content: ""; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: rgba(255,255,255,.7); }
+  .ph-bat i { display: block; height: 100%; width: 78%; border-radius: 1.5px; background: #fff; }
+  .ph-glare { position: absolute; inset: 12px; border-radius: 38px; pointer-events: none; z-index: 4; background: linear-gradient(115deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.05) 100%); }
+  .ph-screen { position: absolute; inset: 12px; border-radius: 38px; overflow: hidden auto; padding: 58px 16px 34px; color: #fff; scrollbar-width: none;
+    background: radial-gradient(circle at 15% 8%, rgba(255,92,122,.95) 0, transparent 42%), radial-gradient(circle at 95% 45%, rgba(255,159,67,.55) 0, transparent 40%), radial-gradient(circle at 70% 95%, rgba(124,58,237,.9) 0, transparent 50%), linear-gradient(165deg, #2b1236, #120e22 60%, #0b0a16);
+    background-size: 160% 160%; animation: phWall 22s ease-in-out infinite alternate; }
+  @keyframes phWall { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
   .ph-screen::-webkit-scrollbar { display: none; }
   .ph-home { position: absolute; bottom: 20px; left: 50%; width: 110px; height: 5px; margin-left: -55px; border-radius: 4px; background: rgba(255,255,255,.75); cursor: pointer; z-index: 3; }
   .ph-tip { position: absolute; left: -40px; right: -40px; top: -30px; text-align: center; font-size: 12px; color: #ddd; text-shadow: 0 1px 4px #000; }
-  .ph-time { text-align: center; font-size: 54px; font-weight: 200; line-height: 1; margin-top: 6px; }
-  .ph-date { text-align: center; font-size: 13px; opacity: .85; margin: 4px 0 14px; }
-  .ph-widget { background: rgba(255,255,255,.12); backdrop-filter: blur(10px); border-radius: 20px; padding: 12px 14px; font-size: 12.5px; margin-bottom: 16px; line-height: 1.45; }
-  .ph-widget b { font-size: 13.5px; }
-  .ph-apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 8px; }
-  .ph-app { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10.5px; color: #fff; background: none; border: none; cursor: pointer; padding: 0; }
-  .ph-app i { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-style: normal; box-shadow: 0 4px 12px rgba(0,0,0,.35); transition: transform .15s; }
+  .ph-screen.home { display: flex; flex-direction: column; padding-bottom: 30px; overflow: hidden; }
+  .ph-time { text-align: center; font-size: 50px; font-weight: 300; letter-spacing: -1px; line-height: 1; margin-top: 4px; text-shadow: 0 2px 20px rgba(0,0,0,.25); }
+  .ph-date { text-align: center; font-size: 13px; font-weight: 600; opacity: .9; margin: 4px 0 10px; }
+  .ph-widget { background: rgba(20,14,30,.35); backdrop-filter: blur(14px) saturate(1.4); border: 1px solid rgba(255,255,255,.14); border-radius: 22px; padding: 9px 12px; font-size: 11.5px; margin-bottom: 12px; line-height: 1.45; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+  .ph-widget b { font-size: 13px; }
+  .ph-wposters { display: flex; gap: 6px; margin-top: 8px; }
+  .ph-wposters img { width: 30px; height: 45px; cursor: pointer; border-radius: 7px; object-fit: cover; box-shadow: 0 3px 8px rgba(0,0,0,.4); }
+  .ph-apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px 8px; }
+  .ph-dots { display: flex; justify-content: center; gap: 6px; margin: auto 0 8px; padding-top: 8px; } .ph-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.35); } .ph-dots i.on { background: #fff; }
+  .ph-dock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; flex: none; border-radius: 28px; background: rgba(255,255,255,.14); backdrop-filter: blur(16px) saturate(1.5); border: 1px solid rgba(255,255,255,.12); }
+  .ph-dock .ph-app span { display: none; }
+  .ph-app { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10.5px; color: #fff; background: none; border: none; cursor: pointer; padding: 0; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .ph-app i { position: relative; overflow: hidden; width: 52px; height: 52px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-style: normal; box-shadow: 0 5px 14px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.12); transition: transform .15s; text-shadow: none; }
+  .ph-app i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255,255,255,.28), rgba(255,255,255,0) 45%); pointer-events: none; }
   .ph-app:hover i { transform: scale(1.08); } .ph-app:active i { transform: scale(.92); }
   .ph-bar { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; }
   .ph-bar h3 { margin: 0; font-size: 20px; flex: 1; }
@@ -658,8 +678,9 @@
 <!-- 3D-Raum -->
 <div id="room"><div id="roomZoom"></div>
   <div id="popHand" title="Popcorn essen (F)">🍿 <b class="pop-n">0</b> <span>· F essen</span></div>
-  <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-island"></div>
-    <div class="ph-status" id="phStatus"><b id="phClock">9:41</b><span>📶 5G 🔋</span></div>
+  <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-btns"></div><div class="ph-island"><i></i></div>
+    <div class="ph-status" id="phStatus"><b id="phClock">9:41</b><span class="ph-icons"><svg viewBox="0 0 18 12" width="17" height="11"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12" width="15" height="11"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.4 1.4a4.5 4.5 0 0 0-6.4 0zM1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.4 1.4a7.8 7.8 0 0 0-11 0z"/></svg><span class="ph-bat"><i></i></span></span></div>
+    <div class="ph-glare"></div>
     <div class="ph-screen" id="phScreen"></div>
     <div class="ph-home" id="phHome" title="Startbildschirm"></div></div>
     <div class="ph-tip" id="phTip"></div></div>
@@ -2142,18 +2163,23 @@ const Room = (() => {
       ["mix", "🔀", "Mischen", "linear-gradient(135deg,#f59e0b,#ef4444)"],
       ["exit", "🚪", "Ausgang", "linear-gradient(135deg,#16a34a,#065f46)"],
     ];
+    const DOCK = ["list", "search", "dice", "kino"];
+    const appBtn = ([k, ic, name, bg]) => `<button class="ph-app" data-app="${k}"><i style="background:${bg}">${ic}</i><span>${name}</span></button>`;
     const bar = t => `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>${t}</h3></div>`;
     const thumb = p => p ? `<img src="${esc(p)}" alt="">` : `<span class="noimg"></span>`;
     function render() {
-      const s = scr(); if (app !== "lz") { s.onclick = null; s.classList.remove("lz-on"); }
+      const s = scr(); if (app !== "lz") { s.onclick = null; s.classList.remove("lz-on"); } s.classList.toggle("home", app === "home");
       if (app === "home") {
         const d = new Date(), h = d.getHours(), greet = h < 11 ? "Guten Morgen" : h < 18 ? "Hallo" : "Guten Abend";
         const seen = items.filter(i => i.status === "gesehen").length;
         const nx = items.filter(i => i.nextAir && i.nextAir.airDate).sort((a, b) => a.nextAir.airDate.localeCompare(b.nextAir.airDate))[0];
         s.innerHTML = `<div class="ph-time">${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</div>
           <div class="ph-date">${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div>
-          <div class="ph-widget"><b>${greet}! 🍿</b><br>${items.length} Titel auf deiner Watchlist · ${seen} gesehen${nx ? `<br>📅 Nächste Folge: <b>${esc(nx.title)}</b> ${SE(nx.nextAir.season, nx.nextAir.episode)} am ${fmtDate(nx.nextAir.airDate)}` : ""}</div>
-          <div class="ph-apps">${APPS.map(([k, ic, name, bg]) => `<button class="ph-app" data-app="${k}"><i style="background:${bg}">${ic}</i>${name}</button>`).join("")}</div>`;
+          <div class="ph-widget"><b>${greet}! 🍿</b><br>${items.length} Titel auf deiner Watchlist · ${seen} gesehen${nx ? `<br>📅 Nächste Folge: <b>${esc(nx.title)}</b> ${SE(nx.nextAir.season, nx.nextAir.episode)} am ${fmtDate(nx.nextAir.airDate)}` : ""}
+            ${(() => { const w = items.filter(i => i.poster && i.status === "schaue").concat(items.filter(i => i.poster && i.status === "geplant")).slice(0, 5); return w.length ? `<div class="ph-wposters">${w.map(i => `<img src="${esc(i.poster)}" alt="" title="${esc(i.title)}" data-item="${esc(i.id)}">`).join("")}</div>` : ""; })()}</div>
+          <div class="ph-apps">${APPS.filter(a => !DOCK.includes(a[0])).map(appBtn).join("")}</div>
+          <div class="ph-dots"><i class="on"></i><i></i></div>
+          <div class="ph-dock">${DOCK.map(k => appBtn(APPS.find(a => a[0] === k))).join("")}</div>`;
       } else if (app === "list") {
         const f = listFilter === "all" ? items : items.filter(i => i.status === listFilter);
         s.innerHTML = bar("Watchlist") + `<div class="ph-chips">${[["all", "Alle"], ...Object.entries(STATUS)].map(([k, l]) => `<button data-f="${k}" class="${listFilter === k ? "on" : ""}">${l}</button>`).join("")}</div>` +
@@ -2785,6 +2811,24 @@ const Room = (() => {
       pic.userData = { r, base: pic.position.z, poster: true }; pickables.push(pic); fixedPicks.push(pic);
       g.position.set(s.x, 1.75, s.z); g.rotation.y = s.rot; posterGroup.add(g);
     });
+    // zwei Kino-Aufsteller aus Pappe links und rechts vor dem Podium
+    [[-2.7, -1.0, .45], [2.7, -1.0, -.45]].forEach(([x, z, ry], k) => {
+      const r = list[6 + k]; if (!r) return;
+      const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry; posterGroup.add(g);
+      shared.card = shared.card || new T.MeshLambertMaterial({ color: 0xd8cdb8 });
+      const back = new T.Mesh(new T.BoxGeometry(.98, 1.82, .03), shared.card); back.position.set(0, .97, -.02); g.add(back);
+      const mat = new T.MeshBasicMaterial({ color: 0x333333, toneMapped: false });
+      const pic = new T.Mesh(new T.PlaneGeometry(.92, 1.38), mat); pic.position.set(0, 1.04, .0); g.add(pic);
+      const head = new T.Mesh(new T.PlaneGeometry(.92, .14), new T.MeshBasicMaterial({ toneMapped: false, map: canvasTex(512, 80, (c, w, hh) => { const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, "#ff4d6d"); gr.addColorStop(1, "#ff9f43"); c.fillStyle = gr; c.fillRect(0, 0, w, hh); c.fillStyle = "#fff"; c.font = "bold 46px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(k ? "★ TIPP DER WOCHE" : "★ JETZT NEU", w / 2, hh / 2 + 2); }) }));
+      head.position.set(0, 1.86, .01); g.add(head);
+      const foot = new T.Mesh(new T.BoxGeometry(.9, .06, .3), shared.card); foot.position.set(0, .03, .05); g.add(foot);
+      blob(g, 0, 0, 1.4, .9, .6);
+      const url = r.big ? r.big.replace("/w500/", "/w342/") : r.poster;
+      loader().load(url, t => { t.colorSpace = T.SRGBColorSpace; t.anisotropy = maxAniso; mat.map = t; mat.color.set(0xffffff); mat.needsUpdate = true; }, undefined, () => { mat.map = fallbackCover(r); mat.color.set(0xffffff); mat.needsUpdate = true; });
+      pic.userData = { r, base: pic.position.z, poster: true }; pickables.push(pic); fixedPicks.push(pic);
+      if (!shared.standeeCol) colliders.push({ x, z, r: .5 });
+    });
+    shared.standeeCol = true;
   }
 
 
@@ -3432,9 +3476,14 @@ const Room = (() => {
       wains.position.set(Math.sin(a) * -(HALF - .02), .45, Math.cos(a) * -(HALF - .02)); wains.rotation.y = a; scene.add(wains);
     }
     // Deckenlampen
-    const lamp = new T.MeshBasicMaterial({ color: 0xfff6e6 });
+    const lamp = new T.MeshBasicMaterial({ toneMapped: false, map: canvasTex(256, 64, (g, w, h) => {
+      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#fff1dc"); gr.addColorStop(.5, "#ffffff"); gr.addColorStop(1, "#fff1dc"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      g.strokeStyle = "rgba(160,140,120,.35)"; g.lineWidth = 2; for (let x = 0; x <= w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y <= h; y += 16) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    }) });
+    const lampFrame = new T.MeshLambertMaterial({ color: 0x3a3d45 });
     for (let x = -5; x <= 5; x += 5) for (let z = -5; z <= 5; z += 5) {
-      const l = new T.Mesh(new T.PlaneGeometry(1.6, .35), lamp); l.rotation.x = Math.PI / 2; l.position.set(x, 3.29, z); scene.add(l);
+      const fr = new T.Mesh(new T.BoxGeometry(1.74, .05, .49), lampFrame); fr.position.set(x, 3.285, z); scene.add(fr);
+      const l = new T.Mesh(new T.PlaneGeometry(1.6, .35), lamp); l.rotation.x = Math.PI / 2; l.position.set(x, 3.255, z); scene.add(l);
       // Lichthof an der Decke und Lichtkegel auf dem Boden
       const halo = new T.Mesh(new T.PlaneGeometry(3.2, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffe2b8, transparent: true, opacity: .35, depthWrite: false, blending: T.AdditiveBlending })); halo.rotation.x = Math.PI / 2; halo.position.set(x, 3.28, z); scene.add(halo);
       const pool = new T.Mesh(new T.PlaneGeometry(4.2, 3.2), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .16, depthWrite: false, blending: T.AdditiveBlending })); pool.rotation.x = -Math.PI / 2; pool.position.set(x, .004, z); scene.add(pool);
@@ -3993,7 +4042,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "49";
+const APP_VERSION = "50";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
