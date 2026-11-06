@@ -431,6 +431,8 @@
   .cin-actions { display: flex; flex-wrap: wrap; gap: .5em; margin-top: auto; }
   .cin-ok { color: var(--gesehen); font-weight: 600; align-self: center; font-size: .9em; }
   .cin-note { color: #8f7f88; font-size: .75em; }
+  #roomFull { position: absolute; top: 14px; right: 150px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); min-width: 40px; }
+  #room.seated #roomFull { display: none; }
   #roomShuffle { position: absolute; top: 14px; right: 14px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #ovArcade { padding: 0; background: rgba(5,6,12,.92); align-items: center; z-index: 25; }
   .arcadewrap { width: min(1100px, 100vw); height: min(780px, 100vh); display: flex; flex-direction: column; margin: auto; border: 3px solid #22d3ee; border-radius: 16px; overflow: hidden;
@@ -605,6 +607,7 @@
   <canvas id="roomCanvas"></canvas>
   <button class="btn" id="roomBack">← Zurück</button>
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
+  <button class="btn" id="roomFull" title="Vollbild an/aus (Taste F11)">⛶</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
   <div id="roomLabel"></div>
@@ -3413,6 +3416,7 @@ const Room = (() => {
 
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
+      if (e.code === "Escape" && document.pointerLockElement) { document.exitPointerLock(); releasedAt = performance.now(); return; }
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
       if (benchSit && e.code === "KeyH" && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
       if (benchSit && e.code === "Escape") { if (performance.now() - releasedAt > 400) standBench(); return; }
@@ -3569,8 +3573,24 @@ const Room = (() => {
     if (inCinema && cssRenderer) cssRenderer.render(cssScene, camera);
   }
 
+  // Echtes Vollbild (verdeckt auch die Taskleiste); Esc bleibt dabei fürs Spiel (Esc gedrückt halten verlässt das Vollbild)
+  let fullByUs = false;
+  const wantFull = () => { try { return localStorage.getItem("watchlist-room-full") !== "0"; } catch { return true; } };
+  function goFull(on) {
+    try {
+      if (on && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen({ navigationUI: "hide" }).then(() => { fullByUs = true; try { navigator.keyboard && navigator.keyboard.lock(["Escape"]); } catch {} }).catch(() => {});
+      } else if (!on && document.fullscreenElement) {
+        try { navigator.keyboard && navigator.keyboard.unlock(); } catch {}
+        document.exitFullscreen().catch(() => {}); fullByUs = false;
+      }
+    } catch {}
+  }
+  document.addEventListener("fullscreenchange", () => { const b = $("#roomFull"); if (b) b.textContent = document.fullscreenElement ? "🗗" : "⛶"; if (!document.fullscreenElement) fullByUs = false; });
   async function open() {
     if (!settings.apiKey) { toast("Für den Raum brauchst du einen TMDB-Schlüssel (⚙)", true); return; }
+    if (matchMedia("(pointer: fine)").matches && wantFull()) goFull(true);
+    $("#roomFull").onclick = () => { const on = !document.fullscreenElement; try { localStorage.setItem("watchlist-room-full", on ? "1" : "0"); } catch {} goFull(on); };
     const el = $("#room"); el.classList.add("open"); document.body.classList.add("in-room");
     $("#roomMsg").textContent = "Lade 3D …";
     try { if (!T) T = await import("./three.module.min.js"); if (!C3) C3 = await import("./css3d.js"); }
@@ -3594,6 +3614,7 @@ const Room = (() => {
   }
   function close() {
     standUp(); benchSit = false; Phone.hide();
+    if (fullByUs || document.fullscreenElement) goFull(false);
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
     if (document.pointerLockElement) document.exitPointerLock();
     $("#roomStart").classList.remove("show");
@@ -3646,7 +3667,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "40";
+const APP_VERSION = "41";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
