@@ -1916,6 +1916,7 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
 const Room = (() => {
   let maxAniso = 4, blobTex = null, poolTex = null;
+  const perf = { acc: 0, n: 0, prev: 0, pr: 1, max: 1, cool: 0 };
   let T = null, renderer, scene, camera, store, raf = 0, running = false, last = 0, builtSig = "";
   let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
   let fixedPicks = [], colliders = [], arcade = null, posterGroup = null, popcorn = null, dice = null;
@@ -1969,8 +1970,9 @@ const Room = (() => {
       g.shadowColor = "#ff6b6b"; g.shadowBlur = 24; g.fillText(text, w / 2, h / 2 + 4);
     });
   }
-  function fallbackCover(r) {
-    return canvasTex(256, 384, (g, w, h) => {
+  function fallbackCover(r) { return canvasTex(256, 384, (g, w, h) => drawFallback(g, w, h, r)); }
+  function drawFallback(g, w, h, r) {
+    {
       const hue = (r.tmdbId * 47) % 360, gr = g.createLinearGradient(0, 0, w, h);
       gr.addColorStop(0, `hsl(${hue},55%,40%)`); gr.addColorStop(1, `hsl(${(hue + 50) % 360},60%,22%)`);
       g.fillStyle = gr; g.fillRect(0, 0, w, h);
@@ -1978,7 +1980,7 @@ const Room = (() => {
       const words = String(r.title).split(" "); let line = "", y = 150;
       for (const wd of words) { if (g.measureText(line + wd).width > 220) { g.fillText(line, w / 2, y); y += 32; line = ""; } line += wd + " "; }
       g.fillText(line, w / 2, y);
-    });
+    }
   }
   const checkTex = () => canvasTex(64, 64, (g) => { g.fillStyle = "#4fd1a5"; g.beginPath(); g.arc(32, 32, 30, 0, 7); g.fill(); g.fillStyle = "#0f1115"; g.font = "bold 40px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("✓", 32, 35); });
 
@@ -2049,6 +2051,31 @@ const Room = (() => {
       for (let i = 0; i < 400; i++) { c.fillStyle = `rgba(${Math.random() < .5 ? "255,255,255" : "0,0,0"},.06)`; c.fillRect(Math.random() * w, Math.random() * hh, 2, 2); }
     });
   }
+  // Viele kleine Teile mit gleichem Material zu einem Modell zusammenfassen (ein Zeichenaufruf)
+  function mergeByMaterial(g, mats) {
+    g.updateMatrixWorld(true);
+    for (const mat of mats) {
+      const parts = []; g.traverse(o => { if (o.isMesh && o.material === mat) parts.push(o); });
+      if (parts.length < 2) continue;
+      const pos = [], nor = [], uv = [], idx = []; let base = 0;
+      const nm = new T.Matrix3(), v = new T.Vector3();
+      for (const o of parts) {
+        const geo = o.geometry, P = geo.attributes.position, N = geo.attributes.normal, U = geo.attributes.uv;
+        nm.getNormalMatrix(o.matrixWorld);
+        for (let i = 0; i < P.count; i++) {
+          v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); pos.push(v.x, v.y, v.z);
+          v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z);
+          uv.push(U ? U.getX(i) : 0, U ? U.getY(i) : 0);
+        }
+        if (geo.index) for (const k of geo.index.array) idx.push(k + base); else for (let i = 0; i < P.count; i++) idx.push(i + base);
+        base += P.count;
+        o.parent.remove(o); geo.dispose();
+      }
+      const mg = new T.BufferGeometry();
+      mg.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); mg.setAttribute("normal", new T.Float32BufferAttribute(nor, 3)); mg.setAttribute("uv", new T.Float32BufferAttribute(uv, 2)); mg.setIndex(idx);
+      g.add(new T.Mesh(mg, mat));
+    }
+  }
   function plant(x, z, type = 0) {
     const g = new T.Group();
     shared.leaves = shared.leaves || [leafTex(128), leafTex(105)];
@@ -2075,6 +2102,7 @@ const Room = (() => {
       leaf.position.set(0, hgt * .9, Math.sin(tilt * .35) * hgt * .9 + len * .35 * Math.sin(tilt));
       leaf.rotation.x = tilt; holder.add(leaf);
     }
+    mergeByMaterial(g, [leafM, stemM]);
     g.position.set(x, 0, z); g.rotation.y = Math.random() * 6; scene.add(g); colliders.push({ x, z, r: .4 });
   }
   function popcornMachine(x, z, rot) {
@@ -2238,7 +2266,7 @@ const Room = (() => {
   // Filmplakate zwischen den Regalen
   function hangPosters(list) {
     if (posterGroup) { scene.remove(posterGroup); posterGroup.traverse(o => { if (o.material && o.material.map && o.material.map !== shared.frameTex) o.material.map.dispose(); }); }
-    posterGroup = new T.Group(); scene.add(posterGroup);
+    posterGroup = new T.Group(); posterGroup.visible = !inCinema; scene.add(posterGroup);
     const spots = [];
     for (let side = 0; side < 4; side++) for (const o of [-2.5, 2.5]) {
       if (side === 0 && o === 2.5) continue; // dort ist die Kino-Tür
@@ -2272,7 +2300,7 @@ const Room = (() => {
   const cinFloorY = lz => lz < STEP0 ? 0 : Math.min(5, Math.floor((lz - STEP0) / GAP) + 1) * RISE;
 
   function buildCinema() {
-    const g = new T.Group(); g.position.set(CIN.x, 0, CIN.z); scene.add(g);
+    const g = new T.Group(); g.position.set(CIN.x, 0, CIN.z); scene.add(g); shared.cinGroup = g; g.visible = false;
     const tex = (w, h, draw, rx = 1, ry = 1) => { const t = canvasTex(w, h, draw); if (rx !== 1 || ry !== 1) { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rx, ry); } return t; };
     // Boden: dunkler Kinoteppich
     const carpetT = tex(256, 256, (c, w, h) => {
@@ -2352,17 +2380,24 @@ const Room = (() => {
       const step = new T.Mesh(new T.BoxGeometry(CW * 2, RISE, depth), stepMat); step.position.set(0, r * RISE - RISE / 2, z0 + depth / 2); g.add(step);
       const lip = new T.Mesh(new T.PlaneGeometry(CW * 2, .03), edgeM); lip.position.set(0, r * RISE - .02, z0 - .002); g.add(lip);
     }
+    // Sitze als Instanzen (wenige Zeichenaufrufe); unsichtbare Sitze bleiben zum Anklicken
+    const legGeo = new T.BoxGeometry(.5, .38, .3), NS = 48;
+    const iSeat = new T.InstancedMesh(seatGeo, fabric, NS), iBack = new T.InstancedMesh(backGeo, fabric, NS), iLeg = new T.InstancedMesh(legGeo, dark, NS), iArm = new T.InstancedMesh(armGeo, dark, NS * 2);
+    let si = 0, ai = 0; const tmp = new T.Matrix4();
+    const put = (im, i, parent, child) => { child.updateMatrix(); tmp.multiplyMatrices(parent.matrix, child.matrix); im.setMatrixAt(i, tmp); };
     for (let row = 0; row < 6; row++) for (let col = 0; col < 8; col++) {
       const sx = -3.5 + col * 1.0, sz = ROW_Z(row);
-      const s = new T.Group(); s.position.set(sx, row * RISE, sz);
-      const seat = new T.Mesh(seatGeo, fabric); seat.position.set(0, .45, 0); s.add(seat);
-      const back = new T.Mesh(backGeo, fabric); back.position.set(0, .82, .26); back.rotation.x = -.15; s.add(back);
-      const leg = new T.Mesh(new T.BoxGeometry(.5, .38, .3), dark); leg.position.set(0, .19, .05); s.add(leg);
-      for (const ax of [-.31, .31]) { const arm = new T.Mesh(armGeo, dark); arm.position.set(ax, .6, .03); s.add(arm); }
+      const s = new T.Group(); s.position.set(sx, row * RISE, sz); s.updateMatrix();
+      const seat = new T.Mesh(seatGeo, fabric); seat.position.set(0, .45, 0); s.add(seat); seat.visible = false;
+      const back = new T.Mesh(backGeo, fabric); back.position.set(0, .82, .26); back.rotation.x = -.15; s.add(back); back.visible = false;
+      const leg = new T.Object3D(); leg.position.set(0, .19, .05);
+      put(iSeat, si, s, seat); put(iBack, si, s, back); put(iLeg, si, s, leg); si++;
+      for (const ax of [-.31, .31]) { const arm = new T.Object3D(); arm.position.set(ax, .6, .03); put(iArm, ai++, s, arm); }
       g.add(s);
       const info = { cinema: "seat", x: CIN.x + sx, z: CIN.z + sz, row, col };
       seat.userData = info; back.userData = info; fixedPicks.push(seat, back);
     }
+    for (const im of [iSeat, iBack, iLeg, iArm]) { im.frustumCulled = false; g.add(im); }
     // Stufenlichter an den Gängen
     const stepM = new T.MeshBasicMaterial({ color: 0xffb35c });
     for (let row = 0; row < 6; row++) for (const sx of [-4.35, 4.35]) { const l = new T.Mesh(new T.BoxGeometry(.25, .03, .06), stepM); l.position.set(sx, row * RISE + .02, ROW_Z(row) - .4); g.add(l); }
@@ -2788,7 +2823,7 @@ const Room = (() => {
   // ---------- Szene ----------
   function init() {
     renderer = new T.WebGLRenderer({ canvas: $("#roomCanvas"), antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    perf.max = Math.min(devicePixelRatio, 1.5); perf.pr = perf.max; renderer.setPixelRatio(perf.pr);
     renderer.outputColorSpace = T.SRGBColorSpace;
     // Filmischer Look: weichere Lichter, satte Farben
     renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.5;
@@ -2802,6 +2837,12 @@ const Room = (() => {
 
     hemi = new T.HemisphereLight(0xffe9d2, 0x1c1426, 0.95); scene.add(hemi);
     const sun = new T.DirectionalLight(0xfff0e0, .45); sun.position.set(3, 8, 2); scene.add(sun);
+    // 4 warme Lichter für die Regalwände (statt eines Lichts pro Regal – viel schneller)
+    const storeLights = new T.Group(); scene.add(storeLights);
+    if (!matchMedia("(pointer: coarse)").matches) for (let i = 0; i < 4; i++) {
+      const a = i * Math.PI / 2, d = HALF - 2.2, l = new T.PointLight(0xffd9b0, 9, 11, 1.2);
+      l.position.set(Math.sin(a) * -d, 2.3, Math.cos(a) * -d); storeLights.add(l);
+    }
     // weicher Schatten unter Möbeln und runder Lichtfleck
     blobTex = canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(0,0,0,.85)"); gr.addColorStop(.55, "rgba(0,0,0,.45)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
     poolTex = canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.4, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
@@ -2889,7 +2930,7 @@ const Room = (() => {
   function unit(x, z, rotY, label) {
     const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotY;
     blob(g, 0, .05, UNIT_W + .9, 1.5, .75);
-    shared.wood = shared.wood || new T.MeshLambertMaterial({ map: wood(false) });
+    shared.wood = shared.wood || new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 });
     shared.dark = shared.dark || new T.MeshLambertMaterial({ map: wood(true) });
     const back = new T.Mesh(new T.BoxGeometry(UNIT_W, 2.25, .05), shared.dark); back.position.set(0, 1.12, -.2); g.add(back);
     for (const y of BOARD_Y) { const b = new T.Mesh(new T.BoxGeometry(UNIT_W, .035, .4), shared.wood); b.position.set(0, y - .02, 0); g.add(b); }
@@ -2913,43 +2954,97 @@ const Room = (() => {
     // leuchtende Vorderkanten der Bretter
     shared.edge = shared.edge || new T.MeshBasicMaterial({ color: 0xff7a59, transparent: true, opacity: .7, toneMapped: false });
     for (const y of BOARD_Y) { const e = new T.Mesh(new T.PlaneGeometry(UNIT_W - .06, .012), shared.edge); e.position.set(0, y - .02, .201); g.add(e); }
-    // Licht pro Regal (nur am PC, am Handy wäre es zu langsam)
-    if (!matchMedia("(pointer: coarse)").matches) { const l = new T.PointLight(0xffd9b0, 4.5, 4.5, 1.6); l.position.set(0, 2.05, .9); g.add(l); }
     store.add(g);
     return g;
   }
 
   const loader = () => (shared.loader = shared.loader || Object.assign(new T.TextureLoader(), { crossOrigin: "anonymous" }));
+  // ---------- Hüllen: pro Regal EIN Zeichenaufruf ----------
+  // Alle Cover eines Regals liegen in einem großen Bild („Atlas“), alle Hüllen in einem Instanz-Modell.
+  // Unsichtbare Einzel-Hüllen bleiben nur zum Anklicken.
+  const dummy = () => (shared.dummy = shared.dummy || new T.Object3D());
+  function caseGeo() {
+    if (shared.caseGeo) return shared.caseGeo;
+    const b = new T.BoxGeometry(CASE_W, CASE_H, CASE_D), idx = b.index.array, rest = [], front = [];
+    for (const gr of b.groups) for (let i = gr.start; i < gr.start + gr.count; i++) (gr.materialIndex === 4 ? front : rest).push(idx[i]);
+    b.setIndex(rest.concat(front)); b.clearGroups(); b.addGroup(0, rest.length, 0); b.addGroup(rest.length, front.length, 1);
+    return shared.caseGeo = b;
+  }
+  function atlasMat(tex) {
+    const m = new T.MeshBasicMaterial({ map: tex, toneMapped: false });
+    m.onBeforeCompile = sh => {
+      sh.vertexShader = "attribute vec2 atlasOff;\n" + sh.vertexShader.replace("#include <uv_vertex>", `#include <uv_vertex>\n  vMapUv = uv * vec2(${(1 / PER_ROW).toFixed(6)}, ${(1 / ROWS).toFixed(6)}) + atlasOff;`);
+    };
+    m.customProgramCacheKey = () => "case-atlas";
+    return m;
+  }
+  function initAtlas(u) {
+    const coarse = matchMedia("(pointer: coarse)").matches, cw = coarse ? 96 : 160, ch = cw * 1.5;
+    const cv = document.createElement("canvas"); cv.width = cw * PER_ROW; cv.height = ch * ROWS;
+    const ctx = cv.getContext("2d"); ctx.fillStyle = "#2a2a30"; ctx.fillRect(0, 0, cv.width, cv.height);
+    const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = maxAniso;
+    const geo = caseGeo().clone(), n = PER_ROW * ROWS;
+    const off = new T.InstancedBufferAttribute(new Float32Array(n * 2), 2); geo.setAttribute("atlasOff", off);
+    shared.plastic = shared.plastic || new T.MeshLambertMaterial({ color: 0x15161a });
+    const im = new T.InstancedMesh(geo, [shared.plastic, atlasMat(tex)], n); im.frustumCulled = false;
+    const zero = new T.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < n; i++) im.setMatrixAt(i, zero);
+    u.g.add(im);
+    u.atlas = { cv, ctx, tex, im, off, cw, ch, dirty: false, last: 0, gen: 0 };
+  }
+  function resetAtlas(u) {
+    const A = u.atlas; if (!A) return; A.gen++;
+    A.ctx.fillStyle = "#2a2a30"; A.ctx.fillRect(0, 0, A.cv.width, A.cv.height); A.dirty = true;
+    const zero = new T.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < PER_ROW * ROWS; i++) A.im.setMatrixAt(i, zero); A.im.instanceMatrix.needsUpdate = true;
+  }
+  function freeAtlas(u) { const A = u.atlas; if (!A) return; A.gen++; A.tex.dispose(); A.im.geometry.dispose(); A.im.material[1].dispose(); u.atlas = null; }
+  function setInst(u, m) {
+    const d = dummy(); d.position.copy(m.position); d.rotation.copy(m.rotation); d.scale.set(1, 1, 1); d.updateMatrix();
+    u.atlas.im.setMatrixAt(m.userData.slot, d.matrix); u.atlas.im.instanceMatrix.needsUpdate = true;
+  }
+  // Hülle nach vorn ziehen / zurückschieben (Bild folgt der unsichtbaren Klick-Hülle)
+  function setCaseZ(m, z) {
+    m.position.z = z;
+    const u = m.userData.slot != null ? units[m.userData.unit] : null;
+    if (u && u.atlas && u.cases.includes(m)) setInst(u, m);
+    if (m.userData.check) m.userData.check.position.z = z + CASE_D / 2 + .003;
+  }
   function addCase(u, r, slot) {
     const g = u.g;
     const row = Math.floor(slot / PER_ROW), col = slot % PER_ROW;
     if (row >= ROWS) return;
-    shared.box = shared.box || new T.BoxGeometry(CASE_W, CASE_H, CASE_D);
-    shared.plastic = shared.plastic || new T.MeshLambertMaterial({ color: 0x15161a });
-    const front = new T.MeshBasicMaterial({ color: 0x444444, toneMapped: false });
-    const mats = [shared.plastic, shared.plastic, shared.plastic, shared.plastic, front, shared.plastic];
-    const m = new T.Mesh(shared.box, mats);
+    if (!u.atlas) initAtlas(u);
+    shared.pickMat = shared.pickMat || new T.MeshBasicMaterial();
+    const m = new T.Mesh(caseGeo(), shared.pickMat); m.visible = false;
     const x = -UNIT_W / 2 + .2 + col * ((UNIT_W - .4) / PER_ROW) + ((UNIT_W - .4) / PER_ROW) / 2;
     m.position.set(x, BOARD_Y[row] + CASE_H / 2, -.13 + CASE_D / 2);
     m.rotation.x = -0.04;
-    m.userData = { r, base: m.position.z, unit: u.idx };
+    m.userData = { r, base: m.position.z, unit: u.idx, slot };
     g.add(m); pickables.push(m); u.cases.push(m);
-    const url = r.big ? r.big.replace("/w500/", "/w342/") : r.poster;
-    const apply = t => { t.colorSpace = T.SRGBColorSpace; t.anisotropy = maxAniso; front.map = t; front.color.set(0xffffff); front.needsUpdate = true; };
-    if (url) loader().load(url, apply, undefined, () => apply(fallbackCover(r)));
-    else apply(fallbackCover(r));
+    const A = u.atlas, gen = A.gen;
+    A.off.setXY(slot, col / PER_ROW, 1 - (row + 1) / ROWS); A.off.needsUpdate = true;
+    setInst(u, m);
+    const cx = col * A.cw, cy = row * A.ch;
+    const fb = () => { if (u.atlas !== A || A.gen !== gen) return; const t = document.createElement("canvas"); t.width = 256; t.height = 384; drawFallback(t.getContext("2d"), 256, 384, r); A.ctx.drawImage(t, cx, cy, A.cw, A.ch); A.dirty = true; };
+    const url = r.poster || (r.big ? r.big.replace("/w500/", "/w185/") : "");
+    if (url) { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => { if (u.atlas !== A || A.gen !== gen) return; A.ctx.drawImage(img, cx, cy, A.cw, A.ch); A.dirty = true; }; img.onerror = fb; img.src = url; }
+    else fb();
     if (Shop.onList(r)) markOne(m);
+  }
+  function removeCases(u) {
+    for (const m of u.cases) { u.g.remove(m); if (m.userData.check) u.g.remove(m.userData.check); if (aimed === m) setAim(null); }
+    pickables = pickables.filter(m => !u.cases.includes(m)); u.cases = [];
   }
   function markOne(m) {
     if (m.userData.check) return;
     shared.check = shared.check || new T.MeshBasicMaterial({ map: checkTex(), transparent: true, toneMapped: false });
-    const c = new T.Mesh(new T.PlaneGeometry(.09, .09), shared.check); c.position.set(CASE_W / 2 - .04, CASE_H / 2 - .04, CASE_D / 2 + .003);
-    m.add(c); m.userData.check = c;
+    shared.checkGeo = shared.checkGeo || new T.PlaneGeometry(.09, .09);
+    const c = new T.Mesh(shared.checkGeo, shared.check); c.position.set(m.position.x + CASE_W / 2 - .04, m.position.y + CASE_H / 2 - .04, m.position.z + CASE_D / 2 + .003); c.rotation.x = -.04;
+    (m.parent || store).add(c); m.userData.check = c;
   }
   function mark() { for (const m of pickables) if (m.userData.r && !m.userData.poster && Shop.onList(m.userData.r)) markOne(m); }
 
   function clearStore() {
-    for (const m of pickables) { if (!m.userData.r || m.userData.poster) continue; const f = m.material[4]; if (f.map) f.map.dispose(); f.dispose(); }
+    for (const u of units) freeAtlas(u);
     fixedPicks = fixedPicks.filter(m => !m.userData.poster);
     pickables = fixedPicks.slice(); aimed = null;
     while (store.children.length) store.remove(store.children[0]);
@@ -2984,8 +3079,7 @@ const Room = (() => {
   async function shuffleUnit(u) {
     if (!u || u.busy) return;
     u.busy = true; Shop.reshuffleOne(u.sh.id);
-    for (const m of u.cases) { u.g.remove(m); const f = m.material[4]; if (f.map) f.map.dispose(); f.dispose(); if (aimed === m) setAim(null); }
-    pickables = pickables.filter(m => !u.cases.includes(m)); u.cases = [];
+    removeCases(u); resetAtlas(u);
     u.btn.userData.spin = 1;
     await loadUnit(u);
     u.busy = false; builtSig = Shop.filterSig(); Shop.refreshShelf(u.sh.id);
@@ -3107,7 +3201,7 @@ const Room = (() => {
 
   function setAim(m) {
     if (aimed === m) return;
-    if (aimed && aimed.userData.r && !aimed.userData.poster) aimed.position.z = aimed.userData.base;
+    if (aimed && aimed.userData.r && !aimed.userData.poster) setCaseZ(aimed, aimed.userData.base);
     if (aimed && aimed.userData.shuffle != null) aimed.scale.setScalar(1);
     aimed = m;
     const lab = $("#roomLabel");
@@ -3123,7 +3217,7 @@ const Room = (() => {
     }
     if (m && m.userData.dice) { if (dice && dice.spinning) return; lab.innerHTML = `🎲 <b>Zufalls-Tipp</b> · Film, Serie oder Anime<span class="hint"> – ${tap} zum Drücken</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.arcade) { lab.innerHTML = `🕹 <b>Arcade</b> · deine 8 Spiele<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Spielen</span>`; lab.style.opacity = 1; return; }
-    if (m) { if (!m.userData.poster) m.position.z = m.userData.base + .07; const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Ansehen</span>`; lab.style.opacity = 1; }
+    if (m) { if (!m.userData.poster) setCaseZ(m, m.userData.base + .07); const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Ansehen</span>`; lab.style.opacity = 1; }
     else lab.style.opacity = 0;
   }
   function select(m) {
@@ -3168,7 +3262,21 @@ const Room = (() => {
     }
     const bob = (Math.abs(joy.x) + Math.abs(joy.y) + (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.ArrowUp || keys.ArrowDown ? 1 : 0)) ? Math.sin(t / 140) * .012 : 0;
     if (shared.neon) shared.neon.rotation.y = Math.sin(t / 2600) * .25;
-    if (arcade && (Math.floor(t / 33) % 2)) arcade.draw(t);
+    if (arcade && !inCinema && (Math.floor(t / 33) % 2) && Math.hypot(pos.x - 3.4, pos.z - 4.6) < 8) arcade.draw(t);
+    // Cover-Atlas höchstens alle 250 ms neu hochladen
+    for (const u of units) { const A = u.atlas; if (A && A.dirty && t - A.last > 250) { A.tex.needsUpdate = true; A.dirty = false; A.last = t; } }
+    // Nur den Bereich zeichnen, in dem man gerade ist (Laden oder Kino)
+    if (shared.lastIn !== inCinema) {
+      shared.lastIn = inCinema;
+      for (const c of scene.children) { if (c.isLight) continue; c.visible = c === shared.cinGroup ? inCinema : !inCinema; }
+    }
+    // Auflösung automatisch anpassen, wenn es ruckelt
+    perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
+    if (perf.acc > 1.5) {
+      const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
+      if (avg > 1 / 48 && perf.pr > .6) { perf.pr = Math.max(.6, +(perf.pr - .15).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
+      else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
+    }
     if (dice) {
       dice.press = Math.max(0, dice.press - dt * 3.5);
       dice.btn.position.y = 1.04 - Math.sin(Math.min(1, dice.press) * Math.PI) * .045;
@@ -3185,7 +3293,7 @@ const Room = (() => {
     camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
     if (screenGlow) screenGlow.intensity = lightsDim ? 1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3 : 0;
     camera.rotation.set(pitch, yaw, 0);
-    if (!seated) aimCenter();
+    if (!seated && (perf.n % 2 === 0)) aimCenter();
     if (!(t % 30 < 17)) startPrompt();
     renderer.render(scene, camera);
     if (inCinema && cssRenderer) cssRenderer.render(cssScene, camera);
@@ -3233,7 +3341,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -3268,7 +3376,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "33";
+const APP_VERSION = "34";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
