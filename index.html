@@ -2104,6 +2104,7 @@ const Room = (() => {
     const APPS = [
       ["tiktok", "♪", "TikTok", "linear-gradient(135deg,#111 40%,#25f4ee 0,#25f4ee 55%,#fe2c55 0)"],
       ["lz", '<img src="lernzentrale.png" alt="" style="width:100%;height:100%;border-radius:14px">', "Lernzentrale", "#141b31"],
+      ["untis", '<b style="font:900 30px/1 Segoe UI,sans-serif;color:#fff">U</b>', "Untis", "linear-gradient(135deg,#f5a623,#e5531a)"],
       ["insta", "📷", "Instagram", "radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)"],
       ["list", "📋", "Watchlist", "linear-gradient(135deg,#ff5c5c,#ff9f43)"],
       ["search", "🔍", "Suchen", "linear-gradient(135deg,#3b82f6,#06b6d4)"],
@@ -2152,14 +2153,20 @@ const Room = (() => {
         box.querySelectorAll("[data-res]").forEach(b => b.onclick = () => { const r = res[+b.dataset.res]; Shop.openItem(Object.assign({ big: r.poster ? r.poster.replace("/w185/", "/w500/") : "", backdrop: "", vote: 0 }, r)); });
       } catch (e) { if (seq === searchSeq) box.innerHTML = `<div class="ph-empty">⚠ ${esc(e.message)}</div>`; }
     }
-    function open(k) {
+    async function open(k) {
       if (k === "dice") { pressDice(); return; }
       if (k === "kino") { standBench(); enterCinema(); return; }
       if (k === "arcade") { openArcade(); return; }
       if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
       if (k === "exit") { standBench(); exitStore(); return; }
-      if (WEBAPP[k]) { app = k; Tok.open(WEBAPP[k]); return; }
+      if (WEBAPP[k] && k !== "untis") { app = k; Tok.open(WEBAPP[k]); return; }
       if (k === "lz") { app = k; LZ.load(); render(); return; }
+      if (k === "untis") {
+        // WebUntis deiner Schule (Server/Schule aus der Lernzentrale), sonst die Schulsuche
+        app = k; let u = "https://webuntis.com/";
+        try { const d = await api("GET", "/api/lernzentrale/data"); const c = d.untis || {}; if (c.server && c.school) u = "https://" + String(c.server).replace(/^https?:\/\//, "").replace(/\/.*$/, "") + "/WebUntis/?school=" + encodeURIComponent(c.school) + "#/basic/login"; } catch {}
+        if (app === k) Tok.open(u); return;
+      }
       if (k === "lzweb") { const u = lzUrl(); if (!u) { app = "lz"; render(); return; } app = k; Tok.open(u); return; }
       app = k; render();
     }
@@ -2171,7 +2178,7 @@ const Room = (() => {
       else if (it) openDetail(it.dataset.item); else if (f) { listFilter = f.dataset.f; render(); }
       else if (e.target.id === "phHome") { if (WEBAPP[app]) Tok.close(); app = "home"; render(); }
     });
-    const WEBAPP = { tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/", get lzweb() { return lzUrl(); } };
+    const WEBAPP = { untis: "https://webuntis.com/", tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/", get lzweb() { return lzUrl(); } };
     // Lernzentrale: Handy-Version (Webseite) im Handy oder das PC-Programm starten
     const lzUrl = () => { try { return localStorage.getItem("watchlist-lz-url") || ""; } catch { return ""; } };
     function lzNorm(u) { u = String(u || "").trim(); if (!u) return ""; if (!/^https:\/\//i.test(u)) u = "https://" + u.replace(/^http:\/\//i, ""); return u; }
@@ -2289,7 +2296,7 @@ const Room = (() => {
       let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false;
       const cdp = (method, params = {}) => new Promise((res, rej) => { if (!ws || ws.readyState !== 1) return rej(new Error("weg")); const i = ++id; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params })); });
       async function open(url) {
-        url = window.__tokUrl || url; const myApp = app, name = { insta: "Instagram", tiktok: "TikTok", lzweb: "Lernzentrale" }[myApp] || "App";
+        url = window.__tokUrl || url; const myApp = app, name = { insta: "Instagram", tiktok: "TikTok", lzweb: "Lernzentrale", untis: "WebUntis" }[myApp] || "App";
         if (on || ws) close();
         const s = scr(); s.classList.add("tok");
         s.innerHTML = `<div class="tok-load"><span class="spin"></span> ${name} wird geöffnet …</div>`;
@@ -3913,7 +3920,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "45";
+const APP_VERSION = "46";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
