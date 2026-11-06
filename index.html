@@ -1992,6 +1992,7 @@ const Room = (() => {
     function peek(on) { el().classList.toggle("peek", on && !coarse()); $("#phTip").textContent = coarse() ? "" : on ? "H: Handy hochnehmen" : "Klick in den Raum zum Umschauen · H: Handy weglegen · W: Aufstehen"; }
     const APPS = [
       ["tiktok", "♪", "TikTok", "linear-gradient(135deg,#111 40%,#25f4ee 0,#25f4ee 55%,#fe2c55 0)"],
+      ["lz", '<img src="lernzentrale.png" alt="" style="width:100%;height:100%;border-radius:14px">', "Lernzentrale", "#141b31"],
       ["insta", "📷", "Instagram", "radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)"],
       ["list", "📋", "Watchlist", "linear-gradient(135deg,#ff5c5c,#ff9f43)"],
       ["search", "🔍", "Suchen", "linear-gradient(135deg,#3b82f6,#06b6d4)"],
@@ -2022,6 +2023,22 @@ const Room = (() => {
         s.innerHTML = bar("Suchen") + `<input class="ph-input" id="phQ" placeholder="Film, Serie oder Anime …" autocomplete="off"><div id="phRes"><div class="ph-empty">Tippe einen Titel ein 🔍</div></div>`;
         const q = $("#phQ"); setTimeout(() => q.focus(), 50);
         let tmr = null; q.oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => runSearch(q.value.trim()), 300); };
+      } else if (app === "lz") {
+        const u = lzUrl();
+        s.innerHTML = bar("Lernzentrale") + `<div style="text-align:center;margin:6px 0 16px"><img src="lernzentrale.png" alt="" style="width:76px;height:76px;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.4)"><div style="font-size:12px;opacity:.75;margin-top:6px">Noten · Skripte · Stundenplan · Chat</div></div>
+          ${u ? `<button class="ph-row" id="lzOpen" style="justify-content:center;font-weight:700;background:#3058de">📱 Handy-App öffnen</button>` : ""}
+          <button class="ph-row" id="lzPc" style="justify-content:center">💻 Am PC starten</button>
+          <div style="font-size:12px;opacity:.8;margin:14px 2px 6px">${u ? "Adresse der Handy-App:" : "Für die Handy-App: Adresse deiner Lernzentrale-Seite mit <b>/app</b> am Ende eintragen (z. B. <i>deine-seite.netlify.app/app</i>):"}</div>
+          <input class="ph-input" id="lzUrl" placeholder="deine-seite.netlify.app/app" value="${esc(u.replace(/^https:\/\//, ""))}" autocomplete="off">
+          <button class="ph-row" id="lzSave" style="justify-content:center">💾 Speichern</button>
+          <div class="ph-empty" id="lzMsg" style="padding:8px"></div>`;
+        const save = () => { const v = lzNorm($("#lzUrl").value); try { v ? localStorage.setItem("watchlist-lz-url", v) : localStorage.removeItem("watchlist-lz-url"); } catch {} render(); if (v) toast("📚 Lernzentrale-Adresse gespeichert"); };
+        $("#lzSave").onclick = save; $("#lzUrl").onkeydown = e => { if (e.key === "Enter") save(); };
+        const o = $("#lzOpen"); if (o) o.onclick = () => open("lzweb");
+        $("#lzPc").onclick = async () => {
+          const m = $("#lzMsg"); m.innerHTML = `<span class="spin"></span>`;
+          try { await api("POST", "/api/lernzentrale"); m.textContent = "✓ Die Lernzentrale startet am PC …"; } catch (e) { m.textContent = "⚠ " + e.message; }
+        };
       } else if (app === "next") {
         const up = items.filter(i => i.nextAir && i.nextAir.airDate).sort((a, b) => a.nextAir.airDate.localeCompare(b.nextAir.airDate));
         s.innerHTML = bar("Neue Folgen") + (up.length ? up.map(i => `<button class="ph-row" data-item="${esc(i.id)}">${thumb(i.poster)}<span><b>${esc(i.title)}</b><small>${SE(i.nextAir.season, i.nextAir.episode)}${i.nextAir.name ? " „" + esc(i.nextAir.name) + "“" : ""}<br>📅 ${fmtDate(i.nextAir.airDate)}</small></span></button>`).join("") : `<div class="ph-empty">Keine angekündigten Folgen für deine Serien.</div>`);
@@ -2045,6 +2062,7 @@ const Room = (() => {
       if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
       if (k === "exit") { standBench(); exitStore(); return; }
       if (WEBAPP[k]) { app = k; Tok.open(WEBAPP[k]); return; }
+      if (k === "lzweb") { const u = lzUrl(); if (!u) { app = "lz"; render(); return; } app = k; Tok.open(u); return; }
       app = k; render();
     }
     document.addEventListener("click", e => {
@@ -2055,7 +2073,10 @@ const Room = (() => {
       else if (it) openDetail(it.dataset.item); else if (f) { listFilter = f.dataset.f; render(); }
       else if (e.target.id === "phHome") { if (WEBAPP[app]) Tok.close(); app = "home"; render(); }
     });
-    const WEBAPP = { tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/" };
+    const WEBAPP = { tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/", get lzweb() { return lzUrl(); } };
+    // Lernzentrale: Handy-Version (Webseite) im Handy oder das PC-Programm starten
+    const lzUrl = () => { try { return localStorage.getItem("watchlist-lz-url") || ""; } catch { return ""; } };
+    function lzNorm(u) { u = String(u || "").trim(); if (!u) return ""; if (!/^https:\/\//i.test(u)) u = "https://" + u.replace(/^http:\/\//i, ""); return u; }
     const busy = () => WEBAPP[app] && Tok.active() && el().classList.contains("show") && !el().classList.contains("peek");
     // ----- TikTok: echtes Edge (unsichtbar) im Handy-Format, Bild wird ins Handy übertragen -----
     const Tok = (() => {
@@ -2063,7 +2084,7 @@ const Room = (() => {
       let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false;
       const cdp = (method, params = {}) => new Promise((res, rej) => { if (!ws || ws.readyState !== 1) return rej(new Error("weg")); const i = ++id; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params })); });
       async function open(url) {
-        url = window.__tokUrl || url; const myApp = app, name = myApp === "insta" ? "Instagram" : "TikTok";
+        url = window.__tokUrl || url; const myApp = app, name = { insta: "Instagram", tiktok: "TikTok", lzweb: "Lernzentrale" }[myApp] || "App";
         if (on || ws) close();
         const s = scr(); s.classList.add("tok");
         s.innerHTML = `<div class="tok-load"><span class="spin"></span> ${name} wird geöffnet …</div>`;
@@ -3671,7 +3692,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "42";
+const APP_VERSION = "43";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
