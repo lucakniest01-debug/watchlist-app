@@ -1988,10 +1988,11 @@ const Room = (() => {
     const coarse = () => matchMedia("(pointer: coarse)").matches;
     const tick = () => { const d = new Date(); $("#phClock").textContent = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); if (app === "home") { const t = scr().querySelector(".ph-time"); if (t) t.textContent = $("#phClock").textContent; } };
     function show() { app = "home"; render(); el().classList.add("show"); peek(!!document.pointerLockElement); tick(); clearInterval(clockT); clockT = setInterval(tick, 10000); }
-    function hide() { el().classList.remove("show", "peek"); clearInterval(clockT); if (app === "tiktok") { Tok.close(); app = "home"; } }
+    function hide() { el().classList.remove("show", "peek"); clearInterval(clockT); if (WEBAPP[app]) { Tok.close(); app = "home"; } }
     function peek(on) { el().classList.toggle("peek", on && !coarse()); $("#phTip").textContent = coarse() ? "" : on ? "H: Handy hochnehmen" : "Klick in den Raum zum Umschauen · H: Handy weglegen · W: Aufstehen"; }
     const APPS = [
       ["tiktok", "♪", "TikTok", "linear-gradient(135deg,#111 40%,#25f4ee 0,#25f4ee 55%,#fe2c55 0)"],
+      ["insta", "📷", "Instagram", "radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)"],
       ["list", "📋", "Watchlist", "linear-gradient(135deg,#ff5c5c,#ff9f43)"],
       ["search", "🔍", "Suchen", "linear-gradient(135deg,#3b82f6,#06b6d4)"],
       ["dice", "🎲", "Zufall", "linear-gradient(135deg,#a855f7,#ec4899)"],
@@ -2043,36 +2044,39 @@ const Room = (() => {
       if (k === "arcade") { openArcade(); return; }
       if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
       if (k === "exit") { standBench(); exitStore(); return; }
-      if (k === "tiktok") { app = k; Tok.open(); return; }
+      if (WEBAPP[k]) { app = k; Tok.open(WEBAPP[k]); return; }
       app = k; render();
     }
     document.addEventListener("click", e => {
       const ph = e.target.closest && e.target.closest("#phone"); if (!ph) return;
       const a = e.target.closest("[data-app]"), g = e.target.closest("[data-go]"), it = e.target.closest("[data-item]"), f = e.target.closest("[data-f]");
       if (e.target.closest(".tok-frame")) return;
-      if (a) open(a.dataset.app); else if (g) { if (app === "tiktok") Tok.close(); app = g.dataset.go; render(); }
+      if (a) open(a.dataset.app); else if (g) { if (WEBAPP[app]) Tok.close(); app = g.dataset.go; render(); }
       else if (it) openDetail(it.dataset.item); else if (f) { listFilter = f.dataset.f; render(); }
-      else if (e.target.id === "phHome") { if (app === "tiktok") Tok.close(); app = "home"; render(); }
+      else if (e.target.id === "phHome") { if (WEBAPP[app]) Tok.close(); app = "home"; render(); }
     });
-    const busy = () => app === "tiktok" && Tok.active() && el().classList.contains("show") && !el().classList.contains("peek");
+    const WEBAPP = { tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/" };
+    const busy = () => WEBAPP[app] && Tok.active() && el().classList.contains("show") && !el().classList.contains("peek");
     // ----- TikTok: echtes Edge (unsichtbar) im Handy-Format, Bild wird ins Handy übertragen -----
     const Tok = (() => {
       const W = 400, H = 770, UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
       let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false;
       const cdp = (method, params = {}) => new Promise((res, rej) => { if (!ws || ws.readyState !== 1) return rej(new Error("weg")); const i = ++id; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params })); });
-      async function open() {
+      async function open(url) {
+        url = window.__tokUrl || url; const myApp = app, name = myApp === "insta" ? "Instagram" : "TikTok";
+        if (on || ws) close();
         const s = scr(); s.classList.add("tok");
-        s.innerHTML = `<div class="tok-load"><span class="spin"></span> TikTok wird geöffnet …</div>`;
-        if (MODE !== "server") { window.open("https://www.tiktok.com/", "_blank", "noopener"); app = "home"; s.classList.remove("tok"); render(); return; }
-        let info; try { info = await api("POST", "/api/kinobrowser", { url: window.__tokUrl || "https://www.tiktok.com/foryou" }); } catch (e) { s.innerHTML = `<div class="ph-empty">⚠ ${esc(e.message)}</div>`; return; }
-        if (app !== "tiktok") { api("POST", "/api/kinobrowser/close").catch(() => {}); return; }
+        s.innerHTML = `<div class="tok-load"><span class="spin"></span> ${name} wird geöffnet …</div>`;
+        if (MODE !== "server") { window.open(url, "_blank", "noopener"); app = "home"; s.classList.remove("tok"); render(); return; }
+        let info; try { info = await api("POST", "/api/kinobrowser", { url }); } catch (e) { s.innerHTML = `<div class="ph-empty">⚠ ${esc(e.message)}</div>`; return; }
+        if (app !== myApp) { api("POST", "/api/kinobrowser/close").catch(() => {}); return; }
         ws = new WebSocket(info.ws);
         ws.onmessage = ev => {
           const m = JSON.parse(ev.data);
           if (m.id && pend[m.id]) { (m.error ? pend[m.id].rej : pend[m.id].res)(m.error || m.result); delete pend[m.id]; return; }
           if (m.method === "Page.screencastFrame") { if (img) img.src = "data:image/jpeg;base64," + m.params.data; ws.send(JSON.stringify({ id: ++id, method: "Page.screencastFrameAck", params: { sessionId: m.params.sessionId } })); }
         };
-        ws.onclose = () => { if (on) { on = false; if (app === "tiktok") { app = "home"; scr().classList.remove("tok"); render(); } } };
+        ws.onclose = () => { if (on) { on = false; if (WEBAPP[app]) { app = "home"; scr().classList.remove("tok"); render(); } } };
         await new Promise(res => { ws.onopen = res; ws.onerror = res; });
         if (ws.readyState !== 1) { s.innerHTML = `<div class="ph-empty">⚠ Verbindung fehlgeschlagen</div>`; return; }
         s.innerHTML = `<img class="tok-frame" alt="">`; img = s.querySelector(".tok-frame"); on = true;
@@ -2082,7 +2086,7 @@ const Room = (() => {
           await cdp("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: true });
           await cdp("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
           await cdp("Page.startScreencast", { format: "jpeg", quality: 75, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
-          await cdp("Page.navigate", { url: window.__tokUrl || "https://www.tiktok.com/foryou" });
+          await cdp("Page.navigate", { url });
         } catch {}
       }
       function close() {
@@ -3667,7 +3671,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "41";
+const APP_VERSION = "42";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
