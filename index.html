@@ -2598,34 +2598,101 @@ const Room = (() => {
       g.add(new T.Mesh(mg, mat));
     }
   }
+  // Gebogenes Blatt: Grundfläche nach oben, Spitze biegt sich in einem Bogen nach vorn, Ränder leicht hochgeklappt
+  function bentLeaf(w, len, bend, fold, segs = 10) {
+    const g = new T.PlaneGeometry(w, len, 4, segs); g.translate(0, len / 2, 0);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), t = p.getY(i) / len, ang = bend * t;
+      const cy = bend ? Math.sin(ang) * len / bend : t * len, cz = bend ? (1 - Math.cos(ang)) * len / bend : 0;
+      const f = fold * Math.pow(Math.abs(x) / (w / 2), 2) * w * .5 * (1 - t * .5);
+      p.setXYZ(i, x, cy - Math.sin(ang) * f, cz + Math.cos(ang) * f);
+    }
+    g.computeVertexNormals(); return g;
+  }
+  // Palmwedel: Mittelrippe mit vielen schmalen Fiederblättchen (unteres Viertel = Stiel)
+  function frondTex(hue) {
+    return canvasTex(128, 512, (c, w, h) => {
+      c.clearRect(0, 0, w, h);
+      c.strokeStyle = `hsl(${hue - 30},35%,30%)`; c.lineWidth = 4; c.beginPath(); c.moveTo(w / 2, h); c.lineTo(w / 2, 6); c.stroke();
+      for (let y = h * .76; y > 10; y -= 6) {
+        const t = 1 - y / (h * .76), env = Math.sin(Math.min(1, t * 1.15) * Math.PI) * .9 + .1, L = w * .47 * env;
+        for (const sd of [-1, 1]) {
+          c.save(); c.translate(w / 2, y); c.rotate(sd * (Math.PI / 2 - .55));
+          const gr = c.createLinearGradient(0, 0, 0, -L); gr.addColorStop(0, `hsl(${hue},55%,${24 + Math.random() * 6}%)`); gr.addColorStop(1, `hsl(${hue + 12},62%,${38 + Math.random() * 8}%)`);
+          c.fillStyle = gr; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(6.5, -L * .45, 0, -L); c.quadraticCurveTo(-6.5, -L * .45, 0, 0); c.fill();
+          c.restore();
+        }
+      }
+    });
+  }
+  // Monstera-Blatt: Herzform mit Schlitzen und Löchern
+  function monsteraTex() {
+    return canvasTex(256, 256, (c, w, h) => {
+      c.clearRect(0, 0, w, h);
+      const shape = () => { c.beginPath(); c.moveTo(w / 2, h - 6); c.bezierCurveTo(w * 1.02, h * .78, w * 1.02, h * .12, w / 2, h * .1); c.bezierCurveTo(w * -.02, h * .12, w * -.02, h * .78, w / 2, h - 6); c.closePath(); };
+      const gr = c.createRadialGradient(w * .45, h * .45, 10, w / 2, h / 2, w * .6); gr.addColorStop(0, "#3f8f3a"); gr.addColorStop(1, "#1c4d1f");
+      shape(); c.fillStyle = gr; c.fill();
+      c.globalCompositeOperation = "destination-out";
+      for (let k = 0; k < 7; k++) for (const sd of [-1, 1]) {
+        const y = h * (.2 + k * .1), x0 = w / 2 + sd * w * .5;
+        c.lineWidth = 7 - k * .4; c.beginPath(); c.moveTo(x0, y + 12); c.quadraticCurveTo(w / 2 + sd * w * .3, y + 6, w / 2 + sd * w * (.16 + Math.random() * .04), y); c.stroke();
+        if (k % 2) { c.beginPath(); c.ellipse(w / 2 + sd * w * .1, y + 14, 4, 7, sd * .4, 0, 7); c.fill(); }
+      }
+      c.globalCompositeOperation = "source-over";
+      c.strokeStyle = "rgba(190,230,150,.55)"; c.lineWidth = 3; c.beginPath(); c.moveTo(w / 2, h - 6); c.lineTo(w / 2, h * .12); c.stroke();
+      c.lineWidth = 1.2; c.strokeStyle = "rgba(190,230,150,.3)";
+      for (let k = 0; k < 7; k++) for (const sd of [-1, 1]) { const y = h * (.24 + k * .1); c.beginPath(); c.moveTo(w / 2, y + 16); c.quadraticCurveTo(w / 2 + sd * w * .2, y + 8, w / 2 + sd * w * .4, y); c.stroke(); }
+      const hl = c.createLinearGradient(0, 0, w, 0); hl.addColorStop(.25, "rgba(255,255,255,0)"); hl.addColorStop(.4, "rgba(255,255,255,.12)"); hl.addColorStop(.55, "rgba(255,255,255,0)");
+      c.globalCompositeOperation = "source-atop"; c.fillStyle = hl; c.fillRect(0, 0, w, h); c.globalCompositeOperation = "source-over";
+    });
+  }
+  // Pflanzen: 0 = große Zimmerpalme im hohen Pflanzkübel, 1 = Monstera im Terrakotta-Topf
   function plant(x, z, type = 0) {
-    const g = new T.Group();
-    shared.leaves = shared.leaves || [leafTex(128), leafTex(105)];
-    shared.pots = shared.pots || [potTex(["#d9784a", "#8f3f22"]), potTex(["#e9e2d4", "#9c9180"])];
-    shared.soil = shared.soil || canvasTex(64, 64, (c, w, hh) => { c.fillStyle = "#3a2618"; c.fillRect(0, 0, w, hh); for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(${90 + Math.random() * 60},${60 + Math.random() * 40},30,.6)`; c.fillRect(Math.random() * w, Math.random() * hh, 2, 2); } });
-    const potM = new T.MeshLambertMaterial({ map: shared.pots[type] });
-    const pot = new T.Mesh(new T.CylinderGeometry(.24, .18, .46, 24, 1, true), potM); pot.position.y = .23; g.add(pot);
-    const rim = new T.Mesh(new T.TorusGeometry(.24, .025, 8, 28), potM); rim.rotation.x = Math.PI / 2; rim.position.y = .46; g.add(rim);
-    const soil = new T.Mesh(new T.CircleGeometry(.23, 24), new T.MeshLambertMaterial({ map: shared.soil })); soil.rotation.x = -Math.PI / 2; soil.position.y = .43; g.add(soil);
-    const leafM = new T.MeshLambertMaterial({ map: shared.leaves[type], transparent: true, alphaTest: .4, side: T.DoubleSide });
-    const stemM = new T.MeshLambertMaterial({ color: 0x3d6b2c });
-    const count = type === 0 ? 9 : 16;
-    for (let i = 0; i < count; i++) {
-      const a = i / count * Math.PI * 2 + Math.random() * .3;
-      const len = type === 0 ? .55 + Math.random() * .25 : .3 + Math.random() * .15;
-      const tilt = type === 0 ? .55 + Math.random() * .45 : .25 + Math.random() * .9;
-      const hgt = type === 0 ? .55 + Math.random() * .35 : .5 + Math.random() * .45;
-      // Stiel
-      const stem = new T.Mesh(new T.CylinderGeometry(.008, .012, hgt, 5), stemM);
-      const holder = new T.Group(); holder.position.y = .43; holder.rotation.y = a; g.add(holder);
-      stem.position.set(0, hgt / 2, 0); stem.rotation.x = tilt * .35; holder.add(stem);
-      // Blatt: zwei Ebenen über Kreuz wirken voller
-      const leaf = new T.Mesh(new T.PlaneGeometry(len * .5, len), leafM);
-      leaf.position.set(0, hgt * .9, Math.sin(tilt * .35) * hgt * .9 + len * .35 * Math.sin(tilt));
-      leaf.rotation.x = tilt; holder.add(leaf);
+    const g = new T.Group(), rnd = Math.random;
+    shared.soil = shared.soil || canvasTex(64, 64, (c, w, hh) => { c.fillStyle = "#2e1e14"; c.fillRect(0, 0, w, hh); for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(${90 + rnd() * 60},${60 + rnd() * 40},30,.6)`; c.fillRect(rnd() * w, rnd() * hh, 2, 2); } });
+    shared.plantTex = shared.plantTex || { frond: frondTex(112), mon: monsteraTex(), pot: potTex(["#d9784a", "#8f3f22"]),
+      planter: canvasTex(128, 128, (c, w, hh) => { const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, "#26282e"); gr.addColorStop(.5, "#3c3f47"); gr.addColorStop(1, "#1d1f24"); c.fillStyle = gr; c.fillRect(0, 0, w, hh); for (let i = 0; i < 600; i++) { c.fillStyle = `rgba(255,255,255,${rnd() * .05})`; c.fillRect(rnd() * w, rnd() * hh, 1, 1); } c.fillStyle = "rgba(255,255,255,.08)"; c.fillRect(0, 10, w, 3); }) };
+    const P = shared.plantTex;
+    const soilM = new T.MeshLambertMaterial({ map: shared.soil });
+    let top;
+    if (type === 0) {
+      const potM = new T.MeshLambertMaterial({ map: P.planter });
+      const pot = new T.Mesh(new T.CylinderGeometry(.22, .17, .62, 28), potM); pot.position.y = .31; g.add(pot);
+      const rim = new T.Mesh(new T.TorusGeometry(.215, .018, 8, 32), new T.MeshLambertMaterial({ color: 0x55585f })); rim.rotation.x = Math.PI / 2; rim.position.y = .62; g.add(rim);
+      top = .6;
+    } else {
+      const potM = new T.MeshLambertMaterial({ map: P.pot });
+      const pot = new T.Mesh(new T.CylinderGeometry(.24, .17, .44, 28), potM); pot.position.y = .22; g.add(pot);
+      const rim = new T.Mesh(new T.TorusGeometry(.24, .028, 8, 32), potM); rim.rotation.x = Math.PI / 2; rim.position.y = .44; g.add(rim);
+      top = .42;
+    }
+    const soil = new T.Mesh(new T.CircleGeometry(type ? .23 : .2, 24), soilM); soil.rotation.x = -Math.PI / 2; soil.position.y = top; g.add(soil);
+    const leafM = new T.MeshLambertMaterial({ map: type ? P.mon : P.frond, transparent: true, alphaTest: .45, side: T.DoubleSide });
+    const stemM = new T.MeshLambertMaterial({ color: 0x4a7a32 });
+    if (type === 0) {
+      // Palmwedel in mehreren Kränzen, äußere stärker überhängend
+      const n = 13;
+      for (let i = 0; i < n; i++) {
+        const holder = new T.Group(); holder.position.y = top - .02; holder.rotation.y = i / n * Math.PI * 2 * 2.39 + rnd() * .3; g.add(holder);
+        const inner = i < 4, len = inner ? 1.15 + rnd() * .25 : .85 + rnd() * .3;
+        const f = new T.Mesh(bentLeaf(.58, len, inner ? .9 + rnd() * .4 : 1.6 + rnd() * .5, .35), leafM);
+        f.rotation.x = inner ? .1 + rnd() * .2 : .35 + rnd() * .35; holder.add(f);
+      }
+    } else {
+      // Monstera: Blätter auf langen Stielen, nach außen geneigt
+      const n = 8;
+      for (let i = 0; i < n; i++) {
+        const holder = new T.Group(); holder.position.y = top - .02; holder.rotation.y = i / n * Math.PI * 2 + rnd() * .5; g.add(holder);
+        const sl = .35 + rnd() * .4, tilt = .2 + rnd() * .45;
+        const stem = new T.Mesh(new T.CylinderGeometry(.007, .01, sl, 5), stemM); stem.position.set(0, sl / 2, 0);
+        const sh = new T.Group(); sh.rotation.x = tilt; sh.add(stem); holder.add(sh);
+        const sz = .36 + rnd() * .16, leaf = new T.Mesh(bentLeaf(sz, sz * 1.05, .5 + rnd() * .3, .18, 8), leafM);
+        leaf.position.set(0, sl, 0); leaf.rotation.x = .35 + rnd() * .3; leaf.rotation.y = (rnd() - .5) * .5; sh.add(leaf);
+      }
     }
     mergeByMaterial(g, [leafM, stemM]);
-    g.position.set(x, 0, z); g.rotation.y = Math.random() * 6; scene.add(g); colliders.push({ x, z, r: .4 });
+    g.position.set(x, 0, z); g.rotation.y = rnd() * 6; scene.add(g); colliders.push({ x, z, r: .4 });
   }
   function popcornMachine(x, z, rot) {
     const g = new T.Group();
@@ -4050,7 +4117,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "51";
+const APP_VERSION = "52";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
