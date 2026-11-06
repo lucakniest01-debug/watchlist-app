@@ -2278,6 +2278,7 @@ const Room = (() => {
     const spots = [];
     for (let side = 0; side < 4; side++) for (const o of [-2.5, 2.5]) {
       if (side === 0 && o === 2.5) continue; // dort ist die Kino-Tür
+      if (side === 2 && o === 2.5) continue; // dort ist der Ausgang
       const d = HALF - .03, a = side * Math.PI / 2;
       spots.push({ x: side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d, z: side === 0 ? -d : side === 1 ? o : side === 2 ? d : -o, rot: -a });
     }
@@ -2300,7 +2301,7 @@ const Room = (() => {
   // ---------- Kinosaal ----------
   // Der Saal liegt weit weg vom Laden (z = -40); eine Tür in der Videothek bringt dich hin.
   const CIN = { x: 0, z: -40 }, CW = 6, CD = 8;            // halbe Breite/Tiefe
-  const STORE_DOOR = { x: 2.5, z: -HALF + .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
+  const STORE_DOOR = { x: 2.5, z: -HALF + .02 }, EXIT_DOOR = { x: -2.5, z: HALF - .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
   let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62, scrPointFn = null, kinoActive = false;
   const RISE = .32, GAP = 1.7, ROW_Z = r => -2.4 + r * GAP, STEP0 = ROW_Z(1) - .5;
@@ -2449,6 +2450,33 @@ const Room = (() => {
     const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#14080e"; c.fillRect(0, 0, w, h); c.font = "bold 100px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ff4d6d"; c.shadowBlur = 26; c.fillStyle = "#ffd0d8"; c.fillText("🎬 KINO", w / 2, h / 2 + 6); });
     const sign = new T.Mesh(new T.PlaneGeometry(1.2, .38), new T.MeshBasicMaterial({ map: signT })); sign.position.set(0, 2.62, .05); g.add(sign);
     const glow = new T.Mesh(new T.PlaneGeometry(2, 1.2), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.62, .03); g.add(glow);
+  }
+
+  // Ausgang an der Rückwand: hindurchgehen oder anklicken verlässt die Videothek
+  function buildExitDoor() {
+    const g = new T.Group(); g.position.set(EXIT_DOOR.x, 0, EXIT_DOOR.z); g.rotation.y = Math.PI; scene.add(g);
+    const frame = new T.Mesh(new T.BoxGeometry(.86, 2.3, .06), new T.MeshLambertMaterial({ color: 0x2b2f36 })); frame.position.y = 1.15; g.add(frame);
+    const doorT = canvasTex(256, 512, (c, w, h) => {
+      // zweiflügelige Glastür mit Blick nach draußen (Abendhimmel)
+      const sky = c.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#1b2a4a"); sky.addColorStop(.55, "#e0785a"); sky.addColorStop(.62, "#2a1f2e"); sky.addColorStop(1, "#141018");
+      c.fillStyle = sky; c.fillRect(0, 0, w, h);
+      c.fillStyle = "rgba(255,255,255,.75)"; for (let i = 0; i < 40; i++) c.fillRect(Math.random() * w, Math.random() * h * .4, 1.5, 1.5);
+      c.fillStyle = "#0f0c14"; for (let i = 0; i < 7; i++) { const bw = 20 + Math.random() * 30, bh = 40 + Math.random() * 90; c.fillRect(i * 38, h * .62 - bh, bw, bh); }
+      c.fillStyle = "rgba(255,210,120,.8)"; for (let i = 0; i < 25; i++) c.fillRect(Math.random() * w, h * .45 + Math.random() * h * .15, 3, 4);
+      c.fillStyle = "rgba(255,255,255,.07)"; c.beginPath(); c.moveTo(20, 0); c.lineTo(90, 0); c.lineTo(20, 200); c.fill();
+      c.strokeStyle = "#c9ced6"; c.lineWidth = 12; c.strokeRect(6, 6, w - 12, h - 12); c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
+      c.fillStyle = "#c9ced6"; c.fillRect(w / 2 - 34, h * .5, 10, 70); c.fillRect(w / 2 + 24, h * .5, 10, 70);
+    });
+    const door = new T.Mesh(new T.PlaneGeometry(.76, 2.2), new T.MeshBasicMaterial({ map: doorT, toneMapped: false })); door.position.set(0, 1.1, .04); g.add(door);
+    door.userData = { exit: true }; fixedPicks.push(door);
+    const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#06140c"; c.fillRect(0, 0, w, h); c.font = "bold 84px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#22c55e"; c.shadowBlur = 26; c.fillStyle = "#d9ffe6"; c.fillText("AUSGANG", w / 2, h / 2 + 6); c.shadowBlur = 0; c.strokeStyle = "#22c55e"; c.lineWidth = 8; c.strokeRect(6, 6, w - 12, h - 12); });
+    const sign = new T.Mesh(new T.PlaneGeometry(.84, .26), new T.MeshBasicMaterial({ map: signT, toneMapped: false })); sign.position.set(0, 2.48, .05); g.add(sign);
+    const glow = new T.Mesh(new T.PlaneGeometry(1.4, .8), new T.MeshBasicMaterial({ map: glowTex, color: 0x66ff99, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.48, .03); g.add(glow);
+    const mat = new T.Mesh(new T.PlaneGeometry(.9, .6), new T.MeshLambertMaterial({ color: 0x22262c })); mat.rotation.x = -Math.PI / 2; mat.position.set(0, .006, .4); g.add(mat);
+  }
+  function exitStore() {
+    pos.x = EXIT_DOOR.x; pos.z = HALF - 2.2; yaw = 0; pitch = -.05; keys = {};
+    close(); toast("👋 Bis bald in der Videothek!");
   }
 
   // Leinwand im Ruhezustand: Titel + Poster deiner Watchlist
@@ -2913,7 +2941,7 @@ const Room = (() => {
     neon.position.set(0, 2.5, 0); scene.add(neon); shared.neon = neon;
 
     store = new T.Group(); scene.add(store);
-    buildDecor(); buildCinema(); buildStoreDoor();
+    buildDecor(); buildCinema(); buildStoreDoor(); buildExitDoor();
     // Kontaktschatten unter Pflanzen, Bank, Automaten
     for (const c of colliders) blob(scene, c.x, c.z, c.r * 2.4, c.r * 2.4, .7);
     // Leuchtende Flächen (Schilder, Neon, Hüllen-Cover) nicht vom Tonemapping abdunkeln lassen
@@ -3230,6 +3258,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.exit) { lab.innerHTML = `🚪 <b>Ausgang</b> · Videothek verlassen<span class="hint"> – ${tap} oder hindurchgehen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.dice) { if (dice && dice.spinning) return; lab.innerHTML = `🎲 <b>Zufalls-Tipp</b> · Film, Serie oder Anime<span class="hint"> – ${tap} zum Drücken</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.arcade) { lab.innerHTML = `🕹 <b>Arcade</b> · deine 8 Spiele<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Spielen</span>`; lab.style.opacity = 1; return; }
     if (m) { if (!m.userData.poster) setCaseZ(m, m.userData.base + .07); const r = m.userData.r; lab.innerHTML = `<b>${esc(r.title)}</b>${r.year ? ` (${esc(r.year)})` : ""} · ${KINDS[r.kind]}${Shop.onList(r) ? " · ✓ auf deiner Liste" : ""}<span class="hint"> – ${matchMedia("(pointer: coarse)").matches ? "antippen" : "klicken"} zum Ansehen</span>`; lab.style.opacity = 1; }
@@ -3243,6 +3272,7 @@ const Room = (() => {
       return;
     }
     if (m.userData.dice) { pressDice(); return; }
+    if (m.userData.exit) { exitStore(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -3302,6 +3332,7 @@ const Room = (() => {
     // Türen: einfach hindurchgehen
     if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .6 && pos.z < -HALF + MARGIN + .12) enterCinema();
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
+    if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .45 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
     if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : .95;
     const targetY = seated ? seated.row * RISE + 1.15 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
@@ -3328,7 +3359,7 @@ const Room = (() => {
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
       ? "🕹 Links: bewegen · 👆 Wischen: umsehen · Hülle antippen: ansehen"
-      : "🖱 Maus: umsehen · W A S D: gehen · Rad: zoomen · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
+      : "🖱 Maus: umsehen · W A S D: gehen · Rad: zoomen · 🚪 Ausgang hinten · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
     $("#roomHelp").classList.add("show"); setTimeout(() => $("#roomHelp").classList.remove("show"), 7000);
     running = true; last = performance.now(); raf = requestAnimationFrame(loop); startPrompt();
     const sig = Shop.filterSig();
@@ -3394,7 +3425,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "35";
+const APP_VERSION = "36";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
