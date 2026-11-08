@@ -42,6 +42,7 @@
            border-bottom: 1px solid var(--line); padding: 14px 24px 0; }
   .toprow { display: flex; align-items: center; gap: 12px; }
   .logo { font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-right: 8px; white-space: nowrap; }
+  .logo .ver { display: inline-block; margin-left: 8px; vertical-align: 3px; font-size: 11px; font-weight: 700; letter-spacing: .3px; padding: 2px 7px; border-radius: 20px; color: var(--muted); background: var(--panel2); border: 1px solid var(--line); }
   .logo span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .search { flex: 1; max-width: 420px; position: relative; }
   .search input { width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px 9px 34px; outline: none; }
@@ -363,7 +364,8 @@
   .ph-glare { position: absolute; inset: 12px; border-radius: 38px; pointer-events: none; z-index: 4; background: linear-gradient(115deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.05) 100%); }
   .ph-screen { position: absolute; inset: 12px; border-radius: 38px; overflow: hidden auto; padding: 58px 16px 34px; color: #fff; scrollbar-width: none;
     background: radial-gradient(circle at 15% 8%, rgba(255,92,122,.95) 0, transparent 42%), radial-gradient(circle at 95% 45%, rgba(255,159,67,.55) 0, transparent 40%), radial-gradient(circle at 70% 95%, rgba(124,58,237,.9) 0, transparent 50%), linear-gradient(165deg, #2b1236, #120e22 60%, #0b0a16);
-    background-size: 160% 160%; animation: phWall 22s ease-in-out infinite alternate; }
+    background-size: 160% 160%; animation: phWall 22s ease-in-out infinite alternate; animation-play-state: paused; }
+  #phone.show:not(.peek) .ph-screen { animation-play-state: running; }
   @keyframes phWall { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
   .ph-screen::-webkit-scrollbar { display: none; }
   .ph-home { position: absolute; bottom: 20px; left: 50%; width: 110px; height: 5px; margin-left: -55px; border-radius: 4px; background: rgba(255,255,255,.75); cursor: pointer; z-index: 3; }
@@ -441,6 +443,10 @@
   #room::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%); }
   #room.open { display: block; }
   body.in-room { overflow: hidden; }
+  body.in-room > header, body.in-room > main, body.in-room::before { display: none !important; }
+  /* Im 3D-Raum keine Unschärfe-Effekte: die müssten sonst jedes Bild neu berechnet werden */
+  #room .btn, #room #roomHelp, #room #roomLabel, #room #roomStart, #room #roomZoom, #room #cineBar .btn, #room .ph-widget, #room .ph-dock { backdrop-filter: none !important; }
+  #room::after { display: none; }
   body.in-room #btnAdd { display: none; }
   #roomCanvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   #roomCanvas:active { cursor: grabbing; }
@@ -607,7 +613,7 @@
 <body>
 <header>
   <div class="toprow">
-    <div class="logo"><img src="icon-32.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">Meine <span>Watchlist</span></div>
+    <div class="logo"><img src="icon-32.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">Meine <span>Watchlist</span><b class="ver" id="appVer" title="Installierte Version"></b></div>
     <div class="seg viewsw" id="viewSw"><button data-v="list" class="active">📋 Meine Liste</button><button data-v="shop">🎬 Videothek</button></div>
     <div class="search"><input id="q" placeholder="Film, Serie oder Anime suchen …" autocomplete="off">
       <div class="suggest" id="suggest"></div></div>
@@ -3529,7 +3535,11 @@ const Room = (() => {
 
   // ---------- Szene ----------
   function init() {
-    renderer = new T.WebGLRenderer({ canvas: $("#roomCanvas"), antialias: true, alpha: true });
+    renderer = new T.WebGLRenderer({ canvas: $("#roomCanvas"), antialias: true, alpha: true, powerPreference: "high-performance" });
+    // Welche Grafikkarte wird benutzt? (für die F3-Anzeige und eine Warnung bei Software-Grafik)
+    try { const gl = renderer.getContext(), ext = gl.getExtension("WEBGL_debug_renderer_info"); perf.gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : ""; } catch { perf.gpu = ""; }
+    perf.gpuShort = String(perf.gpu || "").replace(/^ANGLE \(|\)$/g, "").replace(/\(0x[0-9a-f]+\)|Direct3D.*$|vs_.*$/gi, "").split(",").slice(-1)[0].trim();
+    if (/swiftshader|basic render|llvmpipe|software/i.test(perf.gpu)) setTimeout(() => toast("⚠ Die Grafikkarte wird gerade nicht benutzt (Software-Grafik) – deshalb ruckelt die Videothek. Grafiktreiber aktualisieren oder in Edge „Hardwarebeschleunigung“ einschalten.", true), 1500);
     perf.max = Math.min(devicePixelRatio, quality.real ? 1.25 : 1.5); perf.pr = perf.max; renderer.setPixelRatio(perf.pr);
     renderer.outputColorSpace = T.SRGBColorSpace;
     // Filmischer Look: weichere Lichter, satte Farben
@@ -4038,11 +4048,11 @@ const Room = (() => {
     }
     // Auflösung automatisch anpassen, wenn es ruckelt
     perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
-    perf.fc = (perf.fc || 0) + 1; if (t - (perf.ft || 0) > 500) { const f = Math.round(perf.fc * 1000 / (t - (perf.ft || t - 500))); perf.fc = 0; perf.ft = t; const el = $("#roomFps"); if (el && el.classList.contains("show")) el.textContent = `${f} FPS · ${Math.round(perf.pr * 100)} % · ${quality.real ? "Realistisch" : "Schnell"}`; }
+    perf.fc = (perf.fc || 0) + 1; if (t - (perf.ft || 0) > 500) { const f = Math.round(perf.fc * 1000 / (t - (perf.ft || t - 500))); perf.fc = 0; perf.ft = t; const el = $("#roomFps"); if (el && el.classList.contains("show")) el.textContent = `${f} FPS · ${Math.round(perf.pr * 100)} % · ${quality.real ? "Realistisch" : "Schnell"}${perf.gpuShort ? " · " + perf.gpuShort : ""}`; }
     if (perf.acc > 1.5) {
       const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
-      if (avg > 1 / 40 && perf.pr <= .6 && quality.real && ++perf.slow >= 3) { perf.slow = 0; setQuality(false); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig läuft (oben rechts umschaltbar)"); }
-      if (avg > 1 / 48 && perf.pr > .6) { perf.pr = Math.max(.6, +(perf.pr - .15).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
+      if (avg > 1 / 40 && perf.pr <= .5 && quality.real && ++perf.slow >= 3) { perf.slow = 0; setQuality(false); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig läuft (oben rechts umschaltbar)"); }
+      if (avg > 1 / 50 && perf.pr > .5) { perf.pr = Math.max(.5, +(perf.pr - (avg > 1 / 30 ? .25 : .15)).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
     Popcorn.tick(dt, t, !!bob);
@@ -4182,7 +4192,8 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "57";
+const APP_VERSION = "60";
+{ const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
