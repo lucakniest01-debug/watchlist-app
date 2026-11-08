@@ -710,7 +710,7 @@
   <button class="btn" id="roomBack">← Zurück</button>
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
   <button class="btn" id="roomFull" title="Vollbild an/aus (Taste F11)">⛶</button>
-  <button class="btn" id="roomGfx" title="Grafik umschalten">✨ Realistisch</button>
+  <button class="btn" id="roomGfx" title="Grafik umschalten (Taste M)">✨ Realistisch</button>
   <button class="btn" id="roomKeys" title="Tastenbelegung einstellen">⌨ Tasten</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
@@ -2091,7 +2091,7 @@ const KM = (() => {
     ["run", "Rennen (halten)", "ShiftLeft"], ["stand", "Von der Bank aufstehen", "Space"],
     ["use", "Anvisierte Hülle ansehen", "Enter"], ["shuffle", "Regal mischen", "KeyR"],
     ["phone", "Handy: Maus frei / fangen", "KeyH"], ["popcorn", "Popcorn essen", "KeyF"],
-    ["fps", "FPS-Anzeige", "F3"], ["keys", "Tastenbelegung öffnen", "KeyK"],
+    ["fps", "FPS-Anzeige", "F3"], ["gfx", "Grafik: Schnell / Realistisch", "KeyM"], ["keys", "Tastenbelegung öffnen", "KeyK"],
   ];
   const DEF = Object.fromEntries(ACTIONS.map(a => [a[0], a[2]]));
   const LS = "watchlist-keys";
@@ -2215,7 +2215,7 @@ const Room = (() => {
   }
   function helpText() {
     const n = a => KM.name(KM.get(a));
-    return `🖱 Maus: umsehen · ${n("forward")} ${n("left")} ${n("back")} ${n("right")}: gehen · ${n("run")}: rennen · Rad: zoomen · ${n("popcorn")}: Popcorn essen · ${n("fps")}: FPS · Klick / ${n("use")}: ansehen · 🔀 / ${n("shuffle")}: Regal mischen · ${n("keys")}: Tasten einstellen · Esc: Maus freigeben`;
+    return `🖱 Maus: umsehen · ${n("forward")} ${n("left")} ${n("back")} ${n("right")}: gehen · ${n("run")}: rennen · Rad: zoomen · ${n("popcorn")}: Popcorn essen · ${n("fps")}: FPS · ${n("gfx")}: Grafik · Klick / ${n("use")}: ansehen · 🔀 / ${n("shuffle")}: Regal mischen · ${n("keys")}: Tasten einstellen · Esc: Maus freigeben`;
   }
   KM.onChange = () => { const h = $("#roomHelp"); if (h && !matchMedia("(pointer: coarse)").matches) h.innerHTML = helpText(); const st = $("#roomStart span"); if (st) st.textContent = `Danach bewegst du die Ansicht einfach mit der Maus · ${["forward", "left", "back", "right"].map(a => KM.name(KM.get(a))).join(" ")} zum Gehen · Esc gibt die Maus frei`; };
   function standBench() {
@@ -4053,6 +4053,7 @@ const Room = (() => {
       if (e.code === "Escape" && document.pointerLockElement) { document.exitPointerLock(); releasedAt = performance.now(); return; }
       if (KM.is("keys", e.code) && !e.repeat && !e.ctrlKey && !e.altKey) { e.preventDefault(); KM.open(); return; }
       if (KM.is("popcorn", e.code) && !e.repeat && Popcorn.has()) { Popcorn.eat(); return; }
+      if (KM.is("gfx", e.code) && !e.repeat) { e.preventDefault(); $("#roomGfx").click(); return; }
       if (KM.is("fps", e.code)) { e.preventDefault(); $("#roomFps").classList.toggle("show"); return; }
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
       if (benchSit && KM.is("phone", e.code) && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
@@ -4343,7 +4344,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "65";
+const APP_VERSION = "66";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
