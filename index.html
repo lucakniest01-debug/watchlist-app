@@ -3596,7 +3596,9 @@ const Room = (() => {
     // Umgebung für Spiegelungen (Metall, Glas, Lack)
     if (FX && FX.RE) { try { const pm = new T.PMREMGenerator(renderer); scene.userData.env = pm.fromScene(new FX.RE.RoomEnvironment(), .04).texture; if (quality.real) scene.environment = scene.userData.env; scene.environmentIntensity = .22; } catch {} }
     if (FX && FX.EC) { try {
-      composer = new FX.EC.EffectComposer(renderer); composer.addPass(new FX.RP.RenderPass(scene, camera));
+      // Kantenglättung auch mit Effekten: Bild intern mit 4-fachem Multisampling rendern
+      const rt = new T.WebGLRenderTarget(Math.max(1, innerWidth * perf.pr), Math.max(1, innerHeight * perf.pr), { type: T.HalfFloatType, samples: 4 });
+      composer = new FX.EC.EffectComposer(renderer, rt); composer.addPass(new FX.RP.RenderPass(scene, camera));
       bloom = new FX.UB.UnrealBloomPass(new T.Vector2(innerWidth, innerHeight), .5, .45, .9); composer.addPass(bloom); composer.addPass(new FX.OP.OutputPass());
       // Leuchten in halber Auflösung berechnen – sieht gleich aus, kostet ein Viertel
       const bs = bloom.setSize.bind(bloom); bloom.setSize = (w, h) => bs(Math.max(1, Math.round(w / 2)), Math.max(1, Math.round(h / 2)));
@@ -3759,7 +3761,7 @@ const Room = (() => {
     return m;
   }
   function initAtlas(u) {
-    const coarse = matchMedia("(pointer: coarse)").matches, cw = coarse ? 96 : 160, ch = cw * 1.5;
+    const coarse = matchMedia("(pointer: coarse)").matches, cw = coarse ? 96 : 200, ch = cw * 1.5;
     const cv = document.createElement("canvas"); cv.width = cw * PER_ROW; cv.height = ch * ROWS;
     const ctx = cv.getContext("2d"); ctx.fillStyle = "#2a2a30"; ctx.fillRect(0, 0, cv.width, cv.height);
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = maxAniso;
@@ -3805,7 +3807,7 @@ const Room = (() => {
     setInst(u, m);
     const cx = col * A.cw, cy = row * A.ch;
     const fb = () => { if (u.atlas !== A || A.gen !== gen) return; const t = document.createElement("canvas"); t.width = 256; t.height = 384; drawFallback(t.getContext("2d"), 256, 384, r); A.ctx.drawImage(t, cx, cy, A.cw, A.ch); A.dirty = true; };
-    const url = r.poster || (r.big ? r.big.replace("/w500/", "/w185/") : "");
+    const url = r.big ? r.big.replace("/w500/", "/w342/") : r.poster;
     if (url) { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => { if (u.atlas !== A || A.gen !== gen) return; A.ctx.drawImage(img, cx, cy, A.cw, A.ch); A.dirty = true; }; img.onerror = fb; img.src = url; }
     else fb();
     if (Shop.onList(r)) markOne(m);
@@ -4091,8 +4093,12 @@ const Room = (() => {
     perf.fc = (perf.fc || 0) + 1; if (t - (perf.ft || 0) > 500) { const f = Math.round(perf.fc * 1000 / (t - (perf.ft || t - 500))); perf.fc = 0; perf.ft = t; const el = $("#roomFps"); if (el && el.classList.contains("show")) el.textContent = `${f} FPS · ${Math.round(perf.pr * 100)} % · ${quality.real ? "Realistisch" : "Schnell"}${perf.gpuShort ? " · " + perf.gpuShort : ""}`; }
     if (perf.acc > 1.5) {
       const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
-      if (avg > 1 / 40 && perf.pr <= .5 && quality.real && !window.__noAutoFast && ++perf.slow >= 3) { perf.slow = 0; setQuality(false); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig läuft (oben rechts umschaltbar)"); }
-      if (avg > 1 / 50 && perf.pr > .5) { perf.pr = Math.max(.5, +(perf.pr - (avg > 1 / 30 ? .25 : .15)).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
+      // Ruckelt es: erst Auflösung leicht senken (nicht unter 85 %), dann lieber Effekte abschalten als pixelig werden
+      if (avg > 1 / 50) {
+        if (perf.pr > .85) { perf.pr = Math.max(.85, +(perf.pr - .1).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
+        else if (quality.real && !window.__noAutoFast && ++perf.slow >= 2) { perf.slow = 0; perf.pr = perf.max; perf.cool = t + 8000; setQuality(false); renderer.setPixelRatio(perf.pr); resize(); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig und scharf bleibt (oben rechts umschaltbar)"); }
+        else if (!quality.real && perf.pr > .75 && t > perf.cool) { perf.pr = .75; perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
+      }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
     Popcorn.tick(dt, t, !!bob);
@@ -4232,7 +4238,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "63";
+const APP_VERSION = "64";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
