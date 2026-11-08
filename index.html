@@ -520,6 +520,19 @@
   #room.seated #roomFull { display: none; }
   #roomGfx { position: absolute; top: 14px; right: 198px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #room.seated #roomGfx { display: none; }
+  #roomKeys { position: absolute; top: 14px; right: 330px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
+  #room.seated #roomKeys { display: none; }
+  #ovKeys { z-index: 26; }
+  #ovKeys .modal { max-width: 560px; }
+  .kmlist { display: grid; gap: 6px; }
+  .kmrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid var(--line); }
+  .kmrow span { font-size: .95em; }
+  .kmrow .kbd { min-width: 92px; text-align: center; font: 600 .9em ui-monospace, Consolas, monospace; padding: 7px 12px; border-radius: 9px; cursor: pointer; color: var(--text); background: linear-gradient(#2a2f3a, #1d2129); border: 1px solid #3a4150; border-bottom-width: 3px; }
+  .kmrow .kbd:hover { border-color: var(--accent); }
+  .kmrow .kbd.wait { color: #111; background: var(--accent); border-color: var(--accent); animation: kmPulse 1s infinite; }
+  .kmrow .kbd.changed { box-shadow: 0 0 0 2px rgba(255,179,92,.35); }
+  @keyframes kmPulse { 50% { opacity: .55; } }
+  .kmfoot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
   #roomShuffle { position: absolute; top: 14px; right: 14px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #ovArcade { padding: 0; background: rgba(5,6,12,.92); align-items: center; z-index: 25; }
   .arcadewrap { width: min(1100px, 100vw); height: min(780px, 100vh); display: flex; flex-direction: column; margin: auto; border: 3px solid #22d3ee; border-radius: 16px; overflow: hidden;
@@ -698,6 +711,7 @@
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
   <button class="btn" id="roomFull" title="Vollbild an/aus (Taste F11)">⛶</button>
   <button class="btn" id="roomGfx" title="Grafik umschalten">✨ Realistisch</button>
+  <button class="btn" id="roomKeys" title="Tastenbelegung einstellen">⌨ Tasten</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
   <div id="roomLabel"></div>
@@ -737,6 +751,18 @@
 <!-- Videothek: geöffnete Hülle -->
 <div class="overlay" id="ovCase">
   <div class="casewrap"><button class="x casex" data-close>×</button><div id="caseBox"></div></div>
+</div>
+
+<!-- Tastenbelegung -->
+<div class="overlay" id="ovKeys">
+  <div class="modal">
+    <div class="mhead"><h2>⌨ Tastenbelegung</h2><button class="x" data-close>×</button></div>
+    <div class="mbody">
+      <div class="hint" style="margin:0 0 12px">Auf eine Taste klicken und dann die neue Taste drücken. Esc bricht ab. Die Pfeiltasten funktionieren zum Gehen und Drehen immer zusätzlich.</div>
+      <div class="kmlist" id="kmList"></div>
+      <div class="kmfoot"><span class="hint" id="kmInfo"></span><button class="btn" id="kmReset">↺ Alles zurücksetzen</button></div>
+    </div>
+  </div>
 </div>
 
 <!-- Einstellungen -->
@@ -2056,6 +2082,68 @@ function setView(v) {
 document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setView(b.dataset.v));
 
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
+/* Tastenbelegung für die 3D-Videothek (frei einstellbar, lokal gespeichert) */
+const KM = (() => {
+  const ACTIONS = [
+    ["forward", "Vorwärts gehen", "KeyW"], ["back", "Rückwärts gehen", "KeyS"],
+    ["left", "Nach links gehen", "KeyA"], ["right", "Nach rechts gehen", "KeyD"],
+    ["turnL", "Nach links drehen", "KeyQ"], ["turnR", "Nach rechts drehen", "KeyE"],
+    ["run", "Rennen (halten)", "ShiftLeft"], ["stand", "Von der Bank aufstehen", "Space"],
+    ["use", "Anvisierte Hülle ansehen", "Enter"], ["shuffle", "Regal mischen", "KeyR"],
+    ["phone", "Handy: Maus frei / fangen", "KeyH"], ["popcorn", "Popcorn essen", "KeyF"],
+    ["fps", "FPS-Anzeige", "F3"], ["keys", "Tastenbelegung öffnen", "KeyK"],
+  ];
+  const DEF = Object.fromEntries(ACTIONS.map(a => [a[0], a[2]]));
+  const LS = "watchlist-keys";
+  let map = { ...DEF };
+  try { Object.assign(map, JSON.parse(localStorage.getItem(LS) || "{}")); } catch {}
+  const RESERVED = ["Escape", "F11", "F5", "F12", "Tab", "MetaLeft", "MetaRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+  const NAMES = { Space: "Leertaste", Enter: "Enter", ShiftLeft: "Shift", ShiftRight: "Shift rechts", ControlLeft: "Strg", ControlRight: "Strg rechts", AltLeft: "Alt", AltRight: "AltGr", Backspace: "⌫ Rücktaste", CapsLock: "Feststell", Backquote: "^", Minus: "ß", Equal: "´", BracketLeft: "Ü", BracketRight: "+", Semicolon: "Ö", Quote: "Ä", Backslash: "#", Comma: ",", Period: ".", Slash: "-", IntlBackslash: "<", Insert: "Einfg", Delete: "Entf", Home: "Pos1", End: "Ende", PageUp: "Bild ↑", PageDown: "Bild ↓", NumpadEnter: "Num Enter", Mouse3: "Maus 4", Mouse4: "Maus 5" };
+  // Englische Codes → deutsches Layout (Z/Y vertauscht)
+  const name = c => !c ? "–" : NAMES[c] || (c === "KeyZ" ? "Y" : c === "KeyY" ? "Z" : c.replace(/^Key/, "").replace(/^Digit/, "").replace(/^Numpad/, "Num "));
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(map)); } catch {} };
+  const is = (act, code) => code && map[act] === code;
+  // "Shift links" gilt auch für Shift rechts (und Strg/Alt entsprechend)
+  const pair = c => ({ ShiftLeft: "ShiftRight", ControlLeft: "ControlRight" })[c];
+  const down = (keys, act) => !!(keys[map[act]] || (pair(map[act]) && keys[pair(map[act])]));
+  let waiting = null, onChange = () => {};
+  function render() {
+    const list = $("#kmList"); if (!list) return;
+    list.innerHTML = ACTIONS.map(([id, label]) => `<div class="kmrow"><span>${label}</span><button class="kbd${map[id] !== DEF[id] ? " changed" : ""}${waiting === id ? " wait" : ""}" data-km="${id}">${waiting === id ? "Taste drücken …" : name(map[id])}</button></div>`).join("");
+  }
+  function info(t) { const el = $("#kmInfo"); if (el) el.textContent = t || ""; }
+  function assign(code) {
+    const act = waiting; waiting = null;
+    if (RESERVED.includes(code)) { info(`„${name(code)}“ ist fest belegt und kann nicht vergeben werden.`); render(); return; }
+    const other = Object.keys(map).find(k => k !== act && map[k] === code);
+    if (other) { map[other] = map[act]; info(`Getauscht: „${ACTIONS.find(a => a[0] === other)[1]}“ liegt jetzt auf ${name(map[other])}.`); }
+    else info(`${ACTIONS.find(a => a[0] === act)[1]}: ${name(code)}`);
+    map[act] = code; save(); render(); onChange();
+  }
+  function open() {
+    if (document.pointerLockElement) document.exitPointerLock();
+    waiting = null; info(""); render(); $("#ovKeys").classList.add("open");
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-km]"); if (!b) return;
+    waiting = waiting === b.dataset.km ? null : b.dataset.km; info(waiting ? "Jetzt die neue Taste (oder Maustaste 4/5) drücken …" : ""); render();
+  });
+  // Seitliche Maustasten lassen sich auch belegen
+  document.addEventListener("mousedown", e => { if (waiting && (e.button === 3 || e.button === 4)) { e.preventDefault(); assign("Mouse" + e.button); } }, true);
+  addEventListener("keydown", e => {
+    if (!$("#ovKeys").classList.contains("open")) return;
+    if (!waiting) { if (e.code === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); $("#ovKeys").classList.remove("open"); } return; }
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (e.code === "Escape") { waiting = null; info("Abgebrochen."); render(); return; }
+    assign(e.code);
+  }, true);
+  document.addEventListener("click", e => {
+    if (e.target.id !== "kmReset") return;
+    map = { ...DEF }; save(); waiting = null; render(); info("Standardbelegung wiederhergestellt."); onChange();
+  });
+  return { is, down, name, open, get: a => map[a], bound: c => Object.values(map).includes(c), set onChange(f) { onChange = f; } };
+})();
+
 const Room = (() => {
   let maxAniso = 4, blobTex = null, poolTex = null, TEX = {};
   // Hochauflösende Material-Texturen (Holz, Wand, Decke, Teppichflor, Samt, Metall) – im Programm erzeugt, kachelbar
@@ -2125,6 +2213,11 @@ const Room = (() => {
     if (document.pointerLockElement) document.exitPointerLock();
     Phone.show(); startPrompt();
   }
+  function helpText() {
+    const n = a => KM.name(KM.get(a));
+    return `🖱 Maus: umsehen · ${n("forward")} ${n("left")} ${n("back")} ${n("right")}: gehen · ${n("run")}: rennen · Rad: zoomen · ${n("popcorn")}: Popcorn essen · ${n("fps")}: FPS · Klick / ${n("use")}: ansehen · 🔀 / ${n("shuffle")}: Regal mischen · ${n("keys")}: Tasten einstellen · Esc: Maus freigeben`;
+  }
+  KM.onChange = () => { const h = $("#roomHelp"); if (h && !matchMedia("(pointer: coarse)").matches) h.innerHTML = helpText(); const st = $("#roomStart span"); if (st) st.textContent = `Danach bewegst du die Ansicht einfach mit der Maus · ${["forward", "left", "back", "right"].map(a => KM.name(KM.get(a))).join(" ")} zum Gehen · Esc gibt die Maus frei`; };
   function standBench() {
     if (!benchSit) return;
     benchSit = false; pos.x = 0; pos.z = -3.4 + 1.25; yaw = Math.PI;
@@ -3958,21 +4051,31 @@ const Room = (() => {
     addEventListener("keydown", e => {
       if (!running || e.target.closest("input, textarea, select") || document.querySelector(".overlay.open")) return;
       if (e.code === "Escape" && document.pointerLockElement) { document.exitPointerLock(); releasedAt = performance.now(); return; }
-      if (e.code === "KeyF" && !e.repeat && Popcorn.has()) { Popcorn.eat(); return; }
-      if (e.code === "F3") { e.preventDefault(); $("#roomFps").classList.toggle("show"); return; }
+      if (KM.is("keys", e.code) && !e.repeat && !e.ctrlKey && !e.altKey) { e.preventDefault(); KM.open(); return; }
+      if (KM.is("popcorn", e.code) && !e.repeat && Popcorn.has()) { Popcorn.eat(); return; }
+      if (KM.is("fps", e.code)) { e.preventDefault(); $("#roomFps").classList.toggle("show"); return; }
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
-      if (benchSit && e.code === "KeyH" && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
+      if (benchSit && KM.is("phone", e.code) && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
       if (benchSit && e.code === "Escape") { if (performance.now() - releasedAt > 400) standBench(); return; }
       keys[e.code] = true;
       if (e.code === "Escape" && performance.now() - releasedAt > 400) close();
-      if (e.code === "Enter" && aimed) select(aimed);
-      if (e.code === "KeyR" && !e.repeat) {
+      if (KM.is("use", e.code) && aimed) select(aimed);
+      if (KM.is("shuffle", e.code) && !e.repeat) {
         const ui = aimed && (aimed.userData.shuffle ?? aimed.userData.unit);
         if (!e.shiftKey && ui != null && units[ui]) shuffleUnit(units[ui]); else shuffle();
       }
-      if (/^(Arrow|Space)/.test(e.code)) e.preventDefault();
+      if (/^(Arrow|Space)/.test(e.code) || KM.bound(e.code)) e.preventDefault();
     });
     addEventListener("keyup", e => { keys[e.code] = false; });
+    // Seitliche Maustasten (4/5) wie Tasten behandeln, falls belegt
+    const mbtn = (type, e) => {
+      if (!running || (e.button !== 3 && e.button !== 4) || $("#ovKeys").classList.contains("open")) return;
+      const code = "Mouse" + e.button; if (!KM.bound(code)) return;
+      e.preventDefault(); document.body.dispatchEvent(new KeyboardEvent(type, { code, key: code, bubbles: true }));
+    };
+    addEventListener("mousedown", e => mbtn("keydown", e));
+    addEventListener("mouseup", e => mbtn("keyup", e));
+    addEventListener("auxclick", e => { if (running && (e.button === 3 || e.button === 4)) e.preventDefault(); });
     addEventListener("blur", () => keys = {});
 
     // Joystick (Handy)
@@ -4065,20 +4168,21 @@ const Room = (() => {
     if (!running) return;
     raf = requestAnimationFrame(loop);
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
-    if (benchSit && (keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || keys.Space || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standBench();
+    const mv = KM.down(keys, "forward") || KM.down(keys, "back") || KM.down(keys, "left") || KM.down(keys, "right") || keys.ArrowUp || keys.ArrowDown;
+    if (benchSit && (mv || KM.down(keys, "stand") || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standBench();
     if (!document.querySelector(".overlay.open") && !seated && !benchSit) {
       let f = 0, s = 0;
-      if (keys.KeyW || keys.ArrowUp) f += 1; if (keys.KeyS || keys.ArrowDown) f -= 1;
-      if (keys.KeyD) s += 1; if (keys.KeyA) s -= 1;
+      if (KM.down(keys, "forward") || keys.ArrowUp) f += 1; if (KM.down(keys, "back") || keys.ArrowDown) f -= 1;
+      if (KM.down(keys, "right")) s += 1; if (KM.down(keys, "left")) s -= 1;
       if (keys.ArrowLeft) yaw += 1.8 * dt; if (keys.ArrowRight) yaw -= 1.8 * dt;
-      if (keys.KeyQ) yaw += 1.8 * dt; if (keys.KeyE) yaw -= 1.8 * dt;
+      if (KM.down(keys, "turnL")) yaw += 1.8 * dt; if (KM.down(keys, "turnR")) yaw -= 1.8 * dt;
       f -= joy.y; s += joy.x;
-      const sp = (keys.ShiftLeft || keys.ShiftRight ? 4.6 : 2.4) * dt;
+      const sp = (KM.down(keys, "run") ? 4.6 : 2.4) * dt;
       pos.x += (-Math.sin(yaw) * f + Math.cos(yaw) * s) * sp;
       pos.z += (-Math.cos(yaw) * f - Math.sin(yaw) * s) * sp;
       clampPos();
     }
-    const bob = (Math.abs(joy.x) + Math.abs(joy.y) + (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.ArrowUp || keys.ArrowDown ? 1 : 0)) ? Math.sin(t / 140) * .012 : 0;
+    const bob = (Math.abs(joy.x) + Math.abs(joy.y) + (mv ? 1 : 0)) ? Math.sin(t / 140) * .012 : 0;
     if (shared.neon) shared.neon.rotation.y = Math.sin(t / 2600) * .25;
     if (arcade && !inCinema && t - (arcade.last || 0) > 90 && Math.hypot(pos.x - 3.4, pos.z - 4.6) < 7) { arcade.last = t; arcade.draw(t); }
     // Cover-Atlas höchstens alle 250 ms neu hochladen
@@ -4166,12 +4270,13 @@ const Room = (() => {
     }
     if (!renderer) { if (!TEX.wood_light) await loadTextures(); init(); }
     $("#roomGfx").textContent = quality.real ? "✨ Realistisch" : "⚡ Schnell";
+    $("#roomKeys").onclick = () => KM.open();
     $("#roomGfx").onclick = () => { setQuality(!quality.real); toast(quality.real ? "✨ Realistische Grafik: Licht, Schatten, Spiegelungen, Leuchten" : "⚡ Schnelle Grafik"); };
     resize();
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
       ? "🕹 Links: bewegen · 👆 Wischen: umsehen · Hülle antippen: ansehen"
-      : "🖱 Maus: umsehen · W A S D: gehen · Rad: zoomen · F: Popcorn essen · F3: FPS · 🚪 Ausgang hinten · Klick: ansehen · 🔀 / R: Regal mischen · 🎬 Kino-Tür vorne · Esc: Maus freigeben";
+      : helpText();
     $("#roomHelp").classList.add("show"); setTimeout(() => $("#roomHelp").classList.remove("show"), 7000);
     running = true; last = performance.now(); raf = requestAnimationFrame(loop); startPrompt();
     const sig = Shop.filterSig();
@@ -4238,7 +4343,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "64";
+const APP_VERSION = "65";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
