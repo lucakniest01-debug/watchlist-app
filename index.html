@@ -435,8 +435,8 @@
   #popHand span { opacity: .8; font-size: 12px; }
   .pop-crumb { position: absolute; bottom: 30px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px #000; font-size: 15px; pointer-events: none; animation: crumb .9s ease-out forwards; white-space: nowrap; }
   @keyframes crumb { to { transform: translateY(-70px); opacity: 0; } }
-  #roomFps { position: absolute; left: 14px; top: 60px; z-index: 6; font: 600 12px Consolas, monospace; padding: 4px 9px; border-radius: 8px; background: rgba(0,0,0,.6); color: #7dff9a; display: none; pointer-events: none; }
-  #roomFps.show { display: block; }
+  #roomFps { position: absolute; left: 130px; top: 14px; z-index: 6; font: 600 12px Consolas, monospace; padding: 0 12px; border-radius: 10px; background: rgba(23,26,33,.85); border: 1px solid var(--line); align-items: center; white-space: nowrap; color: #7dff9a; display: none; pointer-events: none; }
+  #roomFps.show { display: flex; }
   #roomZoom { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 4; pointer-events: none; padding: 6px 14px; border-radius: 20px; background: rgba(10,10,14,.7); color: #fff; font-weight: 700; font-size: 15px; opacity: 0; transition: opacity .3s; backdrop-filter: blur(6px); }
   #roomZoom.show { opacity: 1; }
   #room::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.45) 100%); }
@@ -2213,6 +2213,13 @@ const Room = (() => {
     if (document.pointerLockElement) document.exitPointerLock();
     Phone.show(); startPrompt();
   }
+  // FPS-Anzeige direkt rechts neben „← Zurück“, gleiche Höhe
+  function placeFps(on) {
+    const el = $("#roomFps"), b = $("#roomBack"); if (!on || !el || !b) return;
+    const r = b.getBoundingClientRect(), p = $("#room").getBoundingClientRect();
+    el.style.left = (r.right - p.left + 8) + "px"; el.style.top = (r.top - p.top) + "px"; el.style.height = r.height + "px";
+  }
+  addEventListener("resize", () => placeFps($("#roomFps")?.classList.contains("show")));
   function helpText() {
     const n = a => KM.name(KM.get(a));
     return `🖱 Maus: umsehen · ${n("forward")} ${n("left")} ${n("back")} ${n("right")}: gehen · ${n("run")}: rennen · Rad: zoomen · ${n("popcorn")}: Popcorn essen · ${n("fps")}: FPS · ${n("gfx")}: Grafik · Klick / ${n("use")}: ansehen · 🔀 / ${n("shuffle")}: Regal mischen · ${n("keys")}: Tasten einstellen · Esc: Maus freigeben`;
@@ -4054,7 +4061,7 @@ const Room = (() => {
       if (KM.is("keys", e.code) && !e.repeat && !e.ctrlKey && !e.altKey) { e.preventDefault(); KM.open(); return; }
       if (KM.is("popcorn", e.code) && !e.repeat && Popcorn.has()) { Popcorn.eat(); return; }
       if (KM.is("gfx", e.code) && !e.repeat) { e.preventDefault(); $("#roomGfx").click(); return; }
-      if (KM.is("fps", e.code)) { e.preventDefault(); $("#roomFps").classList.toggle("show"); return; }
+      if (KM.is("fps", e.code)) { e.preventDefault(); placeFps($("#roomFps").classList.toggle("show")); return; }
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
       if (benchSit && KM.is("phone", e.code) && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
       if (benchSit && e.code === "Escape") { if (performance.now() - releasedAt > 400) standBench(); return; }
@@ -4344,7 +4351,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "66";
+const APP_VERSION = "67";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
