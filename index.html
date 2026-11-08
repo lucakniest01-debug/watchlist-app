@@ -38,7 +38,7 @@
   button, input, select, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; }
 
-  header { position: sticky; top: 0; z-index: 5; background: rgba(15,17,21,.78); backdrop-filter: blur(14px) saturate(1.3);
+  header { position: sticky; top: 0; z-index: 5; background: rgba(15,17,21,.96);
            border-bottom: 1px solid var(--line); padding: 14px 24px 0; }
   .toprow { display: flex; align-items: center; gap: 12px; }
   .logo { font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-right: 8px; white-space: nowrap; }
@@ -81,7 +81,7 @@
   .poster { aspect-ratio: 2/3; background: var(--panel2) center/cover no-repeat; position: relative; display: flex; align-items: center; justify-content: center;
             color: var(--muted); font-size: 40px; }
   .poster .badge { position: absolute; top: 8px; left: 8px; }
-  .poster .st { position: absolute; top: 8px; right: 8px; font-size: 10.5px; font-weight: 700; padding: 3px 8px 3px 7px; border-radius: 20px; background: rgba(12,13,17,.72); backdrop-filter: blur(6px); color: #e8eaf0; display: flex; align-items: center; gap: 5px; }
+  .poster .st { position: absolute; top: 8px; right: 8px; font-size: 10.5px; font-weight: 700; padding: 3px 8px 3px 7px; border-radius: 20px; background: rgba(12,13,17,.72); color: #e8eaf0; display: flex; align-items: center; gap: 5px; }
   .poster .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
   .badge { box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .badge { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; color: #0f1115; }
@@ -270,14 +270,14 @@
   .herobtn { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 14px 22px; font-size: 16px; border-radius: 14px; box-shadow: 0 10px 30px rgba(255,92,92,.35); }
   .herobtn small { font-size: 12px; font-weight: 400; opacity: .9; margin-top: 2px; }
   .herobtn:hover { transform: translateY(-1px); }
-  .shelf { margin: 22px 0 6px; }
+  .shelf { margin: 22px 0 6px; content-visibility: auto; contain-intrinsic-size: auto 300px; }
   .shelfhead { display: flex; align-items: center; gap: 6px; margin: 0 4px 2px; }
   .shelf h3 { margin: 0; font-size: 17px; }
   .mixone { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2); font-size: 14px; padding: 0; margin-right: 4px; }
   .mixone:hover { border-color: var(--accent); transform: rotate(-20deg); transition: transform .2s; }
   .arrow-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 20px; line-height: 1; padding: 0 0 2px; }
   .arrow-btn:hover { border-color: var(--accent); }
-  .rack { position: relative; perspective: 1400px; border-radius: 14px; overflow: hidden;
+  .rack { position: relative; border-radius: 14px; overflow: hidden; contain: paint;
     background: radial-gradient(ellipse 22% 80% at 15% -10%, rgba(255,214,160,.13), transparent 70%), radial-gradient(ellipse 22% 80% at 50% -10%, rgba(255,214,160,.13), transparent 70%), radial-gradient(ellipse 22% 80% at 85% -10%, rgba(255,214,160,.13), transparent 70%),
       repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, transparent 1px 64px), linear-gradient(#17141b, #0f0d12); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), inset 0 -30px 40px rgba(0,0,0,.35); }
   .rack::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,226,180,.5) 15%, rgba(255,226,180,.5) 85%, transparent); filter: blur(1px); z-index: 2; }
@@ -299,23 +299,22 @@
   .rack:hover .row::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #ff5c5c, #ff9f43); box-shadow: 0 0 10px rgba(255,120,80,.6); }
   .shelf .row::-webkit-scrollbar-thumb:active { background: linear-gradient(90deg, #ff7676, #ffb766); }
   .case { position: relative; flex: none; width: 128px; aspect-ratio: 2/3; border: none; padding: 0; background: none; cursor: pointer;
-    transform-style: preserve-3d; transform: rotateY(-14deg); transform-origin: left center; transition: transform .25s ease, filter .25s; scroll-snap-align: start; filter: brightness(.92); }
-  .case:hover, .case:focus-visible { transform: rotateY(0deg) translateY(-10px) scale(1.05); filter: brightness(1.05); z-index: 2; outline: none; }
-  .case .cover { position: absolute; inset: 0; border-radius: 3px 6px 6px 3px; overflow: hidden; box-shadow: 6px 10px 18px rgba(0,0,0,.55); background: #222; }
+    transition: transform .2s ease; scroll-snap-align: start; }
+  .case:hover, .case:focus-visible { transform: translateY(-8px) scale(1.04); z-index: 2; outline: none; }
+  .case .cover { position: absolute; inset: 0; border-radius: 3px 6px 6px 3px; overflow: hidden; box-shadow: 4px 8px 14px rgba(0,0,0,.5); background: #222; }
   .case .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .case { -webkit-box-reflect: below 3px linear-gradient(transparent 82%, rgba(255,255,255,.14)); }
-  .case .vote { position: absolute; right: 6px; top: 6px; z-index: 2; font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: rgba(10,10,14,.78); color: #ffd36b; backdrop-filter: blur(4px); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+
+  .case .vote { position: absolute; right: 6px; top: 6px; z-index: 2; font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: rgba(10,10,14,.85); color: #ffd36b; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
   .case.have .vote { display: none; }
   .case .rk { position: absolute; left: -52px; bottom: -6px; font-size: 118px; font-weight: 900; line-height: 1; color: #0f0d12; -webkit-text-stroke: 3px rgba(255,180,150,.75); letter-spacing: -8px; z-index: -1; pointer-events: none; font-family: "Segoe UI Black", "Segoe UI", system-ui, sans-serif; }
   .case.ranked { margin-left: 50px; }
   .case.ranked:first-child { margin-left: 60px; }
   .shelf .row:has(.ranked) { scroll-padding-left: 64px; }
-  .skel { flex: none; width: 128px; aspect-ratio: 2/3; border-radius: 4px 7px 7px 4px; background: linear-gradient(100deg, #1b1820 30%, #2a2530 50%, #1b1820 70%); background-size: 300% 100%; animation: shimmer 1.4s linear infinite; transform: rotateY(-14deg); transform-origin: left center; }
+  .skel { flex: none; width: 128px; aspect-ratio: 2/3; border-radius: 4px 7px 7px 4px; background: linear-gradient(100deg, #1b1820 30%, #2a2530 50%, #1b1820 70%); background-size: 300% 100%; animation: shimmer 1.4s linear infinite; }
   @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
   /* Glanz der Kunststoffhülle */
   .case .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 70%, rgba(255,255,255,.06) 100%); }
-  .case .spine { position: absolute; top: 0; bottom: 0; left: 0; width: 14px; transform: rotateY(90deg) translateZ(7px) translateX(-7px); transform-origin: left center;
-    background: linear-gradient(90deg, #111, #2c2c2c 40%, #111); border-radius: 2px; }
+  .case .spine { display: none; }
   .case::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index: 1; border-radius: 3px 0 0 3px; }
   .case .tag { position: absolute; top: -6px; right: -6px; width: 24px; height: 24px; border-radius: 50%; background: var(--gesehen); color: #0f1115; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.5); z-index: 3; }
   .case .ctype { position: absolute; left: 8px; top: 8px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; color: #0f1115; z-index: 2; opacity: 0; transition: opacity .2s; }
@@ -1859,7 +1858,7 @@ const Shop = (() => {
     const have = onList(r), [sid, idx] = key.split(":"), rank = sid === "pop" && +idx < 10 ? +idx + 1 : 0;
     return `<button class="case ${have ? "have" : ""} ${rank ? "ranked" : ""}" data-key="${key}" title="${esc(r.title)}${r.year ? " (" + r.year + ")" : ""}">
       ${rank ? `<span class="rk">${rank}</span>` : ""}${r.vote ? `<span class="vote">★ ${r.vote.toFixed(1)}</span>` : ""}
-      <span class="cover"><img loading="lazy" src="${esc(r.poster)}" alt="${esc(r.title)}"><span class="cap"><b>${esc(r.title)}</b>${r.year ? `<i>${esc(r.year)}${r.vote ? " · ★ " + r.vote.toFixed(1) : ""}</i>` : ""}</span></span>
+      <span class="cover"><img loading="lazy" decoding="async" src="${esc(r.poster)}" alt="${esc(r.title)}"><span class="cap"><b>${esc(r.title)}</b>${r.year ? `<i>${esc(r.year)}${r.vote ? " · ★ " + r.vote.toFixed(1) : ""}</i>` : ""}</span></span>
       <span class="spine"></span>
       ${have ? `<span class="tag">✓</span>` : ""}
       <span class="ctype ${r.kind}">${KINDS[r.kind]}</span></button>`;
@@ -4233,7 +4232,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "62";
+const APP_VERSION = "63";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
