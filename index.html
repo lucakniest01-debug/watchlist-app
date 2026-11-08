@@ -511,6 +511,8 @@
   .cin-note { color: #8f7f88; font-size: .75em; }
   #roomFull { position: absolute; top: 14px; right: 150px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); min-width: 40px; }
   #room.seated #roomFull { display: none; }
+  #roomGfx { position: absolute; top: 14px; right: 198px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
+  #room.seated #roomGfx { display: none; }
   #roomShuffle { position: absolute; top: 14px; right: 14px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #ovArcade { padding: 0; background: rgba(5,6,12,.92); align-items: center; z-index: 25; }
   .arcadewrap { width: min(1100px, 100vw); height: min(780px, 100vh); display: flex; flex-direction: column; margin: auto; border: 3px solid #22d3ee; border-radius: 16px; overflow: hidden;
@@ -688,6 +690,7 @@
   <button class="btn" id="roomBack">← Zurück</button>
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
   <button class="btn" id="roomFull" title="Vollbild an/aus (Taste F11)">⛶</button>
+  <button class="btn" id="roomGfx" title="Grafik umschalten">✨ Realistisch</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
   <div id="roomLabel"></div>
@@ -2048,7 +2051,37 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
 const Room = (() => {
   let maxAniso = 4, blobTex = null, poolTex = null;
-  const perf = { acc: 0, n: 0, prev: 0, pr: 1, max: 1, cool: 0 };
+  const perf = { acc: 0, n: 0, prev: 0, pr: 1, max: 1, cool: 0, slow: 0 };
+  // ---------- Realistische Grafik: PBR-Materialien, Spiegelungen, echte Schatten, Leuchten (Bloom) ----------
+  let FX = null, composer = null, bloom = null;
+  const quality = { real: (() => { try { const v = localStorage.getItem("watchlist-gfx"); return v ? v === "real" : matchMedia("(pointer: fine)").matches; } catch { return true; } })() };
+  const PBR_CACHE = new Map(), GOLD = new Set([0xe8b94a, 0xc9a24a, 0xd4a94a]), METAL = new Set([0xc9c2b8, 0x55585f, 0x3a3d45, 0x555555, 0x2a2a30, 0x2b2f36]);
+  const pbr = (m, r, mt = 0) => { m.userData.pbr = { r, m: mt }; return m; };
+  function realify(root) {
+    if (!renderer || !quality.real) return;
+    const conv = m => {
+      if (!m || !m.isMeshLambertMaterial) return m;
+      let n = PBR_CACHE.get(m); if (n) return n;
+      const hex = m.color.getHex(), p = m.userData.pbr || (GOLD.has(hex) ? { r: .3, m: .95 } : METAL.has(hex) ? { r: .38, m: .8 } : { r: .82, m: 0 });
+      n = new T.MeshStandardMaterial({ color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side, depthWrite: m.depthWrite, roughness: p.r, metalness: p.m });
+      n.userData = m.userData; PBR_CACHE.set(m, n); return n;
+    };
+    root.traverse(o => {
+      if (!o.isMesh) return;
+      o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      if (!o.userData.noShadow && ms.some(x => x.isMeshStandardMaterial) && !ms.some(x => x.transparent && !x.alphaTest)) { o.castShadow = true; o.receiveShadow = true; }
+    });
+    renderer.shadowMap.needsUpdate = true;
+  }
+  function setQuality(real) {
+    quality.real = real; try { localStorage.setItem("watchlist-gfx", real ? "real" : "fast"); } catch {}
+    if (real) realify(scene);
+    renderer.shadowMap.enabled = real; renderer.shadowMap.needsUpdate = true;
+    scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
+    if (scene.userData.env) scene.environment = real ? scene.userData.env : null;
+    const b = $("#roomGfx"); if (b) b.textContent = real ? "✨ Realistisch" : "⚡ Schnell";
+  }
   // Auf der Sitzbank in der Videothek Platz nehmen
   let benchSit = false;
   function sitBench() {
@@ -2094,7 +2127,7 @@ const Room = (() => {
       }
       pieces.userData.full = []; for (let i = 0; i < PIECES; i++) { const mm = new T.Matrix4(); pieces.getMatrixAt(i, mm); pieces.userData.full.push(mm); }
       model.add(pieces);
-      model.traverse(o => { o.frustumCulled = false; o.renderOrder = 10; });
+      model.traverse(o => { o.frustumCulled = false; o.renderOrder = 10; o.userData.noShadow = true; });
       model.visible = false; model.scale.setScalar(.85);
       camera.add(model); if (!camera.parent) scene.add(camera);
     }
@@ -2895,7 +2928,7 @@ const Room = (() => {
       pic.userData = { r, base: pic.position.z, poster: true }; pickables.push(pic); fixedPicks.push(pic);
       if (!shared.standeeCol) colliders.push({ x, z, r: .5 });
     });
-    shared.standeeCol = true;
+    shared.standeeCol = true; realify(posterGroup);
   }
 
 
@@ -3500,6 +3533,7 @@ const Room = (() => {
     // Filmischer Look: weichere Lichter, satte Farben
     renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.5;
     maxAniso = renderer.capabilities.getMaxAnisotropy();
+    renderer.shadowMap.enabled = quality.real; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
     scene = new T.Scene();
     scene.background = new T.Color(0x0c0a10);
     scene.fog = new T.Fog(0x0c0a10, 11, 26);
@@ -3512,16 +3546,29 @@ const Room = (() => {
     // 4 warme Lichter für die Regalwände (statt eines Lichts pro Regal – viel schneller)
     const storeLights = new T.Group(); scene.add(storeLights);
     if (!matchMedia("(pointer: coarse)").matches) for (let i = 0; i < 4; i++) {
-      const a = i * Math.PI / 2, d = HALF - 2.2, l = new T.PointLight(0xffd9b0, 9, 11, 1.2);
-      l.position.set(Math.sin(a) * -d, 2.3, Math.cos(a) * -d); storeLights.add(l);
+      // Strahler unter der Decke, auf die Regalwand gerichtet – mit weichen Schatten
+      const a = i * Math.PI / 2, d = HALF - 3.4, l = new T.SpotLight(0xffdcb4, 26, 13, 1.05, .75, 1.1);
+      l.position.set(Math.sin(a) * -d, 3.15, Math.cos(a) * -d);
+      l.target.position.set(Math.sin(a) * -(HALF - .3), .9, Math.cos(a) * -(HALF - .3)); storeLights.add(l.target);
+      l.castShadow = true; l.shadow.mapSize.set(1024, 1024); l.shadow.bias = -.0004; l.shadow.normalBias = .03; l.shadow.radius = 5; l.shadow.camera.near = .5; l.shadow.camera.far = 13;
+      storeLights.add(l);
     }
+    // Mittelstrahler: Schatten von Bank, Podium und Aufstellern auf dem Teppich
+    const mid = new T.SpotLight(0xffe6c8, 14, 10, 1.15, .9, 1.2); mid.position.set(0, 3.2, -.6); mid.target.position.set(0, 0, -1.2); storeLights.add(mid.target);
+    mid.castShadow = true; mid.shadow.mapSize.set(1024, 1024); mid.shadow.bias = -.0004; mid.shadow.normalBias = .03; mid.shadow.radius = 6; storeLights.add(mid);
+    // Umgebung für Spiegelungen (Metall, Glas, Lack)
+    if (FX && FX.RE) { try { const pm = new T.PMREMGenerator(renderer); scene.userData.env = pm.fromScene(new FX.RE.RoomEnvironment(), .04).texture; if (quality.real) scene.environment = scene.userData.env; scene.environmentIntensity = .22; } catch {} }
+    if (FX && FX.EC) { try {
+      composer = new FX.EC.EffectComposer(renderer); composer.addPass(new FX.RP.RenderPass(scene, camera));
+      bloom = new FX.UB.UnrealBloomPass(new T.Vector2(innerWidth, innerHeight), .5, .45, .9); composer.addPass(bloom); composer.addPass(new FX.OP.OutputPass());
+    } catch { composer = null; } }
     // weicher Schatten unter Möbeln und runder Lichtfleck
     blobTex = canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(0,0,0,.85)"); gr.addColorStop(.55, "rgba(0,0,0,.45)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
     poolTex = canvasTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(.4, "rgba(255,255,255,.45)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
     glowTex = canvasTex(256, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,120,90,.55)"); gr.addColorStop(.5, "rgba(255,90,90,.15)"); gr.addColorStop(1, "rgba(255,90,90,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 
     // Boden, Decke, Wände
-    const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ map: carpet() }));
+    const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), pbr(new T.MeshLambertMaterial({ map: carpet() }), .97));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
     const ceilT = canvasTex(256, 256, (g, w, h) => {
       g.fillStyle = "#2a2730"; g.fillRect(0, 0, w, h);
@@ -3583,6 +3630,7 @@ const Room = (() => {
 
     store = new T.Group(); scene.add(store);
     buildDecor(); buildCinema(); buildStoreDoor(); buildExitDoor();
+    setTimeout(() => realify(scene), 0);
     // Kontaktschatten unter Pflanzen, Bank, Automaten
     for (const c of colliders) blob(scene, c.x, c.z, c.r * 2.4, c.r * 2.4, .7);
     // Leuchtende Flächen (Schilder, Neon, Hüllen-Cover) nicht vom Tonemapping abdunkeln lassen
@@ -3596,6 +3644,7 @@ const Room = (() => {
     const w = innerWidth, h = innerHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
     if (cssRenderer) cssRenderer.setSize(w, h);
+    if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
   }
 
   // Ein Regal mit Schild; gibt die Plätze für Hüllen zurück
@@ -3607,8 +3656,8 @@ const Room = (() => {
   function unit(x, z, rotY, label) {
     const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotY;
     blob(g, 0, .05, UNIT_W + .9, 1.5, .75);
-    shared.wood = shared.wood || new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 });
-    shared.dark = shared.dark || new T.MeshLambertMaterial({ map: wood(true) });
+    shared.wood = shared.wood || pbr(new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 }), .5);
+    shared.dark = shared.dark || pbr(new T.MeshLambertMaterial({ map: wood(true) }), .6);
     const back = new T.Mesh(new T.BoxGeometry(UNIT_W, 2.25, .05), shared.dark); back.position.set(0, 1.12, -.2); g.add(back);
     for (const y of BOARD_Y) { const b = new T.Mesh(new T.BoxGeometry(UNIT_W, .035, .4), shared.wood); b.position.set(0, y - .02, 0); g.add(b); }
     const top = new T.Mesh(new T.BoxGeometry(UNIT_W, .04, .42), shared.wood); top.position.set(0, 2.26, 0); g.add(top);
@@ -3648,7 +3697,7 @@ const Room = (() => {
     return shared.caseGeo = b;
   }
   function atlasMat(tex) {
-    const m = new T.MeshBasicMaterial({ map: tex, toneMapped: false });
+    const m = quality.real ? new T.MeshStandardMaterial({ map: tex, roughness: .62, metalness: 0 }) : new T.MeshBasicMaterial({ map: tex, toneMapped: false });
     m.onBeforeCompile = sh => {
       sh.vertexShader = "attribute vec2 atlasOff;\n" + sh.vertexShader.replace("#include <uv_vertex>", `#include <uv_vertex>\n  vMapUv = uv * vec2(${(1 / PER_ROW).toFixed(6)}, ${(1 / ROWS).toFixed(6)}) + atlasOff;`);
     };
@@ -3662,7 +3711,7 @@ const Room = (() => {
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = maxAniso;
     const geo = caseGeo().clone(), n = PER_ROW * ROWS;
     const off = new T.InstancedBufferAttribute(new Float32Array(n * 2), 2); geo.setAttribute("atlasOff", off);
-    shared.plastic = shared.plastic || new T.MeshLambertMaterial({ color: 0x15161a });
+    shared.plastic = shared.plastic || pbr(new T.MeshLambertMaterial({ color: 0x15161a }), .28);
     const im = new T.InstancedMesh(geo, [shared.plastic, atlasMat(tex)], n); im.frustumCulled = false;
     const zero = new T.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < n; i++) im.setMatrixAt(i, zero);
     u.g.add(im);
@@ -3760,7 +3809,7 @@ const Room = (() => {
     removeCases(u); resetAtlas(u);
     u.btn.userData.spin = 1;
     await loadUnit(u);
-    u.busy = false; builtSig = Shop.filterSig(); Shop.refreshShelf(u.sh.id);
+    u.busy = false; builtSig = Shop.filterSig(); Shop.refreshShelf(u.sh.id); if (renderer) renderer.shadowMap.needsUpdate = true;
   }
   async function fill() {
     clearStore();
@@ -3777,6 +3826,7 @@ const Room = (() => {
       }
     };
     await Promise.all([worker(), worker(), worker()]);
+    realify(store);
     // Plakate: die ersten Titel aus „Gerade beliebt“ (bzw. dem ersten Regal)
     try { const first = Shop.shelves()[0]; if (first && running) hangPosters((await Shop.fetchShelf(first, 1)).slice(12, 20)); } catch {}
   }
@@ -3985,6 +4035,7 @@ const Room = (() => {
     perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
     if (perf.acc > 1.5) {
       const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
+      if (avg > 1 / 40 && perf.pr <= .6 && quality.real && ++perf.slow >= 3) { perf.slow = 0; setQuality(false); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig läuft (oben rechts umschaltbar)"); }
       if (avg > 1 / 48 && perf.pr > .6) { perf.pr = Math.max(.6, +(perf.pr - .15).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
@@ -4010,7 +4061,9 @@ const Room = (() => {
     if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) enterCinema();
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
     if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
-    if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : .95;
+    if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : quality.real ? .42 : .95;
+    renderer.toneMappingExposure = quality.real && !inCinema ? 1.12 : 1.5;
+    if (scene.environment) scene.environmentIntensity = inCinema ? (lightsDim ? .015 : .1) : .22;
     const targetY = seated ? seated.row * RISE + 1.15 : benchSit ? 1.18 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
     camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
@@ -4020,7 +4073,7 @@ const Room = (() => {
     if (zoom.hideAt && t > zoom.hideAt) { zoom.hideAt = 0; const z = $("#roomZoom"); if (z) z.classList.remove("show"); }
     if (!seated && (perf.n % 2 === 0)) aimCenter();
     if (!(t % 30 < 17)) startPrompt();
-    renderer.render(scene, camera);
+    if (composer && quality.real && !inCinema) composer.render(dt); else renderer.render(scene, camera);
     if (inCinema && cssRenderer) cssRenderer.render(cssScene, camera);
   }
 
@@ -4046,7 +4099,12 @@ const Room = (() => {
     $("#roomMsg").textContent = "Lade 3D …";
     try { if (!T) T = await import("./three.module.min.js"); if (!C3) C3 = await import("./css3d.js"); }
     catch { $("#roomMsg").textContent = "3D konnte nicht geladen werden."; return; }
+    if (!renderer && !FX) {
+      try { const [EC, RP, UB, OP, RE] = await Promise.all(["postprocessing/EffectComposer", "postprocessing/RenderPass", "postprocessing/UnrealBloomPass", "postprocessing/OutputPass", "environments/RoomEnvironment"].map(n => import(`./fx/${n}.js`))); FX = { EC, RP, UB, OP, RE }; } catch { FX = null; }
+    }
     if (!renderer) init();
+    $("#roomGfx").textContent = quality.real ? "✨ Realistisch" : "⚡ Schnell";
+    $("#roomGfx").onclick = () => { setQuality(!quality.real); toast(quality.real ? "✨ Realistische Grafik: Licht, Schatten, Spiegelungen, Leuchten" : "⚡ Schnelle Grafik"); };
     resize();
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
@@ -4118,7 +4176,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "55";
+const APP_VERSION = "56";
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
