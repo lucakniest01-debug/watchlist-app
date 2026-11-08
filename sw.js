@@ -1,5 +1,5 @@
 // Minimaler Service Worker: macht die Seite als App installierbar und hält die App-Dateien für den Start bereit.
-const CACHE = "watchlist-app-v68";
+const CACHE = "watchlist-app-v70";
 const FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-32.png", "three.module.min.js", "css3d.js", "lernzentrale.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => {
