@@ -97,6 +97,49 @@
   .empty .big { font-size: 48px; margin-bottom: 10px; }
 
   /* Modals */
+  /* Statistik */
+  .stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .stat-tile { padding: 14px; border-radius: 14px; background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border: 1px solid var(--line); }
+  .stat-tile b { display: block; font-size: 1.9em; line-height: 1.1; } .stat-tile span { color: #9aa0ab; font-size: .85em; }
+  .stat-h { margin: 18px 0 10px; font-size: 1.05em; } .stat-h small { color: #8b8f9a; font-weight: 400; }
+  .stat-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; align-items: end; height: 150px; padding: 8px 4px 0; border-bottom: 1px solid var(--line); }
+  .stat-months div { position: relative; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .stat-months i { display: block; border-radius: 6px 6px 2px 2px; background: linear-gradient(var(--accent), #ff9f43); min-height: 2px; }
+  .stat-months em { position: absolute; top: -18px; left: 0; right: 0; text-align: center; font-style: normal; font-size: .75em; color: #cfd3dc; }
+  .stat-mlab { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; font-size: .72em; color: #8b8f9a; text-align: center; margin-top: 4px; }
+  .stat-bars { display: grid; gap: 8px; } .stat-bar { display: grid; grid-template-columns: 150px 1fr 60px; gap: 10px; align-items: center; font-size: .9em; }
+  .stat-bar div { height: 12px; border-radius: 6px; background: rgba(255,255,255,.06); overflow: hidden; } .stat-bar div i { display: block; height: 100%; background: var(--c, var(--accent)); border-radius: 6px; }
+  .stat-top { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; } .stat-top div { flex: none; width: 96px; font-size: .78em; text-align: center; }
+  .stat-top img { width: 96px; height: 144px; object-fit: cover; border-radius: 10px; display: block; margin-bottom: 4px; }
+  .wrapped { padding: 20px; border-radius: 18px; background: linear-gradient(135deg, #3b0f4f, #7a1d4f 50%, #c2410c); margin-bottom: 14px; }
+  .wrapped h3 { margin: 0 0 6px; font-size: 1.5em; } .wrapped p { margin: 4px 0; opacity: .92; }
+  /* Assistent & Filmabend */
+  .pk-q { margin-bottom: 16px; } .pk-q h4 { margin: 0 0 8px; }
+  .pk-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pk-opts button { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text); cursor: pointer; font: inherit; }
+  .pk-opts button.on { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 600; }
+  .pk-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 14px; }
+  .pk-card { display: flex; gap: 10px; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--line); cursor: pointer; text-align: left; color: var(--text); font: inherit; }
+  .pk-card:hover { border-color: var(--accent); } .pk-card img { width: 70px; height: 105px; object-fit: cover; border-radius: 8px; flex: none; background: #222; }
+  .pk-card small { display: block; color: #9aa0ab; margin-top: 4px; font-size: .8em; } .pk-card em { display: block; font-style: normal; color: #ffb35c; font-size: .8em; margin-top: 6px; }
+  .nt-players { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; } .nt-players span { padding: 6px 10px; border-radius: 20px; background: rgba(255,255,255,.07); }
+  .nt-players span button { background: none; border: 0; color: #aaa; cursor: pointer; margin-left: 4px; }
+  .nt-vote { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: start; }
+  .nt-vote img { width: 220px; height: 330px; object-fit: cover; border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+  .nt-btns { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; } .nt-btns button { font-size: 1.05em; padding: 12px 18px; }
+  .nt-pass { text-align: center; padding: 40px 10px; } .nt-pass b { font-size: 1.6em; display: block; margin: 10px 0; }
+  .nt-rank { display: grid; gap: 8px; } .nt-row { display: grid; grid-template-columns: 34px 46px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; background: rgba(255,255,255,.04); }
+  .nt-row img { width: 46px; height: 69px; object-fit: cover; border-radius: 6px; } .nt-row.win { background: linear-gradient(90deg, rgba(255,179,92,.25), rgba(255,255,255,.03)); border: 1px solid #ffb35c; }
+  @media (max-width: 640px) { .nt-vote { grid-template-columns: 1fr; } .nt-vote img { width: 100%; height: auto; max-height: 360px; } .stat-bar { grid-template-columns: 100px 1fr 44px; } }
+  .cnext { margin-top: 6px; padding: 4px 9px; font-size: .78em; border-radius: 8px; border: 1px solid var(--line); background: rgba(34,197,94,.14); color: #bbf7d0; cursor: pointer; font-family: inherit; }
+  .cnext:hover { background: rgba(34,197,94,.3); }
+  /* Verkäufer-Sprechblase */
+  #clerkTalk { position: absolute; left: 50%; bottom: 120px; transform: translate(-50%, 20px); z-index: 7; width: min(560px, 92vw); padding: 14px 16px; border-radius: 18px; background: rgba(23,26,33,.95); border: 1px solid var(--line); box-shadow: 0 18px 50px rgba(0,0,0,.6); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; display: flex; gap: 12px; }
+  #clerkTalk.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  #clerkTalk img { width: 74px; height: 111px; border-radius: 8px; object-fit: cover; flex: none; } #clerkTalk p { margin: 0 0 10px; line-height: 1.45; }
+  #clerkTalk .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  #updBar { position: fixed; left: 50%; top: 14px; transform: translate(-50%, -140%); z-index: 60; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 14px; background: rgba(23,26,33,.96); border: 1px solid var(--accent); box-shadow: 0 12px 40px rgba(0,0,0,.55); transition: transform .35s cubic-bezier(.2,.9,.3,1.1); white-space: nowrap; }
+  #updBar.show { transform: translate(-50%, 0); }
   .overlay { position: fixed; inset: 0; background: rgba(5,6,9,.66); backdrop-filter: blur(6px); display: none; align-items: flex-start; justify-content: center; z-index: 20; padding: 40px 16px; overflow: auto; }
   .overlay.open { display: flex; }
   .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; width: 100%; max-width: 760px; box-shadow: 0 30px 80px rgba(0,0,0,.6); position: relative; overflow: hidden; animation: popIn .22s cubic-bezier(.2,.9,.3,1.1); }
@@ -377,6 +420,21 @@
   .ph-wposters { display: flex; gap: 6px; margin-top: 8px; }
   .ph-wposters img { width: 30px; height: 45px; cursor: pointer; border-radius: 7px; object-fit: cover; box-shadow: 0 3px 8px rgba(0,0,0,.4); }
   .ph-apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px 8px; }
+  .ph-pg { background: rgba(255,255,255,.12); border: 0; color: #fff; border-radius: 10px; padding: 0 8px; cursor: pointer; margin-left: 6px; font-size: 14px; line-height: 16px; }
+  .ph-dots i { cursor: pointer; }
+  .ph-btn { width: 100%; margin: 6px 0 10px; padding: 9px; border: 0; border-radius: 12px; background: #ff5c5c; color: #fff; font: 600 13px Segoe UI, sans-serif; cursor: pointer; }
+  .ph-form { display: grid; gap: 6px; margin-bottom: 6px; } .ph-form .ph-input { margin: 0; }
+  .ph-link { background: none; border: 0; color: #93c5fd; cursor: pointer; font-size: 11px; }
+  .ph-wx { text-align: center; } .ph-wx-city { font-weight: 600; margin-top: 4px; } .ph-wx-now { display: flex; align-items: center; justify-content: center; gap: 8px; } .ph-wx-now span { font-size: 44px; } .ph-wx-now b { font-size: 52px; font-weight: 300; }
+  .ph-wx-txt { font-size: 12px; opacity: .85; margin: 2px 0; }
+  .ph-wx-hours { display: flex; gap: 8px; overflow-x: auto; margin: 10px 0; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.08); } .ph-wx-hours div { flex: none; display: grid; gap: 2px; font-size: 12px; min-width: 34px; } .ph-wx-hours small { opacity: .7; font-size: 10px; }
+  .ph-wx-days { display: grid; gap: 2px; padding: 6px 10px; border-radius: 14px; background: rgba(255,255,255,.08); text-align: left; } .ph-wx-days div { display: grid; grid-template-columns: 44px 26px 36px 1fr; align-items: center; font-size: 12px; padding: 3px 0; } .ph-wx-days b { text-align: right; font-weight: 500; } .ph-wx-days small { opacity: .7; }
+  .ph-bigclock { font: 200 46px/1.2 Segoe UI, sans-serif; text-align: center; margin: 18px 0 4px; letter-spacing: 1px; }
+  .ph-tgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; } .ph-tgrid button { aspect-ratio: 1; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: #fff; font: 600 16px Segoe UI, sans-serif; cursor: pointer; display: grid; place-content: center; } .ph-tgrid button small { font-size: 9px; opacity: .7; font-weight: 400; }
+  .ph-tgrid button:hover { background: #ff9f43; color: #111; }
+  .ph-al, .ph-hw { display: flex; align-items: center; gap: 8px; cursor: default; } .ph-al span, .ph-hw span { flex: 1; }
+  .ph-x { background: none; border: 0; color: #f87171; cursor: pointer; font-size: 14px; }
+  .ph-chk { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #8b5cf6; background: none; color: #fff; cursor: pointer; flex: none; font-size: 12px; } .ph-hw.done .ph-chk { background: #8b5cf6; } .ph-hw.done b { text-decoration: line-through; opacity: .6; }
   .ph-dots { display: flex; justify-content: center; gap: 6px; margin: auto 0 8px; padding-top: 8px; } .ph-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.35); } .ph-dots i.on { background: #fff; }
   .ph-dock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; flex: none; border-radius: 28px; background: rgba(255,255,255,.14); backdrop-filter: blur(16px) saturate(1.5); border: 1px solid rgba(255,255,255,.12); }
   .ph-dock .ph-app span { display: none; }
@@ -431,6 +489,8 @@
   @media (pointer: coarse) { #phone { width: 240px; right: 4%; } .ph-body { height: 480px; } }
   /* Popcorn-Anzeige (die Tüte selbst ist ein 3D-Modell) */
   #popHand { position: absolute; left: 18px; bottom: 18px; z-index: 6; padding: 7px 14px; border-radius: 20px; background: rgba(184,18,27,.88); color: #fff; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); opacity: 0; transform: translateY(20px); transition: opacity .3s, transform .3s; pointer-events: none; }
+  #drinkHand { position: absolute; left: 18px; bottom: 58px; z-index: 6; padding: 7px 14px; border-radius: 20px; background: rgba(14,116,144,.9); color: #fff; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); opacity: 0; transform: translateY(20px); transition: opacity .3s, transform .3s; pointer-events: none; }
+  #drinkHand.show { opacity: 1; transform: none; pointer-events: auto; } #drinkHand span { opacity: .8; font-size: 12px; }
   #popHand.show { opacity: 1; transform: none; pointer-events: auto; }
   #popHand span { opacity: .8; font-size: 12px; }
   .pop-crumb { position: absolute; bottom: 30px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px #000; font-size: 15px; pointer-events: none; animation: crumb .9s ease-out forwards; white-space: nowrap; }
@@ -520,6 +580,21 @@
   #room.seated #roomFull { display: none; }
   #roomGfx { position: absolute; top: 14px; right: 198px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #room.seated #roomGfx { display: none; }
+  #roomSnd { position: absolute; top: 14px; right: 440px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); min-width: 40px; }
+  #room.seated #roomSnd { display: none; }
+  #room.gp #cross { display: block; }
+  #ovRoomSet { z-index: 26; }
+  #ovRoomSet .modal { max-width: 620px; }
+  .rs-sec { margin-bottom: 18px; }
+  .rs-sec h3 { margin: 0 0 10px; font-size: 1em; color: var(--muted, #aab); letter-spacing: .04em; text-transform: uppercase; }
+  .rs-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,.035); border: 1px solid var(--line); margin-bottom: 6px; }
+  .rs-row small { display: block; color: #8b8f9a; font-size: .8em; margin-top: 2px; }
+  .rs-row input[type=range] { width: 180px; accent-color: var(--accent); }
+  .rs-sw { position: relative; width: 46px; height: 26px; border-radius: 13px; background: #333845; border: 0; cursor: pointer; flex: none; transition: background .2s; }
+  .rs-sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+  .rs-sw.on { background: var(--accent); } .rs-sw.on::after { transform: translateX(20px); }
+  .rs-seg { display: flex; gap: 6px; flex-wrap: wrap; } .rs-seg .btn.on { background: var(--accent); color: #111; border-color: var(--accent); }
+  .rs-pad { font-size: .85em; color: #b9bdc8; line-height: 1.6; }
   #roomKeys { position: absolute; top: 14px; right: 330px; z-index: 2; background: rgba(23,26,33,.85); backdrop-filter: blur(6px); }
   #room.seated #roomKeys { display: none; }
   #ovKeys { z-index: 26; }
@@ -630,6 +705,9 @@
     <div class="search"><input id="q" placeholder="Film, Serie oder Anime suchen …" autocomplete="off">
       <div class="suggest" id="suggest"></div></div>
     <div class="spacer"></div>
+    <button class="btn" id="btnPick" title="Was gucke ich heute? – passender Vorschlag nach Stimmung und Zeit">🎯 Was gucke ich?</button>
+    <button class="btn icon" id="btnNight" title="Filmabend: gemeinsam abstimmen, was ihr schaut">🍿</button>
+    <button class="btn icon" id="btnStats" title="Statistik &amp; Jahresrückblick">📊</button>
     <button class="btn icon" id="btnSync" title="Abgleich PC ↔ Handy" style="display:none">☁</button>
     <button class="btn icon" id="btnRefreshAll" title="Streaming-Infos für alle Titel aktualisieren">⟳</button>
     <button class="btn icon" id="btnSettings" title="Einstellungen">⚙</button>
@@ -699,6 +777,8 @@
 
 <!-- 3D-Raum -->
 <div id="room"><div id="roomZoom"></div><div id="roomFps">… FPS</div>
+  <div id="clerkTalk"></div>
+  <div id="drinkHand" title="Trinken (G)">🥤 <b class="dr-n">0</b> <span>· <i class="dr-k">G</i> trinken</span></div>
   <div id="popHand" title="Popcorn essen (F)">🍿 <b class="pop-n">0</b> <span>· F essen</span></div>
   <div id="phone" aria-label="Handy"><div class="ph-body"><div class="ph-btns"></div><div class="ph-island"><i></i></div>
     <div class="ph-status" id="phStatus"><b id="phClock">9:41</b><span class="ph-icons"><svg viewBox="0 0 18 12" width="17" height="11"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12" width="15" height="11"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.4 1.4a4.5 4.5 0 0 0-6.4 0zM1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.4 1.4a7.8 7.8 0 0 0-11 0z"/></svg><span class="ph-bat"><i></i></span></span></div>
@@ -710,8 +790,9 @@
   <button class="btn" id="roomBack">← Zurück</button>
   <button class="btn" id="roomShuffle" title="Andere Titel in die Regale stellen (Taste R)">🔀 Neu mischen</button>
   <button class="btn" id="roomFull" title="Vollbild an/aus (Taste F11)">⛶</button>
-  <button class="btn" id="roomGfx" title="Grafik umschalten (Taste M)">✨ Realistisch</button>
+  <button class="btn" id="roomGfx" title="Grafik & Ton einstellen (Taste M: Schnell/Realistisch)">✨ Realistisch</button>
   <button class="btn" id="roomKeys" title="Tastenbelegung einstellen">⌨ Tasten</button>
+  <button class="btn" id="roomSnd" title="Ton an/aus">🔊</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
   <div id="roomLabel"></div>
@@ -751,6 +832,56 @@
 <!-- Videothek: geöffnete Hülle -->
 <div class="overlay" id="ovCase">
   <div class="casewrap"><button class="x casex" data-close>×</button><div id="caseBox"></div></div>
+</div>
+
+<!-- Statistik & Jahresrückblick -->
+<div class="overlay" id="ovStats">
+  <div class="modal" style="max-width:860px">
+    <div class="mhead"><h2>📊 Deine Statistik</h2><button class="x" data-close>×</button></div>
+    <div class="mbody" id="statsBody"></div>
+  </div>
+</div>
+<!-- Was gucke ich heute? -->
+<div class="overlay" id="ovPick">
+  <div class="modal" style="max-width:780px">
+    <div class="mhead"><h2>🎯 Was gucke ich heute?</h2><button class="x" data-close>×</button></div>
+    <div class="mbody" id="pickBody"></div>
+  </div>
+</div>
+<!-- Filmabend -->
+<div class="overlay" id="ovNight">
+  <div class="modal" style="max-width:820px">
+    <div class="mhead"><h2>🍿 Filmabend</h2><button class="x" data-close>×</button></div>
+    <div class="mbody" id="nightBody"></div>
+  </div>
+</div>
+
+<!-- Videothek: Grafik, Ton, Controller -->
+<div class="overlay" id="ovRoomSet">
+  <div class="modal">
+    <div class="mhead"><h2>⚙ Grafik &amp; Ton</h2><button class="x" data-close>×</button></div>
+    <div class="mbody">
+      <div class="rs-sec"><h3>Grafik</h3>
+        <div class="rs-row"><span>Stufe<small>Taste M schaltet schnell um</small></span><div class="rs-seg"><button class="btn" data-q="fast">⚡ Schnell</button><button class="btn" data-q="real">✨ Realistisch</button></div></div>
+        <div class="rs-row"><span>Schatten<small>nur „Realistisch“ – kostet am meisten</small></span><button class="rs-sw" data-g="shadows"></button></div>
+        <div class="rs-row"><span>Spiegelungen<small>Glanz auf Metall, Lack und Glas</small></span><button class="rs-sw" data-g="env"></button></div>
+        <div class="rs-row"><span>Leuchten (Bloom)<small>Neon und Lampen strahlen</small></span><button class="rs-sw" data-g="bloom"></button></div>
+        <div class="rs-row"><span>Lichtkegel der Lampen</span><button class="rs-sw" data-g="cones"></button></div>
+        <div class="rs-row"><span>Tageszeit<small>Licht und Blick nach draußen passend zur Uhrzeit</small></span><button class="rs-sw" data-g="daylight"></button></div>
+        <div class="rs-row"><span>Auflösung<small>„Auto“ senkt sie, wenn es ruckelt</small></span><div class="rs-seg" id="rsRes"></div></div>
+      </div>
+      <div class="rs-sec"><h3>Ton</h3>
+        <div class="rs-row"><span>Ton</span><button class="rs-sw" data-s="on"></button></div>
+        <div class="rs-row"><span>Lautstärke</span><input type="range" min="0" max="1" step=".05" data-sv="vol"></div>
+        <div class="rs-row"><span>Musik</span><input type="range" min="0" max="1" step=".05" data-sv="music"></div>
+        <div class="rs-row"><span>Geräusche<small>Schritte, Popcorn, Arcade …</small></span><input type="range" min="0" max="1" step=".05" data-sv="fx"></div>
+      </div>
+      <div class="rs-sec"><h3>Controller &amp; Tasten</h3>
+        <div class="rs-row"><span id="rsPad">🎮 Kein Controller erkannt – einfach einstecken und eine Taste drücken</span><button class="btn" id="rsKeys">⌨ Tasten</button></div>
+        <div class="rs-pad">Linker Stick: gehen · Rechter Stick: umsehen · LT / Stick drücken: rennen · A: ansehen / hinsetzen · B: zurück / aufstehen · X: Regal mischen · Y: Popcorn essen · RB: trinken · Steuerkreuz ↑↓: zoomen · Start: dieses Menü · View: Grafikstufe</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Tastenbelegung -->
@@ -802,6 +933,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="updBar"><span>🔄 <b>Neue Version installiert</b> – zum Aktivieren kurz neu starten</span><button class="btn primary" id="updGo">Jetzt neu starten</button><button class="x" id="updLater" title="Später">×</button></div>
 
 <script>
 /* Bekannte Streaming-Dienste: Name, Farbe, und wie sie bei TMDB/JustWatch heißen */
@@ -970,6 +1102,13 @@ const Local = (() => {
     if (l.length) it.watched[s] = l; else delete it.watched[s];
   }
   const range = (a, b) => { const o = []; for (let i = a; i <= b; i++) o.push(i); return o; };
+  // Seh-Tagebuch (wie im PC-Programm)
+  function logProg(it, before, after, old) {
+    const d = new Date(), mon = d.toISOString().slice(0, 7);
+    if (after > before) { it.log = it.log || {}; it.log[mon] = (it.log[mon] || 0) + after - before; }
+    if (it.status === "gesehen" && old !== "gesehen") it.done = d.toISOString().slice(0, 10);
+    else if (it.status !== "gesehen" && old === "gesehen") it.done = "";
+  }
 
   async function refreshItem(it) {
     if (!it.tmdbId || !it.mediaType) return;
@@ -1010,11 +1149,12 @@ const Local = (() => {
     }],
     ["PUT", /^\/api\/items\/([^/]+)$/, (m, b) => {
       const it = find(m[1]); if (!it) err("Nicht gefunden", 404);
+      const old = it.status;
       for (const [k, v] of Object.entries(b || {})) {
         if (["status", "kind", "note", "manualWhere"].includes(k)) it[k] = v;
         if (k === "title" && String(v).trim()) it.title = String(v).trim();
       }
-      it.modified = bump(it.modified); save(); return it;
+      logProg(it, 0, 0, old); it.modified = bump(it.modified); save(); return it;
     }],
     ["DELETE", /^\/api\/items\/([^/]+)$/, m => {
       const s = load(), it = find(m[1]); s.items = s.items.filter(i => i.id !== m[1]); s.deleted[m[1]] = bump(it && it.modified); save(); return { ok: true };
@@ -1029,7 +1169,7 @@ const Local = (() => {
     }],
     ["POST", /^\/api\/items\/([^/]+)\/watched$/, (m, b) => {
       const it = find(m[1]); if (!it) err("Nicht gefunden", 404);
-      const [before] = progress(it), ss = (it.seasons || []);
+      const [before] = progress(it), ss = (it.seasons || []), old = it.status;
       if (b.mode === "season") { const s = ss.find(x => x.number === b.season); if (s) { if (b.watched) setW(it, s.number, range(1, aired(it, s)), true); else if (it.watched) delete it.watched[s.number]; } }
       else if (b.mode === "upTo") ss.forEach(s => { if (s.number && s.number <= b.season) setW(it, s.number, range(1, s.number === b.season ? b.episode : aired(it, s)), true); });
       else if (b.mode === "all") ss.forEach(s => { if (s.number) setW(it, s.number, range(1, aired(it, s)), true); });
@@ -1041,7 +1181,7 @@ const Local = (() => {
         else if (after > 0 && (it.status === "geplant" || it.status === "gesehen")) it.status = "schaue";
         else if (after === 0 && it.status === "schaue") it.status = "geplant";
       }
-      it.watched = it.watched || {}; it.modified = bump(it.modified); save(); return it;
+      it.watched = it.watched || {}; logProg(it, before, after, old); it.modified = bump(it.modified); save(); return it;
     }],
     ["POST", /^\/api\/refresh-all$/, async () => {
       let updated = 0, error = "";
@@ -1290,7 +1430,13 @@ function render() {
         ${cardProgress(i)}
         <div class="where">${where}</div></div></div>`;
   }).join("");
-  grid.querySelectorAll(".card").forEach(c => c.onclick = () => openDetail(c.dataset.id));
+  grid.querySelectorAll(".card").forEach(c => c.onclick = e => { if (e.target.closest(".cnext")) return; openDetail(c.dataset.id); });
+  grid.querySelectorAll(".cnext").forEach(b => b.onclick = async e => {
+    e.stopPropagation(); b.disabled = true;
+    const it = items.find(x => x.id === b.dataset.next); if (!it) return;
+    try { const u = await api("POST", `/api/items/${it.id}/watched`, { season: +b.dataset.s, episodes: [+b.dataset.e], watched: true }); replaceItem(it, u); render(); toast(`✓ ${it.title} ${SE(+b.dataset.s, +b.dataset.e)} gesehen`); }
+    catch (er) { toast(er.message, true); b.disabled = false; }
+  });
 }
 
 function cardProgress(i) {
@@ -1301,7 +1447,8 @@ function cardProgress(i) {
   else if (n && i.status === "geplant") txt = `🆕 ${p.a - p.w} neue Folge${p.a - p.w === 1 ? "" : "n"} · ${SE(n.s, n.e)}`;
   else if (n) txt = `Weiter: ${SE(n.s, n.e)}`;
   else txt = i.nextAir ? `Alles gesehen · neue Folge ${fmtDate(i.nextAir.airDate)}` : "✓ Alles gesehen";
-  return `<div class="cprog"><div class="bar"><i style="width:${p.pct}%"></i></div><span>${esc(txt)}</span></div>`;
+  const quick = n && i.status === "schaue" ? `<button class="cnext" data-next="${esc(i.id)}" data-s="${n.s}" data-e="${n.e}" title="Diese Folge als gesehen markieren">✓ ${SE(n.s, n.e)} gesehen</button>` : "";
+  return `<div class="cprog"><div class="bar"><i style="width:${p.pct}%"></i></div><span>${esc(txt)}</span></div>${quick}`;
 }
 
 async function load() {
@@ -1318,7 +1465,8 @@ async function checkNewEpisodes() {
     items.forEach(it => { const u = byId.get(it.id); if (u) replaceItem(it, u); });
     render();
     if (current && $("#ovDetail").classList.contains("open")) renderEps();
-    if (r.newEpisodes.length) toast(`🆕 Neue Folgen: ${r.newEpisodes.slice(0, 3).join(", ")}${r.newEpisodes.length > 3 ? " …" : ""}`);
+    if (r.newEpisodes.length) Notify.show("🆕 Neue Folgen", `${r.newEpisodes.slice(0, 3).join(", ")}${r.newEpisodes.length > 3 ? " …" : ""}`, { key: "new:" + r.newEpisodes.join("|") + ":" + new Date().toISOString().slice(0, 10) });
+    Notify.checkToday();
   } catch {}
 }
 setInterval(checkNewEpisodes, 6 * 60 * 60 * 1000);
@@ -1783,6 +1931,7 @@ const Shop = (() => {
   const SHELVES = [
     { id: "pop", name: "🔥 Gerade beliebt", movie: {}, tv: {} },
     { id: "new", name: "✨ Neu erschienen", movie: { sort_by: "primary_release_date.desc", "vote_count.gte": 30 }, tv: { sort_by: "first_air_date.desc", "vote_count.gte": 15 } },
+    { id: "mine", name: "📡 Neu bei deinen Diensten", mine: true, movie: { sort_by: "primary_release_date.desc", "vote_count.gte": 15 }, tv: { sort_by: "first_air_date.desc", "vote_count.gte": 8 } },
     { id: "top", name: "⭐ Am besten bewertet", movie: { sort_by: "vote_average.desc", "vote_count.gte": 800 }, tv: { sort_by: "vote_average.desc", "vote_count.gte": 300 } },
     { id: "anime", name: "🎌 Anime", movie: { with_genres: "16", with_original_language: "ja" }, tv: { with_genres: "16", with_original_language: "ja" }, anime: true },
     { id: "action", name: "💥 Action & Abenteuer", movie: { with_genres: "28" }, tv: { with_genres: "10759" } },
@@ -1852,7 +2001,11 @@ const Shop = (() => {
   }
   async function fetchShelfRaw(sh, page) {
     const region = settings.region || "DE", base = { language: "de-DE", include_adult: "false", page, watch_region: region };
-    if (mineActive()) {
+    if (sh.mine) {
+      const ids = await loadProvIds(); if (!ids.length) return [];
+      const d = new Date().toISOString().slice(0, 10);
+      Object.assign(base, { with_watch_providers: ids.join("|"), with_watch_monetization_types: "flatrate|free|ads", "primary_release_date.lte": d, "first_air_date.lte": d });
+    } else if (mineActive()) {
       const ids = await loadProvIds();
       if (ids.length) Object.assign(base, { with_watch_providers: ids.join("|"), with_watch_monetization_types: "flatrate|free|ads" });
     }
@@ -1878,7 +2031,7 @@ const Shop = (() => {
   }
 
   // Nur Regale zeigen, die zur gewählten Art passen
-  const fits = sh => kind === "all" ? true : kind === "anime" ? ["pop", "new", "top"].includes(sh.id) : !!sh[ENGL[kind]] && sh.id !== "anime";
+  const fits = sh => sh.mine && !(settings.myServices || []).length ? false : kind === "all" ? true : kind === "anime" ? ["pop", "new", "top"].includes(sh.id) : !!sh[ENGL[kind]] && sh.id !== "anime";
   const onList = r => items.find(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
   function caseHtml(r, key) {
     const have = onList(r), [sid, idx] = key.split(":"), rank = sid === "pop" && +idx < 10 ? +idx + 1 : 0;
@@ -2066,7 +2219,7 @@ const Shop = (() => {
     if (!built || show._sig !== sig) { provIds = null; build(); show._sig = sig; }
     else markCases();
   }
-  return { show, markCases, openItem, onList, fetchShelf, reshuffle, reshuffleOne, refreshShelf, rebuild: () => { if (built) build(); }, shelves: () => SHELVES.filter(fits), filterSig: () => JSON.stringify([kind, mineActive(), settings.myServices, settings.region, mixSeed]) };
+  return { toR, provIds: async () => mineActive() || (settings.myServices || []).length ? loadProvIds() : [], show, markCases, openItem, onList, fetchShelf, reshuffle, reshuffleOne, refreshShelf, rebuild: () => { if (built) build(); }, shelves: () => SHELVES.filter(fits), filterSig: () => JSON.stringify([kind, mineActive(), settings.myServices, settings.region, mixSeed]) };
 })();
 
 /* Umschalten zwischen „Meine Liste“ und „Videothek“ */
@@ -2082,6 +2235,106 @@ function setView(v) {
 document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setView(b.dataset.v));
 
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
+/* Klänge für Videothek & Kino – alles live erzeugt (WebAudio), keine Dateien nötig */
+const SFX = (() => {
+  const LS = "watchlist-sfx";
+  let cfg = { on: true, vol: .7, music: .45, fx: .8 };
+  try { Object.assign(cfg, JSON.parse(localStorage.getItem(LS) || "{}")); } catch {}
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(cfg)); } catch {} };
+  let ac = null, master, musicBus, fxBus, noiseBuf, verb;
+  function ctx() {
+    if (ac) { if (ac.state === "suspended") ac.resume().catch(() => {}); return ac; }
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+    master = ac.createGain(); master.connect(ac.destination);
+    musicBus = ac.createGain(); fxBus = ac.createGain();
+    // kleiner Raumhall (Faltung mit erzeugtem Rauschen)
+    verb = ac.createConvolver(); const len = ac.sampleRate * 1.6, ir = ac.createBuffer(2, len, ac.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+    verb.buffer = ir; const wet = ac.createGain(); wet.gain.value = .22; verb.connect(wet); wet.connect(master);
+    musicBus.connect(master); musicBus.connect(verb); fxBus.connect(master); fxBus.connect(verb);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    apply(); return ac;
+  }
+  function apply() {
+    if (!ac) return;
+    const t = ac.currentTime;
+    master.gain.setTargetAtTime(cfg.on ? cfg.vol : 0, t, .08);
+    musicBus.gain.setTargetAtTime(cfg.music * .5, t, .3);
+    fxBus.gain.setTargetAtTime(cfg.fx, t, .05);
+  }
+  // Grundbausteine
+  function tone(freq, dur, { type = "sine", gain = .2, at = 0, attack = .005, release = null, to = null, bus = null, pan = 0, filter = 0 } = {}) {
+    const a = ctx(); if (!a || !cfg.on) return;
+    const t = a.currentTime + at, o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + (release ?? dur));
+    let n = o; if (filter) { const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = filter; o.connect(f); n = f; }
+    let out = g; n.connect(g);
+    if (pan) { const p = a.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); out = p; }
+    out.connect(bus || fxBus); o.start(t); o.stop(t + (release ?? dur) + .05);
+  }
+  function noise(dur, { gain = .2, at = 0, type = "lowpass", freq = 800, q = 1, attack = .003, pan = 0, bus = null } = {}) {
+    const a = ctx(); if (!a || !cfg.on) return;
+    const t = a.currentTime + at, src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    src.buffer = noiseBuf; src.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    src.connect(f); f.connect(g);
+    let out = g; if (pan) { const p = a.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); g.connect(p); out = p; }
+    out.connect(bus || fxBus); src.start(t, Math.random() * .5); src.stop(t + dur + .05);
+  }
+  // Geräusche
+  const fx = {
+    step(soft) { noise(.11, { gain: soft ? .07 : .11, freq: 260 + Math.random() * 90, q: .7 }); noise(.05, { gain: .025, type: "bandpass", freq: 1800, q: 2, at: .01 }); },
+    click() { tone(1400, .04, { type: "triangle", gain: .06 }); },
+    open() { tone(520, .12, { type: "sine", gain: .07, to: 780 }); },
+    close() { tone(700, .12, { type: "sine", gain: .06, to: 420 }); },
+    door() { noise(.7, { gain: .09, freq: 500, attack: .15 }); tone(90, .5, { gain: .05, attack: .1 }); },
+    popcorn() { for (let i = 0; i < 38; i++) { const at = .1 + Math.random() * 1.35; noise(.035, { gain: .06 + Math.random() * .1, type: "bandpass", freq: 900 + Math.random() * 2600, q: 3, at }); } tone(220, 1.5, { type: "sawtooth", gain: .015, filter: 500 }); },
+    crunch() { for (let i = 0; i < 6; i++) noise(.05, { gain: .08 + Math.random() * .06, type: "bandpass", freq: 1500 + Math.random() * 2500, q: 1.5, at: i * .045 + Math.random() * .02 }); },
+    slurp() { noise(.45, { gain: .06, type: "bandpass", freq: 700, q: 4, attack: .05 }); tone(300, .4, { gain: .02, to: 520, type: "triangle" }); },
+    can() { noise(.18, { gain: .16, type: "lowpass", freq: 700 }); tone(160, .25, { type: "square", gain: .04, to: 70, filter: 900, at: .08 }); noise(.4, { gain: .06, type: "highpass", freq: 3000, at: .35, attack: .02 }); },
+    dice() { for (let i = 0; i < 14; i++) tone(500 + Math.random() * 600, .05, { type: "square", gain: .035, at: i * (.05 + i * .006), filter: 2200 }); tone(880, .35, { type: "triangle", gain: .09, at: 1.3 }); tone(1320, .45, { type: "triangle", gain: .07, at: 1.38 }); },
+    shuffle() { for (let i = 0; i < 8; i++) noise(.06, { gain: .05, type: "bandpass", freq: 2000 + i * 150, q: 2, at: i * .04 }); },
+    curtain() { noise(2.2, { gain: .07, freq: 900, attack: .5, type: "lowpass" }); },
+    bleep(pan = 0, g = .05) { const base = [262, 330, 392, 523, 659, 784][Math.floor(Math.random() * 6)], k = Math.random();
+      if (k < .4) { tone(base, .08, { type: "square", gain: g, pan, filter: 3000 }); tone(base * 1.5, .08, { type: "square", gain: g, pan, at: .09, filter: 3000 }); }
+      else if (k < .7) tone(base * 2, .25, { type: "square", gain: g * .8, to: base / 2, pan, filter: 2600 });
+      else for (let i = 0; i < 4; i++) tone(base * [1, 1.25, 1.5, 2][i], .06, { type: "square", gain: g * .8, at: i * .07, pan, filter: 3000 }); },
+    alarm() { for (let i = 0; i < 6; i++) { tone(880, .12, { type: "square", gain: .08, at: i * .3, filter: 3000 }); tone(1100, .12, { type: "square", gain: .08, at: i * .3 + .14, filter: 3000 }); } },
+    notify() { tone(784, .14, { type: "sine", gain: .1 }); tone(1175, .3, { type: "sine", gain: .09, at: .12 }); },
+  };
+  // Hintergrundmusik: ruhiger Lo-Fi-Teppich mit Akkorden, Bass und kleinen Melodietönen
+  const CHORDS = [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65]];
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  let mOn = false, mTimer = null, mNext = 0, mStep = 0;
+  function music(on) {
+    if (on === mOn) return; mOn = on;
+    const a = ctx(); if (!a) return;
+    if (!on) { clearInterval(mTimer); mTimer = null; return; }
+    mNext = a.currentTime + .1;
+    mTimer = setInterval(() => {
+      if (!cfg.on || cfg.music <= 0) { mNext = a.currentTime + .1; return; }
+      while (mNext < a.currentTime + .6) {
+        const beat = .5, ch = CHORDS[Math.floor(mStep / 8) % 4], at = mNext - a.currentTime;
+        if (mStep % 8 === 0) {
+          for (const n of ch) tone(hz(n), 4.2, { type: "triangle", gain: .035, at, attack: .8, release: 4.2, bus: musicBus, filter: 1100, pan: (Math.random() - .5) * .6 });
+          tone(hz(ch[0] - 12), 3.8, { type: "sine", gain: .07, at, attack: .05, release: 3.6, bus: musicBus });
+        }
+        if (mStep % 2 === 1 && Math.random() < .55) tone(hz(ch[Math.floor(Math.random() * 4)] + 12 + (Math.random() < .3 ? 12 : 0)), .9, { type: "sine", gain: .03, at, attack: .01, release: .9, bus: musicBus, pan: (Math.random() - .5) });
+        if (mStep % 4 === 0) noise(.08, { gain: .02, freq: 120, at, bus: musicBus });
+        if (mStep % 4 === 2) noise(.06, { gain: .012, type: "highpass", freq: 6000, at, bus: musicBus });
+        mNext += beat; mStep++;
+      }
+    }, 200);
+  }
+  // Einstellungen
+  function set(k, v) { cfg[k] = v; save(); apply(); }
+  // Browser erlauben Ton erst nach einer Nutzeraktion
+  addEventListener("pointerdown", () => { if (ac) ac.resume().catch(() => {}); }, true);
+  addEventListener("keydown", () => { if (ac) ac.resume().catch(() => {}); }, true);
+  return { fx, music, set, get: k => cfg[k], ctx };
+})();
+
 /* Tastenbelegung für die 3D-Videothek (frei einstellbar, lokal gespeichert) */
 const KM = (() => {
   const ACTIONS = [
@@ -2090,7 +2343,7 @@ const KM = (() => {
     ["turnL", "Nach links drehen", "KeyQ"], ["turnR", "Nach rechts drehen", "KeyE"],
     ["run", "Rennen (halten)", "ShiftLeft"], ["stand", "Von der Bank aufstehen", "Space"],
     ["use", "Anvisierte Hülle ansehen", "Enter"], ["shuffle", "Regal mischen", "KeyR"],
-    ["phone", "Handy: Maus frei / fangen", "KeyH"], ["popcorn", "Popcorn essen", "KeyF"],
+    ["phone", "Handy: Maus frei / fangen", "KeyH"], ["popcorn", "Popcorn essen", "KeyF"], ["drink", "Trinken", "KeyG"],
     ["fps", "FPS-Anzeige", "F3"], ["gfx", "Grafik: Schnell / Realistisch", "KeyM"], ["keys", "Tastenbelegung öffnen", "KeyK"],
   ];
   const DEF = Object.fromEntries(ACTIONS.map(a => [a[0], a[2]]));
@@ -2194,12 +2447,82 @@ const Room = (() => {
     });
     renderer.shadowMap.needsUpdate = true;
   }
+  // Einzelne Grafik-Optionen (im Menü „Grafik & Ton“)
+  const gfx = Object.assign({ shadows: true, env: true, bloom: true, cones: true, daylight: true, res: "auto" }, (() => { try { return JSON.parse(localStorage.getItem("watchlist-gfx-opts") || "{}"); } catch { return {}; } })());
+  function applyGfx(force) {
+    if (!renderer) return;
+    const sh = quality.real && gfx.shadows;
+    if (force || renderer.shadowMap.enabled !== sh) {
+      renderer.shadowMap.enabled = sh; renderer.shadowMap.needsUpdate = true;
+      scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
+    }
+    if (scene.userData.env) scene.environment = quality.real && gfx.env ? scene.userData.env : null;
+    for (const c of shared.cones || []) c.visible = gfx.cones;
+    perf.fixed = gfx.res === "auto" ? 0 : +gfx.res;
+    if (perf.fixed) { perf.pr = perf.fixed; renderer.setPixelRatio(perf.pr); resize(); }
+    dayNight(true);
+  }
+  function setGfx(k, v) { gfx[k] = v; try { localStorage.setItem("watchlist-gfx-opts", JSON.stringify(gfx)); } catch {} applyGfx(); renderRoomSet(); }
+  // Menü „Grafik & Ton“
+  function renderRoomSet() {
+    const ov = $("#ovRoomSet"); if (!ov) return;
+    ov.querySelectorAll("[data-q]").forEach(b => b.classList.toggle("on", (b.dataset.q === "real") === quality.real));
+    ov.querySelectorAll("[data-g]").forEach(b => b.classList.toggle("on", !!gfx[b.dataset.g]));
+    ov.querySelectorAll("[data-s]").forEach(b => b.classList.toggle("on", !!SFX.get(b.dataset.s)));
+    ov.querySelectorAll("[data-sv]").forEach(i => i.value = SFX.get(i.dataset.sv));
+    $("#rsRes").innerHTML = [["auto", "Auto"], [".75", "75 %"], ["1", "100 %"], ["1.25", "125 %"], ["1.5", "150 %"]].map(([v, l]) => `<button class="btn${String(gfx.res) === v ? " on" : ""}" data-res="${v}">${l}</button>`).join("");
+    const p = padNow(); $("#rsPad").textContent = p ? `🎮 Verbunden: ${p.id.replace(/\s*\(.*$/, "").slice(0, 40)}` : "🎮 Kein Controller erkannt – einfach einstecken und eine Taste drücken";
+    const sb = $("#roomSnd"); if (sb) sb.textContent = SFX.get("on") ? "🔊" : "🔇";
+  }
+  function openRoomSet() { if (document.pointerLockElement) document.exitPointerLock(); renderRoomSet(); $("#ovRoomSet").classList.add("open"); SFX.fx.open(); }
+  document.addEventListener("click", e => {
+    const ov = $("#ovRoomSet"); if (!ov || !ov.contains(e.target)) return;
+    const q = e.target.closest("[data-q]"), g = e.target.closest("[data-g]"), sw = e.target.closest("[data-s]"), r = e.target.closest("[data-res]");
+    if (q) { setQuality(q.dataset.q === "real"); renderRoomSet(); }
+    if (g) setGfx(g.dataset.g, !gfx[g.dataset.g]);
+    if (sw) { SFX.set(sw.dataset.s, !SFX.get(sw.dataset.s)); renderRoomSet(); }
+    if (r) setGfx("res", r.dataset.res);
+    if (e.target.id === "rsKeys") { ov.classList.remove("open"); KM.open(); }
+    if (q || g || sw || r) SFX.fx.click();
+  });
+  document.addEventListener("input", e => { const i = e.target.closest && e.target.closest("#ovRoomSet [data-sv]"); if (i) SFX.set(i.dataset.sv, +i.value); });
+
+  // ---------- Tageszeit: Blick durch die Glastür + Lichtstimmung ----------
+  const dayPhase = () => { const h = new Date().getHours() + new Date().getMinutes() / 60; return h >= 6 && h < 10 ? "morgen" : h >= 10 && h < 17 ? "tag" : h >= 17 && h < 20.5 ? "abend" : "nacht"; };
+  const DAY = { // Himmel oben/Mitte/Horizont, Licht-Farbe, Helligkeit, Sonnenfleck
+    morgen: { sky: ["#7fb2e6", "#ffc59a", "#ffe1b8"], light: 0xffeedd, k: 1.02, spot: [0xffc890, .22], city: "#3a3a4a", win: .25 },
+    tag: { sky: ["#3f8fe0", "#9cc9f2", "#dff0ff"], light: 0xfff8f0, k: 1.1, spot: [0xfff2dc, .3], city: "#56607a", win: .05 },
+    abend: { sky: ["#1b2a4a", "#e0785a", "#ffb26b"], light: 0xffe2c4, k: 1, spot: [0xff9a6a, .16], city: "#1a1420", win: .8 },
+    nacht: { sky: ["#03050d", "#0b1530", "#1a2240"], light: 0xffd9b8, k: .92, spot: [0x8fb0ff, .05], city: "#07070c", win: 1 },
+  };
+  let curPhase = "", lastDayCheck = 0;
+  function drawOutside(c, w, h, ph) {
+    const d = DAY[ph], sky = c.createLinearGradient(0, 0, 0, h * .62);
+    sky.addColorStop(0, d.sky[0]); sky.addColorStop(.7, d.sky[1]); sky.addColorStop(1, d.sky[2]); c.fillStyle = sky; c.fillRect(0, 0, w, h);
+    if (ph === "nacht") { c.fillStyle = "rgba(255,255,255,.85)"; for (let i = 0; i < 60; i++) c.fillRect(Math.random() * w, Math.random() * h * .45, 1.5, 1.5); c.fillStyle = "#f4f1e0"; c.beginPath(); c.arc(w * .72, h * .14, 16, 0, 7); c.fill(); c.fillStyle = d.sky[0]; c.beginPath(); c.arc(w * .75, h * .13, 14, 0, 7); c.fill(); }
+    else if (ph === "tag" || ph === "morgen") { c.fillStyle = "rgba(255,255,255,.75)"; for (let i = 0; i < 5; i++) { const x = Math.random() * w, y = 30 + Math.random() * h * .3; for (let k = 0; k < 4; k++) { c.beginPath(); c.ellipse(x + k * 14, y + (k % 2) * 5, 18, 9, 0, 0, 7); c.fill(); } } }
+    if (ph !== "nacht") { const sy = ph === "tag" ? h * .12 : h * .5, sun = c.createRadialGradient(w * .3, sy, 2, w * .3, sy, 60); sun.addColorStop(0, "rgba(255,250,220,1)"); sun.addColorStop(.25, "rgba(255,230,160,.8)"); sun.addColorStop(1, "rgba(255,200,120,0)"); c.fillStyle = sun; c.fillRect(0, 0, w, h * .62); }
+    c.fillStyle = d.city; for (let i = 0; i < 9; i++) { const bw = 18 + (i * 37 % 23), bh = 50 + (i * 53 % 80); c.fillRect(i * 30 - 6, h * .62 - bh, bw, bh); }
+    c.fillStyle = `rgba(255,210,120,${d.win})`; for (let i = 0; i < 40; i++) c.fillRect((i * 97) % w, h * .48 + ((i * 31) % 50), 3, 4);
+    const street = c.createLinearGradient(0, h * .62, 0, h); street.addColorStop(0, ph === "nacht" ? "#14121a" : ph === "abend" ? "#2a1f2e" : "#5f5a5a"); street.addColorStop(1, ph === "nacht" ? "#08070b" : "#2a2626"); c.fillStyle = street; c.fillRect(0, h * .62, w, h);
+    c.fillStyle = "rgba(255,255,255,.08)"; c.beginPath(); c.moveTo(20, 0); c.lineTo(90, 0); c.lineTo(20, 200); c.fill();
+    c.strokeStyle = "#c9ced6"; c.lineWidth = 12; c.strokeRect(6, 6, w - 12, h - 12); c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
+    c.fillStyle = "#c9ced6"; c.fillRect(w / 2 - 34, h * .5, 10, 70); c.fillRect(w / 2 + 24, h * .5, 10, 70);
+  }
+  function dayNight(force) {
+    if (!renderer) return;
+    const ph = gfx.daylight ? dayPhase() : "abend";
+    if (ph === curPhase && !force) return;
+    curPhase = ph; const d = DAY[ph];
+    if (shared.outTex) { const cv = shared.outTex.image; drawOutside(cv.getContext("2d"), cv.width, cv.height, ph); shared.outTex.needsUpdate = true; }
+    if (hemi) hemi.color.setHex(d.light);
+    if (shared.sunSpot) { shared.sunSpot.material.color.setHex(d.spot[0]); shared.sunSpot.material.opacity = d.spot[1]; }
+  }
+  function toggleQ() { setQuality(!quality.real); renderRoomSet(); toast(quality.real ? "✨ Realistische Grafik: Licht, Schatten, Spiegelungen, Leuchten" : "⚡ Schnelle Grafik"); }
   function setQuality(real) {
     quality.real = real; try { localStorage.setItem("watchlist-gfx", real ? "real" : "fast"); } catch {}
     if (real) realify(scene);
-    renderer.shadowMap.enabled = real; renderer.shadowMap.needsUpdate = true;
-    scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
-    if (scene.userData.env) scene.environment = real ? scene.userData.env : null;
+    applyGfx(true);
     if (shared.sun) shared.sun.visible = !real;
     perf.max = Math.min(devicePixelRatio, real ? 1.25 : 1.5); if (perf.pr > perf.max) { perf.pr = perf.max; renderer.setPixelRatio(perf.pr); resize(); }
     const b = $("#roomGfx"); if (b) b.textContent = real ? "✨ Realistisch" : "⚡ Schnell";
@@ -2276,7 +2599,7 @@ const Room = (() => {
     function get() {
       if (busy) return;
       if (left > 20) { toast("🍿 Deine Tüte ist noch fast voll!"); return; }
-      build(); busy = true; if (popcorn) popcorn.pop = 1.6;
+      build(); busy = true; if (popcorn) popcorn.pop = 1.6; SFX.fx.popcorn();
       $("#roomLabel").innerHTML = "🍿 Das Popcorn poppt …"; $("#roomLabel").style.opacity = 1;
       setTimeout(() => {
         busy = false; left = MAX; fillTo(left); model.visible = true; show = 0; badge(); $("#roomLabel").style.opacity = 0;
@@ -2285,7 +2608,7 @@ const Room = (() => {
     }
     function eat() {
       if (left <= 0) return;
-      left--; fillTo(left); badge(); munch = 1;
+      left--; fillTo(left); badge(); munch = 1; SFX.fx.crunch();
       const e = el(), c = document.createElement("span"); c.className = "pop-crumb"; c.textContent = ["😋", "🍿", "mampf", "knusper"][Math.floor(Math.random() * 4)];
       c.style.left = (10 + Math.random() * 60) + "%"; e.appendChild(c); setTimeout(() => c.remove(), 900);
       if (left === 0) toast("🍿 Leer! Am Automaten gibt's Nachschub.");
@@ -2306,6 +2629,200 @@ const Room = (() => {
     document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#popHand")) eat(); });
     return { get, eat, hide, tick, has: () => left > 0 };
   })();
+
+  // ---------- Getränk: Becher mit Deckel und Strohhalm in der rechten Hand ----------
+  const Drink = (() => {
+    const MAX = 14; let left = 0, busy = false, model = null, show = 0, sipT = 0, flavor = 0;
+    const FLAV = [["Cola", "#b0121b", "#2a0a06"], ["Orange", "#ff8a1f", "#ffb347"], ["Zitrone", "#e8d12a", "#f5ec8a"], ["Blue", "#1d6fe0", "#7cc0ff"]];
+    function cupTex(i) {
+      const [name, c1, c2] = FLAV[i];
+      return canvasTex(256, 128, (c, w, h) => {
+        const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, c1); g.addColorStop(.5, c2); g.addColorStop(1, c1); c.fillStyle = g; c.fillRect(0, 0, w, h);
+        c.fillStyle = "rgba(255,255,255,.9)"; for (let k = 0; k < 2; k++) { c.beginPath(); c.moveTo(0, h * (.25 + k * .5)); for (let x = 0; x <= w; x += 8) c.lineTo(x, h * (.25 + k * .5) + Math.sin(x / 18) * 6); c.lineTo(w, h * (.3 + k * .5)); c.lineTo(0, h * (.3 + k * .5)); c.fill(); }
+        c.font = "bold 30px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#fff"; c.shadowColor = "rgba(0,0,0,.5)"; c.shadowBlur = 6;
+        c.fillText(name.toUpperCase(), w * .25, h * .52); c.fillText(name.toUpperCase(), w * .75, h * .52);
+      });
+    }
+    function build() {
+      if (model) return;
+      model = new T.Group();
+      const body = new T.Mesh(new T.CylinderGeometry(.05, .038, .16, 32, 1, true), new T.MeshLambertMaterial({ map: cupTex(0), emissive: 0x222222, side: T.DoubleSide })); model.add(body); model.userData.body = body;
+      const lid = new T.Mesh(new T.CylinderGeometry(.053, .051, .012, 32), new T.MeshLambertMaterial({ color: 0xf2f2f2, emissive: 0x333333 })); lid.position.y = .084; model.add(lid);
+      const dome = new T.Mesh(new T.SphereGeometry(.05, 24, 8, 0, Math.PI * 2, 0, Math.PI / 5), new T.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: .55 })); dome.position.y = .05; model.add(dome);
+      const straw = new T.Mesh(new T.CylinderGeometry(.0045, .0045, .14, 10), new T.MeshLambertMaterial({ map: canvasTex(16, 128, (c, w, h) => { for (let y = 0; y < h; y += 16) { c.fillStyle = (y / 16) % 2 ? "#fff" : "#e8203a"; c.fillRect(0, y, w, 16); } }) }));
+      straw.position.set(.012, .15, 0); straw.rotation.z = -.18; model.add(straw);
+      const bottom = new T.Mesh(new T.CircleGeometry(.038, 24), new T.MeshLambertMaterial({ color: 0x222222 })); bottom.rotation.x = Math.PI / 2; bottom.position.y = -.08; model.add(bottom);
+      model.traverse(o => { o.frustumCulled = false; o.renderOrder = 10; o.userData.noShadow = true; });
+      model.visible = false; model.scale.setScalar(.7);
+      camera.add(model); if (!camera.parent) scene.add(camera);
+    }
+    const el = () => $("#drinkHand");
+    function badge() { const e = el(); if (!e) return; e.querySelector(".dr-n").textContent = left; e.querySelector(".dr-k").textContent = KM.name(KM.get("drink")); e.classList.toggle("show", left > 0); }
+    function get() {
+      if (busy) return;
+      if (left > 9) { toast("🥤 Dein Becher ist noch fast voll!"); return; }
+      build(); busy = true; flavor = Math.floor(Math.random() * FLAV.length);
+      SFX.fx.can(); if (machine) machine.drop = 1;
+      $("#roomLabel").innerHTML = `🥤 ${FLAV[flavor][0]} wird gezapft …`; $("#roomLabel").style.opacity = 1;
+      setTimeout(() => {
+        busy = false; left = MAX; model.userData.body.material.map = cupTex(flavor); model.userData.body.material.needsUpdate = true;
+        model.visible = true; show = 0; badge(); $("#roomLabel").style.opacity = 0;
+        toast(`🥤 ${FLAV[flavor][0]}! ${matchMedia("(pointer: coarse)").matches ? "Tippe unten links" : "Taste " + KM.name(KM.get("drink"))} zum Trinken`);
+      }, 1200);
+    }
+    function sip() { if (left <= 0) return; left--; badge(); sipT = 1; SFX.fx.slurp(); if (left === 0) toast("🥤 Leer! Am Getränkeautomaten gibt's Nachschub."); }
+    function tick(dt, t, walking) {
+      if (!model) return;
+      const want = left > 0 || sipT > 0;
+      show += ((want ? 1 : 0) - show) * Math.min(1, dt * (want ? 6 : 3));
+      model.visible = show > .02; if (!model.visible) return;
+      sipT = Math.max(0, sipT - dt * 1.6);
+      const m = Math.sin(sipT * Math.PI), bob = walking ? Math.sin(t / 140 + 1) * .008 : Math.sin(t / 800) * .003;
+      model.position.set(.31 - m * .24, -.25 - (1 - show) * .35 + m * .18 + bob, -.48 + m * .13);
+      model.rotation.set(.05 + m * .25, -.2, -.05 - m * .1);
+    }
+    function hide() { left = 0; badge(); if (model) { model.visible = false; show = 0; } }
+    document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#drinkHand")) sip(); });
+    return { get, sip, hide, tick, has: () => left > 0 };
+  })();
+  let machine = null;
+  // ---------- Verkäufer an der Info-Theke: gibt Tipps nach deinem Geschmack ----------
+  let clerk = null;
+  function buildClerk(x, z, rot) {
+    const g = new T.Group();
+    const darkW = pbr(new T.MeshLambertMaterial({ map: wood(true) }), .55, 0), lightW = pbr(new T.MeshLambertMaterial({ map: wood(false) }), .35, 0);
+    const front = canvasTex(512, 256, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#2a1418"); gr.addColorStop(1, "#140a0c"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.strokeStyle = "#e8b94a"; c.lineWidth = 6; c.strokeRect(14, 14, w - 28, h - 28);
+      c.font = "bold 62px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#ffe1a8"; c.shadowColor = "#ffb35c"; c.shadowBlur = 18; c.fillText("💡 TIPPS", w / 2, h * .42);
+      c.shadowBlur = 0; c.font = "28px Segoe UI, sans-serif"; c.fillStyle = "#e9cfa0"; c.fillText("Frag mich, was du schauen sollst!", w / 2, h * .72);
+    });
+    const counter = new T.Mesh(new T.BoxGeometry(1.5, 1.0, .55), [darkW, darkW, darkW, darkW, new T.MeshLambertMaterial({ map: front }), darkW]); counter.position.y = .5; g.add(counter);
+    const top = new T.Mesh(new T.BoxGeometry(1.6, .05, .65), lightW); top.position.y = 1.025; g.add(top);
+    // Kasse und Klingel
+    const reg = new T.Mesh(new T.BoxGeometry(.32, .14, .26), pbr(new T.MeshLambertMaterial({ color: 0x2b2f36 }), .4, .3)); reg.position.set(-.45, 1.12, -.05); g.add(reg);
+    const scrT = canvasTex(128, 64, (c, w, h) => { c.fillStyle = "#04130a"; c.fillRect(0, 0, w, h); c.fillStyle = "#2cff8a"; c.font = "bold 22px Courier New"; c.textAlign = "center"; c.fillText("0,00 €", w / 2, 40); });
+    const rs = new T.Mesh(new T.PlaneGeometry(.22, .1), new T.MeshBasicMaterial({ map: scrT, toneMapped: false })); rs.position.set(-.45, 1.25, .02); rs.rotation.x = -.5; g.add(rs);
+    const bell = new T.Mesh(new T.SphereGeometry(.05, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), pbr(new T.MeshLambertMaterial({ color: 0xe8b94a }), .25, .95)); bell.position.set(.5, 1.05, .12); g.add(bell);
+    // Figur
+    const person = new T.Group(); person.position.set(0, 0, -.62); g.add(person);
+    const shirt = new T.MeshLambertMaterial({ color: 0xc8202e }), skin = new T.MeshLambertMaterial({ color: 0xf0c4a0 }), pants = new T.MeshLambertMaterial({ color: 0x1f2533 });
+    const legs = new T.Mesh(new T.CylinderGeometry(.16, .14, .9, 16), pants); legs.position.y = .45; person.add(legs);
+    const torso = new T.Mesh(new T.CylinderGeometry(.2, .17, .62, 20), shirt); torso.position.y = 1.2; person.add(torso);
+    const sh = new T.Mesh(new T.SphereGeometry(.2, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), shirt); sh.position.y = 1.5; sh.scale.y = .45; person.add(sh);
+    const tag = new T.Mesh(new T.PlaneGeometry(.1, .05), new T.MeshBasicMaterial({ map: canvasTex(128, 64, (c, w, h) => { c.fillStyle = "#fff"; c.fillRect(0, 0, w, h); c.fillStyle = "#c8202e"; c.font = "bold 30px Segoe UI"; c.textAlign = "center"; c.fillText("MAX", w / 2, 44); }) })); tag.position.set(.09, 1.36, .19); tag.rotation.y = .25; person.add(tag);
+    const neck = new T.Mesh(new T.CylinderGeometry(.055, .06, .08, 12), skin); neck.position.y = 1.58; person.add(neck);
+    const head = new T.Group(); head.position.y = 1.74; person.add(head);
+    const faceT = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = "#f0c4a0"; c.fillRect(0, 0, w, h);
+      const cx = w * .25; // Gesicht vorne (u = 0.25 zeigt bei der Kugel nach +z)
+      c.fillStyle = "#2a1a12"; for (const dx of [-14, 14]) { c.beginPath(); c.ellipse(cx + dx, h * .45, 4.5, 6, 0, 0, 7); c.fill(); }
+      c.fillStyle = "#fff"; for (const dx of [-13, 15]) { c.beginPath(); c.arc(cx + dx, h * .43, 1.5, 0, 7); c.fill(); }
+      c.strokeStyle = "#5a2a1a"; c.lineWidth = 2.5; for (const dx of [-14, 14]) { c.beginPath(); c.moveTo(cx + dx - 7, h * .32); c.lineTo(cx + dx + 6, h * .3); c.stroke(); }
+      c.strokeStyle = "#a0402a"; c.lineWidth = 3; c.beginPath(); c.arc(cx, h * .58, 11, .15 * Math.PI, .85 * Math.PI); c.stroke();
+      c.fillStyle = "rgba(230,120,110,.35)"; for (const dx of [-24, 24]) { c.beginPath(); c.arc(cx + dx, h * .6, 6, 0, 7); c.fill(); }
+    });
+    const skull = new T.Mesh(new T.SphereGeometry(.14, 32, 20), new T.MeshLambertMaterial({ map: faceT })); skull.scale.set(1, 1.1, 1); head.add(skull);
+    const hair = new T.Mesh(new T.SphereGeometry(.148, 28, 14, 0, Math.PI * 2, 0, Math.PI * .45), new T.MeshLambertMaterial({ color: 0x3a2618 })); hair.position.y = .02; hair.rotation.x = -.25; head.add(hair);
+    const cap = new T.Mesh(new T.CylinderGeometry(.15, .155, .07, 24), shirt); cap.position.set(0, .12, -.01); head.add(cap);
+    const visor = new T.Mesh(new T.CylinderGeometry(.12, .12, .012, 24, 1, false, -Math.PI / 2, Math.PI), shirt); visor.position.set(0, .09, .1); visor.scale.z = 1.3; head.add(visor);
+    for (const sx of [-1, 1]) { const ear = new T.Mesh(new T.SphereGeometry(.03, 10, 8), skin); ear.position.set(sx * .14, 0, 0); ear.scale.set(.6, 1, 1); head.add(ear); }
+    const arms = [];
+    for (const sx of [-1, 1]) {
+      const arm = new T.Group(); arm.position.set(sx * .23, 1.46, 0); person.add(arm);
+      const up = new T.Mesh(new T.CylinderGeometry(.055, .05, .5, 12), shirt); up.position.y = -.25; arm.add(up);
+      const hand = new T.Mesh(new T.SphereGeometry(.055, 12, 10), skin); hand.position.y = -.52; arm.add(hand);
+      arm.rotation.z = sx * .12; arms.push(arm);
+    }
+    const glow = new T.Mesh(new T.PlaneGeometry(2.2, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .22, depthWrite: false, blending: T.AdditiveBlending })); glow.rotation.x = -Math.PI / 2; glow.position.set(0, .007, .3); g.add(glow);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .95 });
+    for (const m of [counter, top, torso, skull, legs, sh]) { m.userData.clerk = true; fixedPicks.push(m); }
+    clerk = { g, person, head, arms, wave: 0, greeted: false, busy: false };
+  }
+  function clerkTick(dt, t) {
+    if (!clerk || inCinema) return;
+    const wp = new T.Vector3(); clerk.head.getWorldPosition(wp);
+    const d = Math.hypot(pos.x - wp.x, pos.z - wp.z);
+    // Kopf zum Spieler drehen (lokal), sanft
+    const ang = Math.atan2(pos.x - wp.x, pos.z - wp.z) - clerk.g.rotation.y;
+    const a = Math.atan2(Math.sin(ang), Math.cos(ang)), want = d < 6 ? Math.max(-1, Math.min(1, a)) : 0;
+    clerk.head.rotation.y += (want - clerk.head.rotation.y) * Math.min(1, dt * 4);
+    if (d < 3.2 && !clerk.greeted) { clerk.greeted = true; clerk.wave = 2.2; }
+    if (d > 6) clerk.greeted = false;
+    clerk.wave = Math.max(0, clerk.wave - dt);
+    const R = clerk.arms[1];
+    R.rotation.z = clerk.wave > 0 ? 2.6 + Math.sin(t / 110) * .35 : R.rotation.z + (.12 - R.rotation.z) * Math.min(1, dt * 5);
+    clerk.person.position.y = Math.sin(t / 900) * .006;
+  }
+  const Clerk = (() => {
+    const LINES = ["Weil du <b>{a}</b> mochtest, gefällt dir bestimmt <b>{b}</b>.", "Kenn ich! Wer <b>{a}</b> schaut, landet oft bei <b>{b}</b> – probier's mal.", "Mein Tipp nach <b>{a}</b>: <b>{b}</b>. Ganz ehrlich, lohnt sich!", "Hmm … <b>{a}</b>? Dann nimm <b>{b}</b> mit, das passt perfekt."];
+    let last = null;
+    const box = () => $("#clerkTalk");
+    function say(html, r) {
+      const b = box();
+      b.innerHTML = `${r && r.poster ? `<img src="${esc(r.poster)}" alt="">` : `<div style="font-size:40px">🧑‍💼</div>`}<div><p>${html}</p><div class="row">${r ? `<button class="btn primary" id="clkOpen">Ansehen</button>` : ""}<button class="btn" id="clkMore">💡 Noch ein Tipp</button><button class="btn" id="clkBye">Danke!</button></div></div>`;
+      b.classList.add("show");
+      if (r) $("#clkOpen").onclick = () => { b.classList.remove("show"); keys = {}; Shop.openItem(r); };
+      $("#clkMore").onclick = () => talk(); $("#clkBye").onclick = () => b.classList.remove("show");
+    }
+    async function talk() {
+      if (clerk.busy) return; clerk.busy = true; clerk.wave = 1;
+      if (document.pointerLockElement) document.exitPointerLock();
+      say("Moment, ich schau mal ins Regal … 🤔");
+      try {
+        const liked = items.filter(i => i.tmdbId && i.mediaType && (i.status === "gesehen" || i.status === "schaue")).sort(() => Math.random() - .5);
+        let rec = null, from = null;
+        for (const i of liked.slice(0, 4)) {
+          const r = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}/recommendations`, language: "de-DE" }));
+          const list = (r.results || []).map(x => Shop.toR(x, i.mediaType)).filter(x => x.poster && !Shop.onList(x) && (!last || x.tmdbId !== last.tmdbId));
+          if (list.length) { rec = list[Math.floor(Math.random() * Math.min(8, list.length))]; from = i; break; }
+        }
+        if (!rec) {
+          const sh = Shop.shelves().find(x => x.id === "top") || Shop.shelves()[0];
+          const list = (await Shop.fetchShelf(sh, 1 + Math.floor(Math.random() * 3))).filter(x => !Shop.onList(x));
+          rec = list[Math.floor(Math.random() * list.length)];
+          if (!rec) throw new Error("leer");
+          last = rec; say(`Du hast noch nicht viel geschaut – fang doch mit <b>${esc(rec.title)}</b>${rec.year ? ` (${esc(rec.year)})` : ""} an! ⭐ ${(rec.vote || 0).toFixed(1)}`, rec);
+        } else {
+          last = rec; const l = LINES[Math.floor(Math.random() * LINES.length)];
+          say(l.replace("{a}", esc(from.title)).replace("{b}", esc(rec.title) + (rec.year ? ` (${esc(rec.year)})` : "")) + (rec.vote ? ` <span style="opacity:.7">⭐ ${rec.vote.toFixed(1)}</span>` : ""), rec);
+        }
+        SFX.fx.notify();
+      } catch { say(settings.apiKey ? "Hm, gerade finde ich nichts – frag mich gleich nochmal!" : "Ohne TMDB-Schlüssel (⚙ Einstellungen) kann ich leider nicht ins Regal schauen."); }
+      clerk.busy = false;
+    }
+    return { talk, hide: () => box().classList.remove("show") };
+  })();
+  // Getränkeautomat: beleuchtete Front mit Flaschen, Tasten und Ausgabefach
+  function drinkMachine(x, z, rot) {
+    const g = new T.Group();
+    const body = pbr(new T.MeshLambertMaterial({ color: 0x0e3a6e }), .35, .2);
+    const box = new T.Mesh(new T.BoxGeometry(.95, 1.95, .7), body); box.position.y = .975; g.add(box);
+    const front = canvasTex(512, 1024, (c, w, h) => {
+      const bg = c.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, "#0f4c8f"); bg.addColorStop(1, "#06213f"); c.fillStyle = bg; c.fillRect(0, 0, w, h);
+      // Fenster mit Fächern
+      c.fillStyle = "#cfe8ff"; c.fillRect(30, 40, w * .66, h * .66);
+      const cols = ["#b0121b", "#ff8a1f", "#e8d12a", "#1d6fe0", "#22c55e"];
+      for (let r = 0; r < 5; r++) { const y = 60 + r * (h * .66 - 40) / 5; c.fillStyle = "#9fb3c8"; c.fillRect(30, y + 100, w * .66, 8);
+        for (let k = 0; k < 5; k++) { const bx = 50 + k * (w * .66 - 40) / 5, col = cols[(r + k) % 5]; c.fillStyle = col; c.fillRect(bx, y + 22, 34, 78); c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(bx + 4, y + 26, 6, 70); c.fillStyle = "#ddd"; c.fillRect(bx + 8, y + 12, 18, 12); } }
+      const sh = c.createLinearGradient(30, 0, 30 + w * .66, 0); sh.addColorStop(0, "rgba(255,255,255,.25)"); sh.addColorStop(.3, "rgba(255,255,255,0)"); c.fillStyle = sh; c.fillRect(30, 40, w * .66, h * .66);
+      // Bedienfeld
+      const px = 30 + w * .66 + 18; c.fillStyle = "#03101f"; c.fillRect(px, 40, w - px - 26, 120);
+      c.fillStyle = "#2cff8a"; c.font = "bold 34px Courier New, monospace"; c.textAlign = "center"; c.fillText("1,50", px + (w - px - 26) / 2, 112);
+      for (let k = 0; k < 8; k++) { c.fillStyle = "#cfd6df"; c.fillRect(px + 12 + (k % 2) * 58, 190 + Math.floor(k / 2) * 70, 46, 46); c.fillStyle = "#334"; c.font = "bold 24px Arial"; c.fillText(String.fromCharCode(65 + k), px + 35 + (k % 2) * 58, 222 + Math.floor(k / 2) * 70); }
+      c.fillStyle = "#111"; c.fillRect(px + 30, 500, 60, 90); c.fillStyle = "#ffcc33"; c.fillRect(px + 52, 515, 16, 60);
+      // Ausgabefach + Logo
+      c.fillStyle = "#020812"; c.fillRect(60, h * .76, w - 120, 110); c.fillStyle = "rgba(255,255,255,.15)"; c.fillRect(60, h * .76, w - 120, 6);
+      c.font = "bold 74px Segoe UI, sans-serif"; c.fillStyle = "#fff"; c.textAlign = "center"; c.shadowColor = "#7cc0ff"; c.shadowBlur = 24; c.fillText("DRINKS", w / 2, h * .95); c.shadowBlur = 0;
+    });
+    const face = new T.Mesh(new T.PlaneGeometry(.95, 1.95), new T.MeshBasicMaterial({ map: front, toneMapped: false, color: 0xdddddd })); face.position.set(0, .975, .351); g.add(face);
+    const top = new T.Mesh(new T.BoxGeometry(.97, .06, .72), pbr(new T.MeshLambertMaterial({ color: 0xb8bec8 }), .3, .9)); top.position.y = 1.98; g.add(top);
+    const can = new T.Mesh(new T.CylinderGeometry(.035, .035, .1, 16), new T.MeshLambertMaterial({ color: 0xb0121b })); can.rotation.z = Math.PI / 2; can.position.set(0, .3, .32); can.visible = false; g.add(can);
+    const glow = new T.Mesh(new T.PlaneGeometry(1.8, 1.8), new T.MeshBasicMaterial({ map: poolTex, color: 0x5aa8ff, transparent: true, opacity: .25, depthWrite: false, blending: T.AdditiveBlending })); glow.rotation.x = -Math.PI / 2; glow.position.set(0, .006, .7); g.add(glow);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .6 });
+    for (const part of [box, face, top]) { part.userData.drinks = true; fixedPicks.push(part); }
+    machine = { can, drop: 0 };
+  }
 
   // ---------- Handy (erscheint auf der Sitzbank) ----------
   const Phone = (() => {
@@ -2329,7 +2846,16 @@ const Room = (() => {
       ["arcade", "🕹", "Arcade", "linear-gradient(135deg,#0ea5e9,#1e3a8a)"],
       ["mix", "🔀", "Mischen", "linear-gradient(135deg,#f59e0b,#ef4444)"],
       ["exit", "🚪", "Ausgang", "linear-gradient(135deg,#16a34a,#065f46)"],
+      ["spotify", '<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.2c3.6-1.1 7.8-.8 11 1M7.2 12.3c3-.8 6.4-.5 9 .9M7.8 15.2c2.4-.6 4.9-.4 7 .7" stroke="#000" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg>', "Spotify", "#121212"],
+      ["ytmusic", '<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="11" fill="#ff0033"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#fff" stroke-width="1.3"/><path d="M10.2 9.2v5.6l4.6-2.8z" fill="#fff"/></svg>', "YT Music", "#1b1b1b"],
+      ["weather", "⛅", "Wetter", "linear-gradient(160deg,#38bdf8,#1d4ed8)"],
+      ["clock", "⏰", "Uhr", "linear-gradient(160deg,#1f2937,#000)"],
+      ["hw", "📚", "Hausaufgaben", "linear-gradient(135deg,#6366f1,#8b5cf6)"],
+      ["tipp", "🎯", "Was gucke ich?", "linear-gradient(135deg,#f97316,#e11d48)"],
+      ["night", "🍿", "Filmabend", "linear-gradient(135deg,#b91c1c,#f59e0b)"],
+      ["stats", "📊", "Statistik", "linear-gradient(135deg,#0f766e,#22d3ee)"],
     ];
+    let page = 0, clockTab = "clock";
     const DOCK = ["list", "search", "dice", "kino"];
     const appBtn = ([k, ic, name, bg]) => `<button class="ph-app" data-app="${k}"><i style="background:${bg}">${ic}</i><span>${name}</span></button>`;
     const bar = t => `<div class="ph-bar"><button class="ph-back" data-go="home">‹</button><h3>${t}</h3></div>`;
@@ -2344,8 +2870,8 @@ const Room = (() => {
           <div class="ph-date">${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div>
           <div class="ph-widget"><b>${greet}! 🍿</b><br>${items.length} Titel auf deiner Watchlist · ${seen} gesehen${nx ? `<br>📅 Nächste Folge: <b>${esc(nx.title)}</b> ${SE(nx.nextAir.season, nx.nextAir.episode)} am ${fmtDate(nx.nextAir.airDate)}` : ""}
             ${(() => { const w = items.filter(i => i.poster && i.status === "schaue").concat(items.filter(i => i.poster && i.status === "geplant")).slice(0, 5); return w.length ? `<div class="ph-wposters">${w.map(i => `<img src="${esc(i.poster)}" alt="" title="${esc(i.title)}" data-item="${esc(i.id)}">`).join("")}</div>` : ""; })()}</div>
-          <div class="ph-apps">${APPS.filter(a => !DOCK.includes(a[0])).map(appBtn).join("")}</div>
-          <div class="ph-dots"><i class="on"></i><i></i></div>
+          <div class="ph-apps">${APPS.filter(a => !DOCK.includes(a[0])).slice(page * 12, page * 12 + 12).map(appBtn).join("")}</div>
+          <div class="ph-dots">${[0, 1].map(k => `<i class="${k === page ? "on" : ""}" data-page="${k}" title="Seite ${k + 1}"></i>`).join("")}<button class="ph-pg" data-page="${page ? 0 : 1}">${page ? "‹" : "›"}</button></div>
           <div class="ph-dock">${DOCK.map(k => appBtn(APPS.find(a => a[0] === k))).join("")}</div>`;
       } else if (app === "list") {
         const f = listFilter === "all" ? items : items.filter(i => i.status === listFilter);
@@ -2357,10 +2883,72 @@ const Room = (() => {
         let tmr = null; q.oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => runSearch(q.value.trim()), 300); };
       } else if (app === "lz") {
         LZ.render(s);
+      } else if (app === "weather") {
+        renderWeather(s);
+      } else if (app === "clock") {
+        renderClock(s);
+      } else if (app === "hw") {
+        renderHW(s);
       } else if (app === "next") {
         const up = items.filter(i => i.nextAir && i.nextAir.airDate).sort((a, b) => a.nextAir.airDate.localeCompare(b.nextAir.airDate));
         s.innerHTML = bar("Neue Folgen") + (up.length ? up.map(i => `<button class="ph-row" data-item="${esc(i.id)}">${thumb(i.poster)}<span><b>${esc(i.title)}</b><small>${SE(i.nextAir.season, i.nextAir.episode)}${i.nextAir.name ? " „" + esc(i.nextAir.name) + "“" : ""}<br>📅 ${fmtDate(i.nextAir.airDate)}</small></span></button>`).join("") : `<div class="ph-empty">Keine angekündigten Folgen für deine Serien.</div>`);
       }
+    }
+    // ----- Wetter -----
+    async function renderWeather(s) {
+      const c = Weather.city();
+      if (!c) {
+        s.innerHTML = bar("Wetter") + `<div class="ph-empty">In welcher Stadt wohnst du?</div><input class="ph-input" id="phCity" placeholder="z. B. Saarbrücken" autocomplete="off"><button class="ph-btn" id="phCityGo">Speichern</button>`;
+        const go = async () => { const v = $("#phCity").value.trim(); if (!v) return; try { await Weather.setCity(v); render(); } catch (e) { toast(e.message, true); } };
+        $("#phCityGo").onclick = go; $("#phCity").onkeydown = e => { if (e.key === "Enter") go(); e.stopPropagation(); }; setTimeout(() => $("#phCity").focus(), 50); return;
+      }
+      s.innerHTML = bar("Wetter") + `<div class="ph-empty"><span class="spin"></span></div>`;
+      let d; try { d = await Weather.load(); } catch (e) { if (app === "weather") s.innerHTML = bar("Wetter") + `<div class="ph-empty">⚠ ${esc(e.message)}</div>`; return; }
+      if (app !== "weather") return;
+      const cur = d.current, [ic, txt] = Weather.w(cur.weather_code), now = new Date().getHours();
+      const hrs = d.hourly.time.map((t, k) => [t, k]).filter(([t]) => new Date(t) >= new Date(Date.now() - 36e5)).slice(0, 12);
+      const days = d.daily.time.map((t, k) => ({ t, k }));
+      s.innerHTML = bar("Wetter") + `<div class="ph-wx"><div class="ph-wx-city">${esc(c.name)} <button class="ph-link" id="phCityCh">ändern</button></div>
+        <div class="ph-wx-now"><span>${ic}</span><b>${Math.round(cur.temperature_2m)}°</b></div><div class="ph-wx-txt">${txt} · gefühlt ${Math.round(cur.apparent_temperature)}°</div>
+        <div class="ph-wx-txt">↑ ${Math.round(d.daily.temperature_2m_max[0])}° ↓ ${Math.round(d.daily.temperature_2m_min[0])}° · 💨 ${Math.round(cur.wind_speed_10m)} km/h · 💧 ${cur.relative_humidity_2m} %</div>
+        <div class="ph-wx-hours">${hrs.map(([t, k]) => `<div><small>${new Date(t).getHours()} Uhr</small><span>${Weather.w(d.hourly.weather_code[k])[0]}</span><b>${Math.round(d.hourly.temperature_2m[k])}°</b><small>${d.hourly.precipitation_probability[k] ?? 0} %</small></div>`).join("")}</div>
+        <div class="ph-wx-days">${days.map(({ t, k }) => `<div><span>${k ? new Date(t + "T12:00").toLocaleDateString("de-DE", { weekday: "short" }) : "Heute"}</span><span>${Weather.w(d.daily.weather_code[k])[0]}</span><small>${d.daily.precipitation_probability_max[k] ?? 0} %</small><b>${Math.round(d.daily.temperature_2m_min[k])}° / ${Math.round(d.daily.temperature_2m_max[k])}°</b></div>`).join("")}</div></div>`;
+      $("#phCityCh").onclick = () => { Weather.reset(); render(); };
+    }
+    // ----- Uhr, Wecker, Timer -----
+    function renderClock(s) {
+      const tabs = `<div class="ph-chips">${[["clock", "🕐 Uhr"], ["alarm", "⏰ Wecker"], ["timer", "⏲ Timer"]].map(([k, l]) => `<button data-ct="${k}" class="${clockTab === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
+      const list = Clock.list().filter(a => clockTab === "clock" || a.kind === clockTab);
+      const items_ = list.length ? list.map(a => `<div class="ph-row ph-al"><span><b>${a.kind === "timer" ? "⏲ " + new Date(a.at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "⏰ " + new Date(a.at).toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit" })}</b><small>${esc(a.label)} · noch ${fmtLeft(a.at - Date.now())}</small></span><button class="ph-x" data-del="${a.id}">✕</button></div>`).join("") : "";
+      if (clockTab === "clock") {
+        const d = new Date();
+        s.innerHTML = bar("Uhr") + tabs + `<div class="ph-bigclock" id="phBig">${d.toLocaleTimeString("de-DE")}</div><div class="ph-date" style="text-align:center">${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>${items_ ? `<div class="ph-empty" style="padding:8px 0 4px">Aktiv:</div>` + items_ : ""}`;
+      } else if (clockTab === "alarm") {
+        s.innerHTML = bar("Wecker") + tabs + `<div class="ph-form"><input type="time" class="ph-input" id="phAt" value="${String((new Date().getHours() + 1) % 24).padStart(2, "0")}:00"><input class="ph-input" id="phAl" placeholder="Name (z. B. Hausaufgaben)"><button class="ph-btn" id="phAdd">+ Wecker stellen</button></div>` + (items_ || `<div class="ph-empty">Kein Wecker gestellt.</div>`);
+        $("#phAdd").onclick = () => { const d = Clock.alarm($("#phAt").value || "07:00", $("#phAl").value.trim()); toast(`⏰ Wecker: ${d.toLocaleString("de-DE", { weekday: "short", hour: "2-digit", minute: "2-digit" })}`); render(); };
+      } else {
+        s.innerHTML = bar("Timer") + tabs + `<div class="ph-tgrid">${[1, 3, 5, 10, 15, 25, 45, 60].map(m => `<button data-min="${m}">${m}<small>Min.</small></button>`).join("")}</div>` + (items_ || `<div class="ph-empty">Kein Timer läuft.</div>`);
+        s.querySelectorAll("[data-min]").forEach(b => b.onclick = () => { Clock.timer(+b.dataset.min, `Timer ${b.dataset.min} Min.`); toast(`⏲ Timer läuft: ${b.dataset.min} Min.`); render(); });
+      }
+      s.querySelectorAll("[data-ct]").forEach(b => b.onclick = () => { clockTab = b.dataset.ct; render(); });
+      s.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { Clock.remove(b.dataset.del); render(); });
+      s.querySelectorAll("input").forEach(i => i.onkeydown = e => e.stopPropagation());
+    }
+    const fmtLeft = ms => { const m = Math.max(0, Math.round(ms / 60e3)); return m < 60 ? m + " Min." : Math.floor(m / 60) + " Std. " + (m % 60) + " Min."; };
+    setInterval(() => { if (app === "clock" && el().classList.contains("show")) { const b = $("#phBig"); if (b) b.textContent = new Date().toLocaleTimeString("de-DE"); } }, 1000);
+    // ----- Hausaufgaben -----
+    async function renderHW(s) {
+      await HW.loadLZ(); if (app !== "hw") return;
+      const t = HW.today(), list = HW.all(), ex = HW.exams().slice(0, 4);
+      const due = d => !d ? "" : d < t ? "⚠ überfällig" : d === t ? "heute" : d === HW.plus(1) ? "morgen" : new Date(d + "T12:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+      s.innerHTML = bar("Hausaufgaben") + `<div class="ph-form"><input class="ph-input" id="hwS" placeholder="Fach (z. B. Deutsch)"><input class="ph-input" id="hwT" placeholder="Aufgabe"><input type="date" class="ph-input" id="hwD" value="${HW.plus(1)}"><button class="ph-btn" id="hwAdd">+ Eintragen</button></div>` +
+        (list.length ? list.map(h => `<div class="ph-row ph-hw ${h.done ? "done" : ""}"><button class="ph-chk" data-tg="${esc(h.id)}" ${h.lz ? "disabled" : ""}>${h.done ? "✓" : ""}</button><span><b>${esc(h.text)}</b><small>${esc(h.subject || "")}${h.due ? " · " + due(h.due) : ""}${h.lz ? " · Lernzentrale" : ""}</small></span>${h.lz ? "" : `<button class="ph-x" data-del="${esc(h.id)}">✕</button>`}</div>`).join("") : `<div class="ph-empty">Keine Hausaufgaben 🎉</div>`) +
+        (ex.length ? `<div class="ph-empty" style="padding:10px 0 4px;text-align:left">✏️ Nächste Klassenarbeiten</div>` + ex.map(e => `<div class="ph-row"><span><b>${esc(e.subject)}</b><small>${esc(e.kind)} · ${due(e.date)}${e.text ? " · " + esc(e.text) : ""}</small></span></div>`).join("") : "") +
+        `<div class="ph-empty" style="font-size:11px">🔔 Erinnerung nachmittags für Aufgaben bis morgen und vor Klassenarbeiten</div>`;
+      $("#hwAdd").onclick = () => { const tx = $("#hwT").value.trim(); if (!tx) return; HW.addOwn($("#hwS").value.trim(), tx, $("#hwD").value); render(); };
+      s.querySelectorAll("[data-tg]").forEach(b => b.onclick = () => { HW.toggle(b.dataset.tg); render(); });
+      s.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { HW.del(b.dataset.del); render(); });
+      s.querySelectorAll("input").forEach(i => i.onkeydown = e => e.stopPropagation());
     }
     async function runSearch(q) {
       const box = $("#phRes"); if (!box) return;
@@ -2379,6 +2967,7 @@ const Room = (() => {
       if (k === "arcade") { openArcade(); return; }
       if (k === "mix") { shuffle(); toast("🔀 Alle Regale werden neu gemischt"); return; }
       if (k === "exit") { standBench(); exitStore(); return; }
+      if (k === "tipp" || k === "night" || k === "stats") { if (document.pointerLockElement) document.exitPointerLock(); (k === "tipp" ? Pick : k === "night" ? Night : Stats).open(); return; }
       if (WEBAPP[k] && k !== "untis") { app = k; Tok.open(WEBAPP[k]); return; }
       if (k === "lz") { app = k; LZ.load(); render(); return; }
       if (k === "untis") {
@@ -2390,15 +2979,17 @@ const Room = (() => {
       if (k === "lzweb") { const u = lzUrl(); if (!u) { app = "lz"; render(); return; } app = k; Tok.open(u); return; }
       app = k; render();
     }
+    document.addEventListener("wheel", e => { if (app !== "home" || !e.target.closest || !e.target.closest("#phScreen")) return; const np = e.deltaY > 0 ? 1 : 0; if (np !== page) { page = np; render(); } }, { passive: true });
     document.addEventListener("click", e => {
       const ph = e.target.closest && e.target.closest("#phone"); if (!ph) return;
       const a = e.target.closest("[data-app]"), g = e.target.closest("[data-go]"), it = e.target.closest("[data-item]"), f = e.target.closest("[data-f]");
       if (e.target.closest(".tok-frame")) return;
+      const pg = e.target.closest("[data-page]"); if (pg && app === "home") { page = +pg.dataset.page; render(); return; }
       if (a) open(a.dataset.app); else if (g) { if (WEBAPP[app]) Tok.close(); app = g.dataset.go; render(); }
       else if (it) openDetail(it.dataset.item); else if (f) { listFilter = f.dataset.f; render(); }
       else if (e.target.id === "phHome") { if (WEBAPP[app]) Tok.close(); app = "home"; render(); }
     });
-    const WEBAPP = { untis: "https://webuntis.com/", tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/", get lzweb() { return lzUrl(); } };
+    const WEBAPP = { spotify: "https://open.spotify.com/", ytmusic: "https://music.youtube.com/", untis: "https://webuntis.com/", tiktok: "https://www.tiktok.com/foryou", insta: "https://www.instagram.com/", get lzweb() { return lzUrl(); } };
     // Lernzentrale: Handy-Version (Webseite) im Handy oder das PC-Programm starten
     const lzUrl = () => { try { return localStorage.getItem("watchlist-lz-url") || ""; } catch { return ""; } };
     function lzNorm(u) { u = String(u || "").trim(); if (!u) return ""; if (!/^https:\/\//i.test(u)) u = "https://" + u.replace(/^http:\/\//i, ""); return u; }
@@ -2515,13 +3106,13 @@ const Room = (() => {
       const W = 400, H = 770, UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
       let ws = null, id = 0, pend = {}, img = null, on = false, lastMove = 0, down = false, cur = "", desk = false, z = 1;
       // Manche Seiten (WebUntis) haben keine Handy-Ansicht: dort als schmale Desktop-Seite mit Maus statt Touch
-      const PROFILE = { untis: { desk: true, zoom: 1.15 }, lzweb: { zoom: 1 } };
+      const PROFILE = { untis: { desk: true, zoom: 1.15 }, lzweb: { zoom: 1 }, spotify: { desk: true, zoom: .8 }, ytmusic: { zoom: 1 } };
       const zKey = a => "watchlist-phone-zoom-" + a;
       const cssW = () => Math.round(W / z), cssH = () => Math.round(H / z);
       const metrics = () => cdp("Emulation.setDeviceMetricsOverride", { width: cssW(), height: cssH(), deviceScaleFactor: z, mobile: !desk }).catch(() => {});
       const cdp = (method, params = {}) => new Promise((res, rej) => { if (!ws || ws.readyState !== 1) return rej(new Error("weg")); const i = ++id; pend[i] = { res, rej }; ws.send(JSON.stringify({ id: i, method, params })); });
       async function open(url) {
-        url = window.__tokUrl || url; const myApp = app, name = { insta: "Instagram", tiktok: "TikTok", lzweb: "Lernzentrale", untis: "WebUntis" }[myApp] || "App";
+        url = window.__tokUrl || url; const myApp = app, name = { insta: "Instagram", tiktok: "TikTok", lzweb: "Lernzentrale", untis: "WebUntis", spotify: "Spotify", ytmusic: "YouTube Music" }[myApp] || "App";
         if (on || ws) close();
         cur = myApp; const pf = PROFILE[myApp] || {}; desk = !!pf.desk;
         z = +(localStorage.getItem(zKey(myApp)) || pf.zoom || 1) || 1;
@@ -2597,7 +3188,7 @@ const Room = (() => {
     }, true);
     addEventListener("keyup", e => { if (running && busy()) { e.stopImmediatePropagation(); Tok.key(e); } }, true);
     addEventListener("paste", e => { if (!running || !busy()) return; const t = e.clipboardData && e.clipboardData.getData("text"); if (t) { e.preventDefault(); } }, true);
-    return { show, hide, peek, render };
+    return { show, hide, peek, render, open };
   })();
   const FOV = 68, FOV_MIN = 20, zoom = { target: 68, hideAt: 0 };
   function showZoom() {
@@ -2692,6 +3283,8 @@ const Room = (() => {
     popcornMachine(-3.4, 4.6, Math.atan2(3.4, -4.6));
     randomPodium(0, 0);
     arcadeCabinet(3.4, 4.6, Math.atan2(-3.4, -4.6));
+    drinkMachine(-4.75, 3.2, Math.atan2(4.75, -3.2));
+    buildClerk(6.3, -6.3, Math.atan2(-6.3, 6.3));
     // Sitzbank vor der Mitte
     // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
     const bench = new T.Group();
@@ -2936,7 +3529,7 @@ const Room = (() => {
   }
   async function pressDice() {
     if (!dice || dice.spinning) return;
-    dice.spinning = true; dice.press = 1;
+    dice.spinning = true; dice.press = 1; SFX.fx.dice();
     const lab = $("#roomLabel"), names = []; for (const u of units) for (const m of u.cases) if (m.userData.r) names.push(m.userData.r.title);
     const got = randomTitle(); let shown = 0;
     // kleine Roulette-Anzeige, während gesucht wird
@@ -3244,6 +3837,18 @@ const Room = (() => {
     const curtM = new T.MeshLambertMaterial({ map: curtT, side: T.DoubleSide });
     for (const sx of [-1, 1]) { const cu = new T.Mesh(new T.PlaneGeometry(1.7, 5.3), curtM); cu.position.set(sx * 5.05, 3.1, -CD + .25); g.add(cu); }
     const val = new T.Mesh(new T.PlaneGeometry(CW * 2, .9), curtM); val.position.set(0, 5.5, -CD + .3); g.add(val);
+    // Großer Bühnenvorhang vor der Leinwand (zwei Hälften, die zur Seite gleiten)
+    { const cT = canvasTex(512, 512, (c, w, h) => {
+        for (let x = 0; x < w; x++) { const v = .5 + .5 * Math.sin(x / w * Math.PI * 22); c.fillStyle = `rgb(${Math.floor(95 + 95 * v)},${Math.floor(8 + 16 * v)},${Math.floor(20 + 20 * v)})`; c.fillRect(x, 0, 1, h); }
+        const sh = c.createLinearGradient(0, 0, 0, h); sh.addColorStop(0, "rgba(0,0,0,.5)"); sh.addColorStop(.15, "rgba(0,0,0,0)"); sh.addColorStop(.9, "rgba(0,0,0,.1)"); sh.addColorStop(1, "rgba(0,0,0,.45)"); c.fillStyle = sh; c.fillRect(0, 0, w, h);
+        c.fillStyle = "#e8b94a"; c.fillRect(0, h - 14, w, 6); for (let x = 6; x < w; x += 14) { c.beginPath(); c.arc(x, h - 4, 4, 0, 7); c.fill(); }
+      });
+      const cM = withNormal(new T.MeshLambertMaterial({ map: cT, side: T.DoubleSide, emissive: 0x150205 }), "velvet_n", 6, 2, .6);
+      const mk = sign => { const geo = new T.PlaneGeometry(4.5, 4.7, 48, 1), p = geo.attributes.position;
+        for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, Math.sin(x * 9) * .05); }
+        geo.translate(sign * -2.25, 0, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, cM); m.position.set(sign * 4.5, 3.05, -CD + .2); g.add(m); return m; };
+      shared.curt = { L: mk(-1), R: mk(1), k: 0, want: 0 };
+    }
     // Sitzreihen
     // Samtbezug mit Steppnähten und weichem Glanz
     const fabric = withNormal(new T.MeshLambertMaterial({ emissive: 0x1a0306, map: canvasTex(128, 128, (c, w, h) => {
@@ -3343,17 +3948,10 @@ const Room = (() => {
   function buildExitDoor() {
     const g = new T.Group(); g.position.set(EXIT_DOOR.x, 0, EXIT_DOOR.z); g.rotation.y = Math.PI; scene.add(g);
     const frame = new T.Mesh(new T.BoxGeometry(1.5, 2.5, .06), new T.MeshLambertMaterial({ color: 0x2b2f36 })); frame.position.y = 1.25; g.add(frame);
-    const doorT = canvasTex(256, 512, (c, w, h) => {
-      // zweiflügelige Glastür mit Blick nach draußen (Abendhimmel)
-      const sky = c.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#1b2a4a"); sky.addColorStop(.55, "#e0785a"); sky.addColorStop(.62, "#2a1f2e"); sky.addColorStop(1, "#141018");
-      c.fillStyle = sky; c.fillRect(0, 0, w, h);
-      c.fillStyle = "rgba(255,255,255,.75)"; for (let i = 0; i < 40; i++) c.fillRect(Math.random() * w, Math.random() * h * .4, 1.5, 1.5);
-      c.fillStyle = "#0f0c14"; for (let i = 0; i < 7; i++) { const bw = 20 + Math.random() * 30, bh = 40 + Math.random() * 90; c.fillRect(i * 38, h * .62 - bh, bw, bh); }
-      c.fillStyle = "rgba(255,210,120,.8)"; for (let i = 0; i < 25; i++) c.fillRect(Math.random() * w, h * .45 + Math.random() * h * .15, 3, 4);
-      c.fillStyle = "rgba(255,255,255,.07)"; c.beginPath(); c.moveTo(20, 0); c.lineTo(90, 0); c.lineTo(20, 200); c.fill();
-      c.strokeStyle = "#c9ced6"; c.lineWidth = 12; c.strokeRect(6, 6, w - 12, h - 12); c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h); c.stroke();
-      c.fillStyle = "#c9ced6"; c.fillRect(w / 2 - 34, h * .5, 10, 70); c.fillRect(w / 2 + 24, h * .5, 10, 70);
-    });
+    // zweiflügelige Glastür mit Blick nach draußen – Himmel passend zur Tageszeit
+    const doorT = canvasTex(256, 512, (c, w, h) => drawOutside(c, w, h, gfx.daylight ? dayPhase() : "abend")); shared.outTex = doorT;
+    // Sonnen- bzw. Mondlicht fällt durch die Tür auf den Boden
+    { const spot = new T.Mesh(new T.PlaneGeometry(1.8, 2.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xfff2dc, transparent: true, opacity: .2, depthWrite: false, blending: T.AdditiveBlending })); spot.rotation.x = -Math.PI / 2; spot.position.set(0, .008, 1.3); g.add(spot); shared.sunSpot = spot; }
     const door = new T.Mesh(new T.PlaneGeometry(1.36, 2.38), new T.MeshBasicMaterial({ map: doorT, toneMapped: false })); door.position.set(0, 1.19, .04); g.add(door);
     door.userData = { exit: true }; fixedPicks.push(door);
     const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#06140c"; c.fillRect(0, 0, w, h); c.font = "bold 84px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#22c55e"; c.shadowBlur = 26; c.fillStyle = "#d9ffe6"; c.fillText("AUSGANG", w / 2, h / 2 + 6); c.shadowBlur = 0; c.strokeStyle = "#22c55e"; c.lineWidth = 8; c.strokeRect(6, 6, w - 12, h - 12); });
@@ -3379,11 +3977,12 @@ const Room = (() => {
   }
 
   function enterCinema() {
+    SFX.fx.door(); SFX.music(false);
     inCinema = true; pos.x = CIN.x + CIN_DOOR.x; pos.z = CIN.z + CD - 1.3; yaw = 0; pitch = .05;
     drawScreenIdle(); toast("🎬 Willkommen im Kino – such dir einen Platz");
   }
   function leaveCinema() {
-    standUp(); inCinema = false; pos.x = STORE_DOOR.x; pos.z = -HALF + 1.6; yaw = Math.PI; pitch = -.05;
+    SFX.fx.door(); standUp(); inCinema = false; pos.x = STORE_DOOR.x; pos.z = -HALF + 1.6; yaw = Math.PI; pitch = -.05;
   }
   function cinemaClamp() {
     const mx = CW - .5; pos.x = Math.max(CIN.x - mx, Math.min(CIN.x + mx, pos.x)); pos.z = Math.max(CIN.z - CD + 1.9, Math.min(CIN.z + CD - .5, pos.z));
@@ -3426,10 +4025,21 @@ const Room = (() => {
     if (cinScreen) { cinScreen.material = screenMat; drawScreenIdle(); }
     pos.z += .9; pitch = 0;
   }
-  function setLights(dim) {
-    lightsDim = dim;
-    for (const l of cinLights) l.intensity = dim ? .25 : 6;
-    if (shared.beam) shared.beam.material.opacity = dim ? .035 : .018;
+  // Saallicht: dimmt langsam herunter, wenn etwas läuft, und geht bei Pause wieder hoch
+  let lk = 0;
+  function setLights(dim) { lightsDim = dim; }
+  function lightsTick(dt, t) {
+    lk += ((lightsDim ? 1 : 0) - lk) * Math.min(1, dt * (lightsDim ? .7 : 1.4));
+    for (const l of cinLights) l.intensity = 6 - 5.75 * lk;
+    if (shared.beam) shared.beam.material.opacity = .018 + .017 * lk;
+    if (screenGlow) screenGlow.intensity = lk * (1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3);
+    // Vorhang: öffnet sich, sobald du sitzt
+    const C = shared.curt; if (C) {
+      const want = seated ? 1 : 0; if (want !== C.want) { C.want = want; if (inCinema) SFX.fx.curtain(); }
+      C.k += (want - C.k) * Math.min(1, dt * .9);
+      const sx = 1 - .82 * C.k; C.L.scale.x = sx; C.R.scale.x = sx;
+      C.L.visible = C.R.visible = true;
+    }
   }
   // Leinwand-Ecken auf den Bildschirm projizieren, damit das Programm genau auf der Leinwand liegt
   function screenRect() {
@@ -3561,6 +4171,7 @@ const Room = (() => {
         if (m.id && pend[m.id]) { (m.error ? pend[m.id].rej : pend[m.id].res)(m.error || m.result); delete pend[m.id]; return; }
         if (m.method === "Page.frameNavigated" && !m.params.frame.parentId) { const u = $("#cineUrl"); if (u && document.activeElement !== u) u.value = m.params.frame.url.startsWith("chrome-error") ? "" : m.params.frame.url; }
         if (m.method === "Runtime.bindingCalled" && m.params.name === "__kinoFS") { m.params.payload === "1" ? enterFull(true) : exitFull(true); return; }
+        if (m.method === "Runtime.bindingCalled" && m.params.name === "__kinoPlay") { if (seated) { const on = m.params.payload === "1"; if (on !== lightsDim) { setLights(on); if (!on) toast("⏸ Pause – das Saallicht geht an"); } } return; }
         if (m.method === "Page.screencastFrame") {
           const src = "data:image/jpeg;base64," + m.params.data;
           if (kimg) kimg.src = src;
@@ -3578,7 +4189,8 @@ const Room = (() => {
         await cdp("Page.enable");
         // Vollbild verhindern (sonst würde das unsichtbare Fenster auf den Bildschirm springen)
         // Vollbild der Seite abfangen: statt das unsichtbare Fenster zu vergrößern, füllt das Video die Seite – und das Kino zeigt sie groß
-        await cdp("Runtime.enable"); await cdp("Runtime.addBinding", { name: "__kinoFS" });
+        await cdp("Runtime.enable"); await cdp("Runtime.addBinding", { name: "__kinoFS" }); await cdp("Runtime.addBinding", { name: "__kinoPlay" });
+        await cdp("Page.addScriptToEvaluateOnNewDocument", { source: "(()=>{const f=(e,v)=>{if(e.target&&e.target.tagName==='VIDEO'&&e.target.duration>20)try{window.__kinoPlay(v)}catch(x){}};document.addEventListener('play',e=>f(e,'1'),true);document.addEventListener('playing',e=>f(e,'1'),true);document.addEventListener('pause',e=>f(e,'0'),true);document.addEventListener('ended',e=>f(e,'0'),true);})();" });
         await cdp("Page.addScriptToEvaluateOnNewDocument", { source: "(()=>{let fs=null;const st=document.createElement('style');st.textContent='.__kfs{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;z-index:2147483647!important;background:#000!important;margin:0!important;transform:none!important}';const add=()=>(document.head||document.documentElement).appendChild(st);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();const fire=()=>{document.dispatchEvent(new Event('fullscreenchange'));document.dispatchEvent(new Event('webkitfullscreenchange'));window.dispatchEvent(new Event('resize'));try{window.__kinoFS(fs?'1':'0')}catch(e){}};Element.prototype.requestFullscreen=function(){if(fs)fs.classList.remove('__kfs');fs=this;this.classList.add('__kfs');fire();return Promise.resolve()};Element.prototype.webkitRequestFullscreen=Element.prototype.requestFullscreen;Document.prototype.exitFullscreen=function(){if(fs){fs.classList.remove('__kfs');fs=null;fire()}return Promise.resolve()};Document.prototype.webkitExitFullscreen=Document.prototype.exitFullscreen;Object.defineProperty(Document.prototype,'fullscreenElement',{get(){return fs}});Object.defineProperty(Document.prototype,'webkitFullscreenElement',{get(){return fs}});Object.defineProperty(Document.prototype,'fullscreenEnabled',{get(){return true}});})();" });
         await cdp("Emulation.setDeviceMetricsOverride", { width: KW, height: KH, deviceScaleFactor: 1, mobile: false });
         await cdp("Page.startScreencast", { format: "jpeg", quality: 78, maxWidth: KW, maxHeight: KH, everyNthFrame: 1 });
@@ -3751,6 +4363,7 @@ const Room = (() => {
       stopMedia(); view = "file"; setLights(true);
       const url = URL.createObjectURL(file);
       el().innerHTML = `<video src="${url}" controls autoplay playsinline></video>`;
+      const v = el().querySelector("video"); if (v) { v.onplay = () => setLights(true); v.onpause = v.onended = () => setLights(false); }
       toast("▶ " + file.name);
     }
     function menu() { view = "menu"; render(); }
@@ -3862,7 +4475,7 @@ const Room = (() => {
       const shade = new T.Mesh(shadeGeo, shadeM); shade.position.y = y; g.add(shade);
       const inner = new T.Mesh(shadeGeo, shadeIn); inner.position.y = y; inner.scale.setScalar(.985); g.add(inner);
       const bulb = new T.Mesh(new T.SphereGeometry(.055, 16, 12), bulbM); bulb.position.y = y - .06; g.add(bulb);
-      const cone = new T.Mesh(coneGeo, coneM); cone.position.y = y - .14 - 2.35 / 2; g.add(cone); cone.userData.noShadow = true;
+      const cone = new T.Mesh(coneGeo, coneM); cone.position.y = y - .14 - 2.35 / 2; g.add(cone); cone.userData.noShadow = true; (shared.cones = shared.cones || []).push(cone);
       const pool = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .2, depthWrite: false, blending: T.AdditiveBlending })); pool.rotation.x = -Math.PI / 2; pool.position.y = .004; g.add(pool);
       const halo = new T.Mesh(new T.PlaneGeometry(1.6, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffe2b8, transparent: true, opacity: .22, depthWrite: false, blending: T.AdditiveBlending })); halo.rotation.x = Math.PI / 2; halo.position.y = 3.29; g.add(halo);
     }
@@ -3886,7 +4499,7 @@ const Room = (() => {
 
     store = new T.Group(); scene.add(store);
     buildDecor(); buildCinema(); buildStoreDoor(); buildExitDoor();
-    setTimeout(() => realify(scene), 0);
+    setTimeout(() => { realify(scene); applyGfx(true); }, 0);
     // Kontaktschatten unter Pflanzen, Bank, Automaten
     for (const c of colliders) blob(scene, c.x, c.z, c.r * 2.4, c.r * 2.4, .7);
     // Leuchtende Flächen (Schilder, Neon, Hüllen-Cover) nicht vom Tonemapping abdunkeln lassen
@@ -4060,6 +4673,7 @@ const Room = (() => {
   }
   // Ein einzelnes Regal neu mischen (Maus bleibt eingefangen)
   async function shuffleUnit(u) {
+    SFX.fx.shuffle();
     if (!u || u.busy) return;
     u.busy = true; Shop.reshuffleOne(u.sh.id);
     removeCases(u); resetAtlas(u);
@@ -4106,7 +4720,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -4160,7 +4774,8 @@ const Room = (() => {
       if (e.code === "Escape" && document.pointerLockElement) { document.exitPointerLock(); releasedAt = performance.now(); return; }
       if (KM.is("keys", e.code) && !e.repeat && !e.ctrlKey && !e.altKey) { e.preventDefault(); KM.open(); return; }
       if (KM.is("popcorn", e.code) && !e.repeat && Popcorn.has()) { Popcorn.eat(); return; }
-      if (KM.is("gfx", e.code) && !e.repeat) { e.preventDefault(); $("#roomGfx").click(); return; }
+      if (KM.is("drink", e.code) && !e.repeat && Drink.has()) { Drink.sip(); return; }
+      if (KM.is("gfx", e.code) && !e.repeat) { e.preventDefault(); toggleQ(); return; }
       if (KM.is("fps", e.code)) { e.preventDefault(); placeFps($("#roomFps").classList.toggle("show")); return; }
       if (seated) { if (e.code === "Escape") { if (!Cinema.back()) standUp(); } return; }
       if (benchSit && KM.is("phone", e.code) && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); else if (lockable) lockReq(); return; }
@@ -4237,6 +4852,8 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.clerk) { lab.innerHTML = `🧑‍💼 <b>Max</b> · Verkäufer<span class="hint"> – ${tap} für einen Tipp nach deinem Geschmack</span>`; lab.style.opacity = 1; return; }
+    if (m && m.userData.drinks) { lab.innerHTML = `🥤 <b>Getränkeautomat</b><span class="hint"> – ${tap} für einen Becher</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.popcorn) { lab.innerHTML = `🍿 <b>Popcorn-Automat</b><span class="hint"> – ${tap} für eine Tüte Popcorn</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.bench) { if (benchSit) { lab.style.opacity = 0; return; } lab.innerHTML = `🛋 <b>Sitzbank</b><span class="hint"> – ${tap} zum Hinsetzen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.exit) { lab.innerHTML = `🚪 <b>Ausgang</b> · Videothek verlassen<span class="hint"> – ${tap} oder hindurchgehen</span>`; lab.style.opacity = 1; return; }
@@ -4256,27 +4873,63 @@ const Room = (() => {
     if (m.userData.exit) { exitStore(); return; }
     if (m.userData.bench) { sitBench(); return; }
     if (m.userData.popcorn) { Popcorn.get(); return; }
+    if (m.userData.drinks) { Drink.get(); return; }
+    if (m.userData.clerk) { Clerk.talk(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
   // Am Handy: was in der Bildmitte ist, wird hervorgehoben
   function aimCenter() {
     const coarse = matchMedia("(pointer: coarse)").matches, lockedNow = document.pointerLockElement === $("#roomCanvas");
-    if (!coarse && !lockedNow) return;
+    if (!coarse && !lockedNow && !$("#room").classList.contains("gp")) return;
     ndc.set(0, 0); ray.setFromCamera(ndc, camera);
     const hit = ray.intersectObjects(pickables, false)[0]; setAim(hit && hit.distance < (coarse ? 3.5 : 12) ? hit.object : null);
   }
   // Startkarte „Klicken zum Umsehen“ (nur Maus)
   function startPrompt() {
-    const show = running && !seated && !benchSit && matchMedia("(pointer: fine)").matches && document.pointerLockElement !== $("#roomCanvas") && !document.querySelector(".overlay.open");
+    const show = running && !seated && !benchSit && matchMedia("(pointer: fine)").matches && document.pointerLockElement !== $("#roomCanvas") && !document.querySelector(".overlay.open") && !$("#room").classList.contains("gp");
     $("#roomStart").classList.toggle("show", show);
   }
 
+  // ---------- Controller (Xbox / PlayStation / andere) ----------
+  const padNow = () => { try { for (const p of navigator.getGamepads ? navigator.getGamepads() : []) if (p && p.connected) return p; } catch {} return null; };
+  let padPrev = [], padActiveAt = 0, padRun = false;
+  addEventListener("gamepadconnected", e => { toast(`🎮 Controller verbunden${running ? " – Start öffnet das Menü" : ""}`); renderRoomSet(); });
+  addEventListener("gamepaddisconnected", () => { toast("🎮 Controller getrennt"); renderRoomSet(); });
+  const dz = v => Math.abs(v) < .15 ? 0 : (v - Math.sign(v) * .15) / .85;
+  function padTick(dt, t) {
+    const p = padNow(); if (!p) { padRun = false; return null; }
+    const b = i => !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > .5)), hit = i => b(i) && !padPrev[i];
+    const lx = dz(p.axes[0] || 0), ly = dz(p.axes[1] || 0), rx = dz(p.axes[2] || 0), ry = dz(p.axes[3] || 0);
+    if (lx || ly || rx || ry || p.buttons.some(x => x.pressed)) padActiveAt = t;
+    const active = padActiveAt > 0 && t - padActiveAt < 5000;
+    $("#room").classList.toggle("gp", active && !seated);
+    const ov = document.querySelector(".overlay.open");
+    if (ov) {
+      if (hit(1) || hit(9)) { if (ov.id === "ovArcade") closeArcade(); else ov.classList.remove("open"); }
+    } else {
+      const zs = camera.fov / FOV;
+      yaw -= rx * 2.6 * dt * zs; pitch = Math.max(-1.25, Math.min(1.25, pitch - ry * 2 * dt * zs));
+      if (hit(0) && aimed && !seated) select(aimed);
+      if (hit(1)) { if (seated) { if (!Cinema.back()) standUp(); } else if (benchSit) standBench(); }
+      if (hit(2) && !seated) { const ui = aimed && (aimed.userData.shuffle ?? aimed.userData.unit); if (ui != null && units[ui]) shuffleUnit(units[ui]); else shuffle(); }
+      if (hit(3) && Popcorn.has()) Popcorn.eat();
+      if (hit(5) && typeof Drink !== "undefined" && Drink.has()) Drink.sip();
+      if (hit(9)) openRoomSet();
+      if (hit(8)) toggleQ();
+      if (b(12) || b(13)) { zoom.target = Math.max(FOV_MIN, Math.min(FOV, zoom.target * (1 + (b(12) ? -1 : 1) * dt * 1.6))); showZoom(); }
+    }
+    padPrev = p.buttons.map(x => x.pressed || x.value > .5);
+    padRun = b(6) || b(10);
+    return { x: lx, y: ly };
+  }
+  let stepAcc = 0, nextBleep = 0;
   function loop(t) {
     if (!running) return;
     raf = requestAnimationFrame(loop);
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
-    const mv = KM.down(keys, "forward") || KM.down(keys, "back") || KM.down(keys, "left") || KM.down(keys, "right") || keys.ArrowUp || keys.ArrowDown;
+    const gp = padTick(dt, t) || { x: 0, y: 0 };
+    const mv = KM.down(keys, "forward") || KM.down(keys, "back") || KM.down(keys, "left") || KM.down(keys, "right") || keys.ArrowUp || keys.ArrowDown || Math.abs(gp.x) + Math.abs(gp.y) > .2;
     if (benchSit && (mv || KM.down(keys, "stand") || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standBench();
     if (!document.querySelector(".overlay.open") && !seated && !benchSit) {
       let f = 0, s = 0;
@@ -4284,8 +4937,11 @@ const Room = (() => {
       if (KM.down(keys, "right")) s += 1; if (KM.down(keys, "left")) s -= 1;
       if (keys.ArrowLeft) yaw += 1.8 * dt; if (keys.ArrowRight) yaw -= 1.8 * dt;
       if (KM.down(keys, "turnL")) yaw += 1.8 * dt; if (KM.down(keys, "turnR")) yaw -= 1.8 * dt;
-      f -= joy.y; s += joy.x;
-      const sp = (KM.down(keys, "run") ? 4.6 : 2.4) * dt;
+      f -= joy.y + gp.y; s += joy.x + gp.x;
+      const running_ = KM.down(keys, "run") || padRun, sp = (running_ ? 4.6 : 2.4) * dt;
+      // Schritte hörbar machen
+      const amt = Math.min(1, Math.hypot(f, s));
+      if (amt > .15) { stepAcc += dt * (running_ ? 2.9 : 2) * amt; if (stepAcc >= 1) { stepAcc = 0; SFX.fx.step(inCinema); } } else stepAcc = .6;
       pos.x += (-Math.sin(yaw) * f + Math.cos(yaw) * s) * sp;
       pos.z += (-Math.cos(yaw) * f - Math.sin(yaw) * s) * sp;
       clampPos();
@@ -4293,6 +4949,13 @@ const Room = (() => {
     const bob = (Math.abs(joy.x) + Math.abs(joy.y) + (mv ? 1 : 0)) ? Math.sin(t / 140) * .012 : 0;
     if (shared.neon) shared.neon.rotation.y = Math.sin(t / 2600) * .25;
     if (arcade && !inCinema && t - (arcade.last || 0) > 90 && Math.hypot(pos.x - 3.4, pos.z - 4.6) < 7) { arcade.last = t; arcade.draw(t); }
+    // Arcade piept leise, je näher man kommt; Musik läuft im Laden
+    SFX.music(!inCinema && !$("#ovArcade").classList.contains("open"));
+    if (!inCinema && t > nextBleep) {
+      const dx = 3.4 - pos.x, dzz = 4.6 - pos.z, d = Math.hypot(dx, dzz);
+      nextBleep = t + 700 + Math.random() * 1600;
+      if (d < 6.5 && !$("#ovArcade").classList.contains("open")) { const ang = Math.atan2(-dx, -dzz) - yaw; SFX.fx.bleep(-Math.sin(ang), .05 * Math.pow(1 - d / 6.5, 1.5)); }
+    }
     // Cover-Atlas höchstens alle 250 ms neu hochladen
     for (const u of units) { const A = u.atlas; if (A && A.dirty && t - A.last > 250) { A.tex.needsUpdate = true; A.dirty = false; A.last = t; } }
     // Nur den Bereich zeichnen, in dem man gerade ist (Laden oder Kino)
@@ -4303,6 +4966,7 @@ const Room = (() => {
     // Auflösung automatisch anpassen, wenn es ruckelt
     perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
     perf.fc = (perf.fc || 0) + 1; if (t - (perf.ft || 0) > 500) { const f = Math.round(perf.fc * 1000 / (t - (perf.ft || t - 500))); perf.fc = 0; perf.ft = t; const el = $("#roomFps"); if (el && el.classList.contains("show")) el.textContent = `${f} FPS · ${Math.round(perf.pr * 100)} % · ${quality.real ? "Realistisch" : "Schnell"}${perf.gpuShort ? " · " + perf.gpuShort : ""}`; }
+    if (perf.fixed) { perf.acc = 0; perf.n = 0; }
     if (perf.acc > 1.5) {
       const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
       // Ruckelt es: erst Auflösung leicht senken (nicht unter 85 %), dann lieber Effekte abschalten als pixelig werden
@@ -4313,7 +4977,8 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob);
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t);
+    if (machine && machine.drop > 0) { machine.drop = Math.max(0, machine.drop - dt * .9); machine.can.visible = machine.drop > 0; machine.can.position.y = .3 + Math.max(0, machine.drop - .6) * 2; }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -4335,19 +5000,20 @@ const Room = (() => {
     if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) enterCinema();
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
     if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
-    if (hemi) hemi.intensity = inCinema ? (lightsDim ? .04 : .35) : quality.real ? .42 : .95;
+    if (hemi) hemi.intensity = inCinema ? .35 - .31 * lk : (quality.real ? .42 : .95) * (gfx.daylight ? DAY[curPhase || "abend"].k : 1);
+    if (t - lastDayCheck > 30000) { lastDayCheck = t; dayNight(); }
     renderer.toneMappingExposure = quality.real && !inCinema ? 1.12 : 1.5;
-    if (scene.environment) scene.environmentIntensity = inCinema ? (lightsDim ? .015 : .1) : .22;
+    if (scene.environment) scene.environmentIntensity = inCinema ? .1 - .085 * lk : .22;
     const targetY = seated ? seated.row * RISE + 1.15 : benchSit ? 1.18 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
     camera.position.set(pos.x, eyeY + (seated ? 0 : bob), pos.z);
-    if (screenGlow) screenGlow.intensity = lightsDim ? 1.6 + Math.sin(t / 90) * .5 + Math.sin(t / 37) * .3 : 0;
+    if (inCinema) lightsTick(dt, t);
     camera.rotation.set(pitch, yaw, 0);
     if (Math.abs(camera.fov - zoom.target) > .01) { camera.fov += (zoom.target - camera.fov) * Math.min(1, dt * 12); camera.updateProjectionMatrix(); }
     if (zoom.hideAt && t > zoom.hideAt) { zoom.hideAt = 0; const z = $("#roomZoom"); if (z) z.classList.remove("show"); }
     if (!seated && (perf.n % 3 === 0)) aimCenter();
     if (!(t % 30 < 17)) startPrompt();
-    if (composer && quality.real && !inCinema) composer.render(dt); else renderer.render(scene, camera);
+    if (composer && quality.real && gfx.bloom && !inCinema) composer.render(dt); else renderer.render(scene, camera);
     if (inCinema && cssRenderer) cssRenderer.render(cssScene, camera);
   }
 
@@ -4379,7 +5045,9 @@ const Room = (() => {
     if (!renderer) { if (!TEX.wood_light) await loadTextures(); init(); }
     $("#roomGfx").textContent = quality.real ? "✨ Realistisch" : "⚡ Schnell";
     $("#roomKeys").onclick = () => KM.open();
-    $("#roomGfx").onclick = () => { setQuality(!quality.real); toast(quality.real ? "✨ Realistische Grafik: Licht, Schatten, Spiegelungen, Leuchten" : "⚡ Schnelle Grafik"); };
+    $("#roomSnd").onclick = () => { SFX.set("on", !SFX.get("on")); renderRoomSet(); if (SFX.get("on")) SFX.fx.click(); };
+    renderRoomSet();
+    $("#roomGfx").onclick = () => openRoomSet();
     resize();
     const touch = matchMedia("(pointer: coarse)").matches;
     $("#roomHelp").innerHTML = touch
@@ -4397,7 +5065,7 @@ const Room = (() => {
     await fill(); Shop.rebuild();
   }
   function close() {
-    standUp(); benchSit = false; Phone.hide(); Popcorn.hide();
+    SFX.music(false); standUp(); benchSit = false; Phone.hide(); Popcorn.hide(); Drink.hide(); Clerk.hide();
     if (fullByUs || document.fullscreenElement) goFull(false);
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
     if (document.pointerLockElement) document.exitPointerLock();
@@ -4416,7 +5084,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -4451,8 +5119,335 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "68";
+const APP_VERSION = "70";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
+// Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
+(() => {
+  const bar = document.getElementById("updBar"); if (!bar) return; let later = false;
+  const check = () => fetch("/api/update").then(r => r.json()).then(j => { if (j.ready && !later) bar.classList.add("show"); }).catch(() => {});
+  document.getElementById("updGo").onclick = async () => {
+    bar.querySelector("span").innerHTML = "⏳ Starte neu …";
+    try { await fetch("/api/update/restart", { method: "POST" }); } catch {}
+    setTimeout(() => { try { window.close(); } catch {} }, 1500);
+  };
+  document.getElementById("updLater").onclick = () => { later = true; bar.classList.remove("show"); setTimeout(() => later = false, 10 * 60000); };
+  check(); setInterval(check, 20000);
+})();
+/* ===================== Extras: Statistik, Assistent, Filmabend, Hinweise, Wecker, Hausaufgaben, Wetter ===================== */
+const Notify = (() => {
+  const LS = "watchlist-notified";
+  let sent = {}; try { sent = JSON.parse(localStorage.getItem(LS) || "{}"); } catch {}
+  const save = () => { try { const cut = Date.now() - 60 * 864e5; for (const k in sent) if (sent[k] < cut) delete sent[k]; localStorage.setItem(LS, JSON.stringify(sent)); } catch {} };
+  // Windows-Benachrichtigung (über das PC-Programm) + Hinweis in der App
+  async function show(title, body, opts = {}) {
+    if (opts.key) { if (sent[opts.key]) return false; sent[opts.key] = Date.now(); save(); }
+    toast(`${title} – ${body}`); try { SFX.fx[opts.sound || "notify"](); } catch {}
+    if (MODE === "server") api("POST", "/api/notify", { title, body }).catch(() => {});
+    return true;
+  }
+  const today = () => new Date().toISOString().slice(0, 10);
+  // Folgen, die heute erscheinen
+  function checkToday() {
+    const t = today();
+    for (const i of items) {
+      const n = i.nextAir; if (!n || !n.airDate || n.airDate !== t || i.status === "abgebrochen") continue;
+      show("🆕 Heute neue Folge", `${i.title} ${SE(n.season, n.episode)}${n.name ? " „" + n.name + "“" : ""}`, { key: `air:${i.id}:${n.season}:${n.episode}` });
+    }
+  }
+  setInterval(() => { if (typeof items !== "undefined" && items.length) checkToday(); }, 30 * 60e3);
+  setTimeout(() => { if (typeof items !== "undefined" && items.length) checkToday(); }, 15000);
+  return { show, checkToday };
+})();
+
+/* Wecker & Timer – laufen auch, wenn das Handy weggelegt ist */
+const Clock = (() => {
+  const LS = "watchlist-alarms";
+  let list = []; try { list = JSON.parse(localStorage.getItem(LS) || "[]"); } catch {}
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(list)); } catch {} };
+  function add(at, label, kind) { list.push({ id: Math.random().toString(36).slice(2), at, label, kind }); list.sort((a, b) => a.at - b.at); save(); }
+  function remove(id) { list = list.filter(a => a.id !== id); save(); }
+  function timer(min, label) { add(Date.now() + min * 60e3, label || `Timer ${min} Min.`, "timer"); }
+  function alarm(hhmm, label) {
+    const [h, m] = hhmm.split(":").map(Number), d = new Date(); d.setHours(h, m, 0, 0); if (d.getTime() <= Date.now() + 1000) d.setDate(d.getDate() + 1);
+    add(d.getTime(), label || "Wecker", "alarm"); return d;
+  }
+  setInterval(() => {
+    const now = Date.now(), due = list.filter(a => a.at <= now);
+    if (!due.length) return;
+    list = list.filter(a => a.at > now); save();
+    for (const a of due) Notify.show(a.kind === "timer" ? "⏲ Timer abgelaufen" : "⏰ Wecker", a.label, { sound: "alarm" });
+  }, 1000);
+  return { add, remove, timer, alarm, list: () => list };
+})();
+
+/* Hausaufgaben: eigene Einträge + Daten aus der Lernzentrale, mit Erinnerung */
+const HW = (() => {
+  const LS = "watchlist-homework";
+  let own = []; try { own = JSON.parse(localStorage.getItem(LS) || "[]"); } catch {}
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(own)); } catch {} };
+  let lz = null, lzAt = 0;
+  const iso = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+  const today = () => iso(new Date()), plus = n => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+  async function loadLZ(force) {
+    if (MODE !== "server") return null;
+    if (lz && !force && Date.now() - lzAt < 10 * 60e3) return lz;
+    try { lz = await api("GET", "/api/lernzentrale/data"); lzAt = Date.now(); } catch { lz = lz || {}; }
+    return lz;
+  }
+  // Einträge aus der Lernzentrale: Hausaufgaben (falls vorhanden) und Klassenarbeiten
+  function fromLZ() {
+    if (!lz) return { hw: [], exams: [] };
+    const subj = id => { const s = (lz.subjects || []).find(x => x.id === id || x.code === id || x.untis === id); return s ? s.name : id || ""; };
+    const hwRaw = [].concat(...["homework", "hausaufgaben", "aufgaben", "tasks", "todos"].map(k => Array.isArray(lz[k]) ? lz[k] : (lz[k] && Array.isArray(lz[k].items) ? lz[k].items : [])));
+    const hw = hwRaw.map(h => ({ id: "lz:" + (h.id || h.text || h.title), subject: subj(h.subject || h.fach), text: h.text || h.title || h.name || h.aufgabe || "", due: String(h.due || h.date || h.faellig || h.dueDate || "").slice(0, 10), done: !!(h.done || h.erledigt || h.completed), lz: true })).filter(h => h.text);
+    const exams = [...(lz.exams || []).map(e => ({ subject: subj(e.subject), text: e.topic || e.kind || "Klassenarbeit", date: String(e.date).slice(0, 10), kind: (e.kind || "Klassenarbeit").replace(/^./, c => c.toUpperCase()) })),
+      ...((lz.untis_exams || {}).items || []).map(e => ({ subject: e.name || subj(e.subject), text: e.text || e.type || "", date: String(e.date).slice(0, 10), kind: e.type || "Klassenarbeit" }))];
+    return { hw, exams };
+  }
+  function all() { const { hw } = fromLZ(); return [...own, ...hw].sort((a, b) => (a.done - b.done) || String(a.due).localeCompare(String(b.due))); }
+  function exams() { const t = today(); return fromLZ().exams.filter(e => e.date >= t).sort((a, b) => a.date.localeCompare(b.date)); }
+  function addOwn(subject, text, due) { own.push({ id: "own:" + Math.random().toString(36).slice(2), subject, text, due, done: false }); save(); }
+  function toggle(id) { const h = own.find(x => x.id === id); if (h) { h.done = !h.done; save(); } }
+  function del(id) { own = own.filter(x => x.id !== id); save(); }
+  // Erinnerung: nachmittags an Aufgaben für morgen, morgens an Klassenarbeiten in den nächsten Tagen
+  async function remind() {
+    await loadLZ();
+    const h = new Date().getHours(), t = today(), tm = plus(1);
+    if (h >= 15) {
+      const due = all().filter(x => !x.done && x.due === tm);
+      if (due.length) Notify.show("📚 Hausaufgaben für morgen", due.map(x => (x.subject ? x.subject + ": " : "") + x.text).join(" · "), { key: "hw:" + t });
+    }
+    if (h >= 7) {
+      const soon = exams().filter(e => e.date >= t && e.date <= plus(3));
+      for (const e of soon) { const d = Math.round((new Date(e.date + "T00:00:00") - new Date(t + "T00:00:00")) / 864e5);
+        Notify.show(`✏️ ${e.kind} ${d === 0 ? "heute" : d === 1 ? "morgen" : "in " + d + " Tagen"}`, `${e.subject}${e.text ? " – " + e.text : ""}`, { key: `ex:${e.date}:${e.subject}:${t}` }); }
+    }
+  }
+  setInterval(remind, 10 * 60e3); setTimeout(remind, 20000);
+  return { all, exams, addOwn, toggle, del, loadLZ, today, plus };
+})();
+
+/* Wetter über Open-Meteo (kostenlos, ohne Schlüssel) */
+const Weather = (() => {
+  const LS = "watchlist-city";
+  let city = null; try { city = JSON.parse(localStorage.getItem(LS) || "null"); } catch {}
+  let data = null, at = 0;
+  const WMO = { 0: ["☀️", "Klar"], 1: ["🌤", "Überwiegend klar"], 2: ["⛅", "Teils bewölkt"], 3: ["☁️", "Bewölkt"], 45: ["🌫", "Nebel"], 48: ["🌫", "Reifnebel"], 51: ["🌦", "Leichter Niesel"], 53: ["🌦", "Niesel"], 55: ["🌧", "Starker Niesel"], 61: ["🌦", "Leichter Regen"], 63: ["🌧", "Regen"], 65: ["🌧", "Starker Regen"], 66: ["🌧", "Eisregen"], 67: ["🌧", "Eisregen"], 71: ["🌨", "Leichter Schnee"], 73: ["🌨", "Schnee"], 75: ["❄️", "Starker Schnee"], 77: ["🌨", "Schneegriesel"], 80: ["🌦", "Regenschauer"], 81: ["🌧", "Regenschauer"], 82: ["⛈", "Starke Schauer"], 85: ["🌨", "Schneeschauer"], 86: ["❄️", "Schneeschauer"], 95: ["⛈", "Gewitter"], 96: ["⛈", "Gewitter mit Hagel"], 99: ["⛈", "Gewitter mit Hagel"] };
+  const w = c => WMO[c] || ["🌡", "–"];
+  async function setCity(name) {
+    const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?" + new URLSearchParams({ name, count: 1, language: "de" })).then(r => r.json());
+    const g = (r.results || [])[0]; if (!g) throw new Error(`„${name}“ nicht gefunden`);
+    city = { name: g.name, lat: g.latitude, lon: g.longitude, admin: g.admin1 || "" }; data = null;
+    try { localStorage.setItem(LS, JSON.stringify(city)); } catch {}
+    return city;
+  }
+  async function load(force) {
+    if (!city) return null;
+    if (data && !force && Date.now() - at < 15 * 60e3) return data;
+    const q = new URLSearchParams({ latitude: city.lat, longitude: city.lon, current: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m", hourly: "temperature_2m,weather_code,precipitation_probability", daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset", timezone: "auto", forecast_days: 7 });
+    data = await fetch("https://api.open-meteo.com/v1/forecast?" + q).then(r => { if (!r.ok) throw new Error("Wetterdienst nicht erreichbar"); return r.json(); }); at = Date.now();
+    return data;
+  }
+  function reset() { city = null; data = null; try { localStorage.removeItem(LS); } catch {} }
+  return { city: () => city, setCity, load, w, reset };
+})();
+
+/* Statistik & Jahresrückblick */
+const Stats = (() => {
+  const MON = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+  const epMin = i => i.kind === "anime" ? 24 : 45;
+  const hrs = m => m >= 600 ? Math.round(m / 60) + " Std." : (Math.round(m / 6) / 10).toLocaleString("de-DE") + " Std.";
+  function open() {
+    const y = String(new Date().getFullYear());
+    const shows = items.filter(isShow), films = items.filter(i => !isShow(i));
+    const seenFilms = films.filter(i => i.status === "gesehen");
+    const filmMin = seenFilms.reduce((a, i) => a + (i.runtime || 110), 0);
+    const eps = shows.reduce((a, i) => a + prog(i).w, 0), epsMin = shows.reduce((a, i) => a + prog(i).w * epMin(i), 0);
+    // Jahr: Folgen pro Monat aus dem Tagebuch, Filme nach Fertig-Datum
+    const mMin = Array(12).fill(0), mEps = Array(12).fill(0), mFilms = Array(12).fill(0), perShow = [];
+    for (const i of shows) { let n = 0; for (const [k, v] of Object.entries(i.log || {})) if (k.startsWith(y)) { const m = +k.slice(5, 7) - 1; mEps[m] += v; mMin[m] += v * epMin(i); n += v; } if (n) perShow.push([i, n]); }
+    for (const i of films) if ((i.done || "").startsWith(y)) { const m = +i.done.slice(5, 7) - 1; mFilms[m]++; mMin[m] += i.runtime || 110; }
+    const yMin = mMin.reduce((a, b) => a + b, 0), yEps = mEps.reduce((a, b) => a + b, 0), yFilms = mFilms.reduce((a, b) => a + b, 0);
+    const yDone = items.filter(i => (i.done || "").startsWith(y));
+    perShow.sort((a, b) => b[1] - a[1]);
+    const best = mMin.indexOf(Math.max(...mMin)), maxM = Math.max(1, ...mMin);
+    const kinds = [["film", "🎬 Filme", "#3b82f6"], ["serie", "📺 Serien", "#22c55e"], ["anime", "🎌 Anime", "#ec4899"]].map(([k, l, c]) => [l, items.filter(i => i.kind === k).length, c]);
+    const sts = Object.entries(STATUS).map(([k, l]) => [l, items.filter(i => i.status === k).length, `var(--${k})`]);
+    const prov = new Map(); for (const i of items.filter(i => i.status !== "geplant")) for (const p of streamProviders(i)) prov.set(p.name, (prov.get(p.name) || 0) + 1);
+    const topProv = [...prov.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const bars = (rows, total) => `<div class="stat-bars">${rows.map(([l, n, c]) => `<div class="stat-bar"><span>${esc(l)}</span><div><i style="width:${total ? n / total * 100 : 0}%;--c:${c || "var(--accent)"}"></i></div><b>${n}</b></div>`).join("")}</div>`;
+    const tile = (v, l) => `<div class="stat-tile"><b>${v}</b><span>${l}</span></div>`;
+    const hasLog = yMin > 0 || yDone.length > 0;
+    $("#statsBody").innerHTML = `
+      ${hasLog ? `<div class="wrapped"><h3>✨ Dein Jahr ${y}</h3>
+        <p>Du hast dieses Jahr ungefähr <b>${hrs(yMin)}</b> geschaut${yMin > 1440 ? ` – das sind <b>${(yMin / 1440).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Tage</b> am Stück` : ""}.</p>
+        <p>📺 ${yEps} Folge${yEps === 1 ? "" : "n"} · 🎬 ${yFilms} Film${yFilms === 1 ? "" : "e"} · ✅ ${yDone.length} Titel komplett geschaut</p>
+        ${perShow[0] ? `<p>🏆 Deine Serie des Jahres: <b>${esc(perShow[0][0].title)}</b> (${perShow[0][1]} Folgen)</p>` : ""}
+        ${yMin ? `<p>📅 Dein stärkster Monat: <b>${MON[best]}</b></p>` : ""}</div>` :
+        `<div class="hint" style="margin-bottom:14px">📅 Ab jetzt zählt das Programm mit, wann du was schaust – im Laufe des Jahres entsteht hier dein persönlicher Jahresrückblick.</div>`}
+      <div class="stat-tiles">
+        ${tile(items.length, "Titel auf der Liste")}${tile(seenFilms.length, "Filme gesehen")}${tile(eps, "Folgen gesehen")}
+        ${tile(hrs(filmMin + epsMin), "geschaut insgesamt (ca.)")}${tile(items.filter(i => i.status === "schaue").length, "schaust du gerade")}${tile(items.filter(i => i.status === "geplant").length, "warten noch auf dich")}
+      </div>
+      <div class="stat-h">Stunden pro Monat ${y} <small>(Folgen + Filme, geschätzt)</small></div>
+      <div class="stat-months">${mMin.map(m => `<div>${m ? `<em>${Math.round(m / 60)}</em>` : ""}<i style="height:${m / maxM * 100}%"></i></div>`).join("")}</div>
+      <div class="stat-mlab">${MON.map(m => `<span>${m}</span>`).join("")}</div>
+      ${perShow.length ? `<div class="stat-h">Meistgeschaut ${y}</div><div class="stat-top">${perShow.slice(0, 8).map(([i, n]) => `<div>${i.poster ? `<img src="${esc(i.poster)}" alt="">` : ""}${esc(i.title)}<br><b>${n} Folgen</b></div>`).join("")}</div>` : ""}
+      <div class="stat-h">Deine Liste</div>${bars(kinds, items.length)}<div style="height:10px"></div>${bars(sts, items.length)}
+      ${topProv.length ? `<div class="stat-h">Wo du schaust <small>(Dienste deiner geschauten Titel)</small></div>${bars(topProv.map(([n, c]) => [n, c, (svcInfo(n) || {}).c]), topProv[0][1])}` : ""}`;
+    $("#ovStats").classList.add("open");
+  }
+  return { open };
+})();
+
+/* „Was gucke ich heute?“ */
+const Pick = (() => {
+  const MOODS = [["laugh", "😂 Lachen", "35", "35"], ["thrill", "😱 Spannung", "53|28|80", "80|9648|10759"], ["scary", "👻 Gruseln", "27", "9648"], ["feel", "🥹 Gefühle", "18|10749", "18"], ["adv", "🚀 Abenteuer", "12|14|878", "10765|10759"], ["mind", "🧠 Nachdenken", "99|9648|36", "99|9648"], ["any", "🤷 Egal", "", ""]];
+  const TIME = [["short", "⏱ Unter 30 Min."], ["mid", "🕐 Etwa 1,5 Std."], ["long", "🌙 Ganzer Abend"]];
+  const WHO = [["solo", "🙋 Allein"], ["friends", "👯 Mit Freunden"], ["family", "👨‍👩‍👧 Familie"], ["date", "💞 Date"]];
+  const SRC = [["list", "📋 Aus meiner Liste"], ["new", "✨ Etwas Neues"]];
+  const st = { mood: "any", time: "mid", who: "solo", src: "list" };
+  const genreCache = new Map();
+  const q = (t, key, opts) => `<div class="pk-q"><h4>${t}</h4><div class="pk-opts">${opts.map(([k, l]) => `<button data-k="${key}" data-v="${k}" class="${st[key] === k ? "on" : ""}">${l}</button>`).join("")}</div></div>`;
+  function render() {
+    $("#pickBody").innerHTML = q("Worauf hast du Lust?", "mood", MOODS) + q("Wie viel Zeit hast du?", "time", TIME) + q("Mit wem schaust du?", "who", WHO) + q("Woher?", "src", SRC) +
+      `<button class="btn primary" id="pkGo" style="font-size:1.05em">🎯 Vorschläge zeigen</button><div id="pkRes"></div>`;
+    $("#pickBody").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { st[b.dataset.k] = b.dataset.v; render(); });
+    $("#pkGo").onclick = run;
+  }
+  const mood = () => MOODS.find(m => m[0] === st.mood);
+  function wantGenres(tv) {
+    let g = mood()[tv ? 3 : 2];
+    if (!g && st.who === "family") g = tv ? "10751|16" : "10751|16|12";
+    if (!g && st.who === "date") g = tv ? "35|18" : "10749|35";
+    return g;
+  }
+  async function genresOf(i) {
+    const k = i.mediaType + i.tmdbId; if (genreCache.has(k)) return genreCache.get(k);
+    let g = []; try { const r = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}`, language: "de-DE" })); g = (r.genres || []).map(x => x.id); if (!i.runtime && r.runtime) i.runtime = r.runtime; } catch {}
+    genreCache.set(k, g); return g;
+  }
+  async function run() {
+    const box = $("#pkRes"); box.innerHTML = `<div class="hint" style="margin-top:14px"><span class="spin"></span> Suche passende Titel …</div>`;
+    try { const res = st.src === "list" ? await fromList() : await fromNew(); show(res); }
+    catch (e) { box.innerHTML = `<div class="hint" style="margin-top:14px">⚠ ${esc(e.message)}</div>`; }
+  }
+  async function fromList() {
+    let c = items.filter(i => i.status === "geplant" || i.status === "schaue");
+    if (st.time === "short") c = c.filter(i => isShow(i) || (i.runtime && i.runtime <= 35));
+    if (st.time === "mid") c = c.filter(i => isShow(i) || !i.runtime || i.runtime <= 125);
+    if (!c.length) throw new Error("Auf deiner Liste passt gerade nichts dazu – probier „✨ Etwas Neues“.");
+    c = c.slice().sort(() => Math.random() - .5).slice(0, 30);
+    const scored = await Promise.all(c.map(async i => {
+      let s = Math.random() * .8; const reasons = [];
+      if (i.tmdbId && i.mediaType) {
+        const g = await genresOf(i), want = (wantGenres(i.mediaType === "tv") || "").split("|").filter(Boolean).map(Number);
+        if (want.length && g.some(x => want.includes(x))) { s += 3; reasons.push(mood()[1]); }
+        if (st.who === "family" && g.includes(27)) s -= 5;
+      }
+      if (i.status === "schaue") { s += 1.5; const n = nextEp(i); if (n) reasons.push(`weiter mit ${SE(n.s, n.e)}`); }
+      const mine = onMyServices(i); if (mine.length) { s += 1; reasons.push("bei " + mine[0]); }
+      if (!isShow(i) && i.runtime) reasons.push(fmtDur(i.runtime));
+      if (st.time === "long" && isShow(i)) { s += .5; reasons.push("perfekt zum Durchschauen"); }
+      return { s, i, why: reasons.join(" · ") };
+    }));
+    return scored.sort((a, b) => b.s - a.s).slice(0, 3).map(x => ({ title: x.i.title, poster: x.i.poster, sub: `${KINDS[x.i.kind] || ""}${x.i.year ? " · " + x.i.year : ""}`, why: x.why, id: x.i.id }));
+  }
+  async function fromNew() {
+    const types = st.time === "short" ? ["tv"] : st.time === "mid" ? ["movie"] : ["movie", "tv"], out = [];
+    const region = settings.region || "DE";
+    let prov = []; try { prov = await Shop.provIds(); } catch {}
+    for (const t of types) {
+      const p = { language: "de-DE", sort_by: "popularity.desc", "vote_count.gte": t === "tv" ? 150 : 400, "vote_average.gte": 6.3, watch_region: region, page: 1 + Math.floor(Math.random() * 3), include_adult: "false" };
+      const g = wantGenres(t === "tv"); if (g) p.with_genres = g;
+      if (st.who === "family") p.without_genres = "27|53";
+      if (t === "movie" && st.time === "mid") p["with_runtime.lte"] = 115;
+      if (prov.length) Object.assign(p, { with_watch_providers: prov.join("|"), with_watch_monetization_types: "flatrate|free|ads" });
+      const r = await api("GET", "/api/tmdb?" + new URLSearchParams(Object.assign({ path: `/discover/${t}` }, p)));
+      out.push(...(r.results || []).map(x => Shop.toR(x, t)).filter(x => x.poster && !Shop.onList(x)));
+    }
+    if (!out.length) throw new Error("Nichts gefunden – probier eine andere Stimmung.");
+    return out.sort(() => Math.random() - .5).slice(0, 3).map(r => ({ title: r.title, poster: r.poster, sub: `${KINDS[r.kind] || ""}${r.year ? " · " + r.year : ""} · ⭐ ${(r.vote || 0).toFixed(1)}`, why: (mood()[0] !== "any" ? mood()[1] + " · " : "") + (prov.length ? "in deinen Abos" : "beliebt"), r }));
+  }
+  function show(res) {
+    const box = $("#pkRes");
+    box.innerHTML = `<div class="pk-res">${res.map((x, k) => `<button class="pk-card" data-i="${k}"><img src="${esc(x.poster || "")}" alt=""><span><b>${esc(x.title)}</b><small>${esc(x.sub)}</small><em>${esc(x.why || "")}</em></span></button>`).join("")}</div>
+      <div style="margin-top:12px"><button class="btn" id="pkAgain">🔁 Andere Vorschläge</button></div>`;
+    box.querySelectorAll("[data-i]").forEach(b => b.onclick = () => { const x = res[+b.dataset.i]; $("#ovPick").classList.remove("open"); if (x.id) openDetail(x.id); else Shop.openItem(x.r); });
+    $("#pkAgain").onclick = run;
+  }
+  function open() { render(); $("#ovPick").classList.add("open"); }
+  return { open };
+})();
+
+/* Filmabend: Mehrere stimmen nacheinander am selben Gerät ab */
+const Night = (() => {
+  let players = [], cand = [], votes = {}, pi = 0, ci = 0, src = "list";
+  try { players = JSON.parse(localStorage.getItem("watchlist-night-players") || "[]"); } catch {}
+  const body = () => $("#nightBody");
+  function setup() {
+    body().innerHTML = `<p class="hint" style="margin-top:0">Jeder stimmt nacheinander am selben Gerät ab – die anderen schauen weg 🙈. Am Ende gewinnt der Titel mit den meisten Punkten.</p>
+      <div class="field"><label>Wer ist dabei?</label><div class="row"><input class="inp" id="ntName" placeholder="Name eingeben und Enter" style="flex:1"><button class="btn" id="ntAdd">+ Dazu</button></div>
+      <div class="nt-players">${players.map((p, k) => `<span>${esc(p)}<button data-del="${k}" title="Entfernen">✕</button></span>`).join("") || `<span style="opacity:.6">Noch niemand – mindestens 2 Leute</span>`}</div></div>
+      <div class="field"><label>Zur Auswahl stehen …</label><div class="pk-opts">${[["list", "📋 Titel von meiner Liste"], ["pop", "🔥 Beliebt in deinen Abos"], ["mix", "🎲 Gemischt"]].map(([k, l]) => `<button data-src="${k}" class="${src === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
+      <button class="btn primary" id="ntGo" ${players.length < 2 ? "disabled" : ""} style="font-size:1.05em">🍿 Abstimmung starten</button>`;
+    const add = () => { const v = $("#ntName").value.trim(); if (v && !players.includes(v) && players.length < 8) { players.push(v); savePl(); } setup(); setTimeout(() => $("#ntName").focus(), 0); };
+    $("#ntAdd").onclick = add; $("#ntName").onkeydown = e => { if (e.key === "Enter") add(); };
+    body().querySelectorAll("[data-del]").forEach(b => b.onclick = () => { players.splice(+b.dataset.del, 1); savePl(); setup(); });
+    body().querySelectorAll("[data-src]").forEach(b => b.onclick = () => { src = b.dataset.src; setup(); });
+    $("#ntGo").onclick = start;
+  }
+  const savePl = () => { try { localStorage.setItem("watchlist-night-players", JSON.stringify(players)); } catch {} };
+  async function start() {
+    body().innerHTML = `<div class="hint"><span class="spin"></span> Stelle die Auswahl zusammen …</div>`;
+    const mine = items.filter(i => i.status === "geplant" && i.poster).sort(() => Math.random() - .5).map(i => ({ title: i.title, poster: i.poster, year: i.year, kind: i.kind, overview: i.overview, id: i.id }));
+    let pop = [];
+    if (src !== "list") { try { const sh = Shop.shelves()[0]; pop = (await Shop.fetchShelf(sh, 1 + Math.floor(Math.random() * 2))).filter(r => !Shop.onList(r)).sort(() => Math.random() - .5).map(r => ({ title: r.title, poster: r.poster, year: r.year, kind: r.kind, overview: r.overview, r })); } catch {} }
+    cand = (src === "list" ? mine : src === "pop" ? pop : [...mine.slice(0, 3), ...pop.slice(0, 3)]).slice(0, 6);
+    if (cand.length < 2) cand = [...mine, ...pop].slice(0, 6);
+    if (cand.length < 2) { body().innerHTML = `<div class="hint">Zu wenige Titel – setz ein paar Titel auf „Geplant“ oder wähle „Beliebt“.</div><button class="btn" id="ntBack">← Zurück</button>`; $("#ntBack").onclick = setup; return; }
+    votes = {}; pi = 0; pass();
+  }
+  function pass() {
+    ci = 0;
+    body().innerHTML = `<div class="nt-pass">📱<b>Gib das Gerät an ${esc(players[pi])}</b><span class="hint">${pi + 1}. von ${players.length} · ${cand.length} Titel zur Auswahl</span><br><br><button class="btn primary" id="ntMe">Ich bin ${esc(players[pi])} – los!</button></div>`;
+    $("#ntMe").onclick = vote;
+  }
+  function vote() {
+    const c = cand[ci];
+    body().innerHTML = `<div class="hint" style="margin:0 0 10px">${esc(players[pi])} · Titel ${ci + 1} von ${cand.length}</div>
+      <div class="nt-vote"><img src="${esc((c.poster || "").replace("/w185/", "/w342/"))}" alt=""><div><h3 style="margin:0">${esc(c.title)} ${c.year ? `<small style="opacity:.6">(${esc(c.year)})</small>` : ""}</h3><div class="hint">${KINDS[c.kind] || ""}</div>
+      <p style="line-height:1.5;opacity:.9">${esc((c.overview || "Keine Beschreibung.").slice(0, 420))}${(c.overview || "").length > 420 ? " …" : ""}</p>
+      <div class="nt-btns"><button class="btn" data-s="0">❌ Nein <small>(1)</small></button><button class="btn" data-s="1">👍 Gerne <small>(2)</small></button><button class="btn primary" data-s="2">❤️ Unbedingt <small>(3)</small></button></div></div></div>`;
+    body().querySelectorAll("[data-s]").forEach(b => b.onclick = () => put(+b.dataset.s));
+  }
+  function put(sc) {
+    (votes[ci] = votes[ci] || []).push(sc); try { SFX.fx.click(); } catch {}
+    if (++ci < cand.length) return vote();
+    if (++pi < players.length) return pass();
+    result();
+  }
+  addEventListener("keydown", e => { if (!$("#ovNight").classList.contains("open") || !body().querySelector(".nt-vote")) return; const k = { "1": 0, "2": 1, "3": 2 }[e.key]; if (k != null) { e.preventDefault(); put(k); } });
+  function result() {
+    const rows = cand.map((c, k) => { const v = votes[k] || []; return { c, pts: v.reduce((a, b) => a + b, 0), hearts: v.filter(x => x === 2).length, no: v.filter(x => x === 0).length, r: Math.random() }; })
+      .sort((a, b) => b.pts - a.pts || b.hearts - a.hearts || a.no - b.no || a.r - b.r);
+    try { SFX.fx.dice(); } catch {}
+    const w = rows[0];
+    body().innerHTML = `<div class="wrapped" style="display:flex;gap:16px;align-items:center"><img src="${esc((w.c.poster || "").replace("/w185/", "/w342/"))}" alt="" style="width:110px;border-radius:10px"><div><h3>🎉 Heute schaut ihr: ${esc(w.c.title)}</h3><p>${w.pts} Punkte · ${w.hearts}× ❤️${w.no ? " · " + w.no + "× ❌" : ""}</p><div class="row" style="margin-top:10px"><button class="btn primary" id="ntOpen">Details ansehen</button><button class="btn" id="ntAgain">🔁 Neue Runde</button></div></div></div>
+      <div class="nt-rank">${rows.map((x, k) => `<div class="nt-row ${k ? "" : "win"}"><b>${k + 1}.</b><img src="${esc(x.c.poster || "")}" alt=""><span>${esc(x.c.title)}</span><span>${x.pts} Pkt. ${"❤️".repeat(x.hearts)}</span></div>`).join("")}</div>`;
+    $("#ntOpen").onclick = () => { $("#ovNight").classList.remove("open"); if (w.c.id) openDetail(w.c.id); else Shop.openItem(w.c.r); };
+    $("#ntAgain").onclick = setup;
+  }
+  function open() { setup(); $("#ovNight").classList.add("open"); }
+  return { open };
+})();
+
+document.addEventListener("click", e => {
+  const t = e.target.closest && e.target.closest("#btnStats, #btnPick, #btnNight");
+  if (!t) return;
+  if (t.id === "btnStats") Stats.open(); else if (t.id === "btnPick") Pick.open(); else Night.open();
+});
+
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
   const DESC = "Meine Watchlist – Abgleich (bitte nicht löschen)", LKEY = "watchlist-sync-local";
