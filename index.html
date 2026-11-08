@@ -2953,64 +2953,164 @@ const Room = (() => {
   }
   function arcadeCabinet(x, z, rot) {
     const g = new T.Group();
-    const side = canvasTex(256, 512, (c, w, hh) => {
-      const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, "#111a2e"); gr.addColorStop(1, "#0b0f1a"); c.fillStyle = gr; c.fillRect(0, 0, w, hh);
-      const glow = c.createRadialGradient(w / 2, 0, 10, w / 2, 0, 260); glow.addColorStop(0, "rgba(34,211,238,.35)"); glow.addColorStop(1, "rgba(34,211,238,0)"); c.fillStyle = glow; c.fillRect(0, 0, w, hh);
-      c.strokeStyle = "rgba(34,211,238,.35)"; c.lineWidth = 2;
-      for (let y = hh * .55; y < hh; y += 22) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
-      for (let i = -6; i <= 6; i++) { c.beginPath(); c.moveTo(w / 2 + i * 14, hh * .55); c.lineTo(w / 2 + i * 70, hh); c.stroke(); }
-      c.fillStyle = "rgba(167,139,250,.5)"; c.fillRect(0, hh * .55 - 3, w, 3);
-      c.save(); c.translate(w / 2, hh * .3); c.rotate(-Math.PI / 2); c.font = "bold 64px Courier New, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
-      c.fillStyle = chrome(c, -32, 32); c.fillText("ARCADE", 0, 0); c.restore();
+    // Seitenprofil eines klassischen Automaten (z = vorne, y = oben)
+    const P = [[-.36, 0], [.36, 0], [.36, .84], [.5, .93], [.5, 1.0], [.25, 1.09], [.07, 1.73], [.17, 1.79], [.17, 2.11], [-.28, 2.15], [-.36, 2.02]];
+    const shape = new T.Shape(); P.forEach(([pz, py], i) => i ? shape.lineTo(pz, py) : shape.moveTo(pz, py)); shape.closePath();
+    const prof = depth => { const geo = new T.ExtrudeGeometry(shape, { depth, bevelEnabled: false }); geo.rotateY(-Math.PI / 2); return geo; };
+    // Seitenwände: Synthwave-Motiv (ohne Schrift, damit beide Seiten richtig herum aussehen)
+    const art = canvasTex(512, 1280, (c, w, h) => {
+      const sky = c.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#05030f"); sky.addColorStop(.42, "#2a0b4a"); sky.addColorStop(.6, "#7a1d6b"); sky.addColorStop(.62, "#0b0f1a"); sky.addColorStop(1, "#05070d");
+      c.fillStyle = sky; c.fillRect(0, 0, w, h);
+      for (let i = 0; i < 260; i++) { c.fillStyle = `rgba(255,255,255,${Math.random() * .8})`; const sz = Math.random() < .1 ? 3 : 1.5; c.fillRect(Math.random() * w, Math.random() * h * .55, sz, sz); }
+      // Sonne mit Streifen
+      const sy = h * .5, sr = 150, sun = c.createLinearGradient(0, sy - sr, 0, sy + sr * .4); sun.addColorStop(0, "#ffe66b"); sun.addColorStop(.6, "#ff5c8a"); sun.addColorStop(1, "#b5179e");
+      c.save(); c.beginPath(); c.arc(w / 2, sy, sr, 0, Math.PI * 2); c.clip(); c.fillStyle = sun; c.fillRect(0, sy - sr, w, sr * 2);
+      c.fillStyle = "#2a0b4a"; for (let k = 0; k < 7; k++) c.fillRect(0, sy + 12 + k * 20, w, 4 + k * 1.6); c.restore();
+      // Berge
+      c.fillStyle = "#14061f"; c.beginPath(); c.moveTo(0, h * .62); [[.1, .55], [.22, .59], [.35, .5], [.5, .6], [.64, .53], [.8, .58], [.92, .52], [1, .57]].forEach(([px, py]) => c.lineTo(px * w, py * h)); c.lineTo(w, h * .62); c.fill();
+      c.strokeStyle = "rgba(255,92,138,.6)"; c.lineWidth = 2; c.stroke();
+      // Gitterboden
+      c.strokeStyle = "rgba(34,211,238,.55)"; c.lineWidth = 2; const hz = h * .62;
+      for (let k = 1; k < 14; k++) { const y = hz + Math.pow(k / 13, 1.8) * (h - hz); c.globalAlpha = .3 + k / 20; c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+      c.globalAlpha = .7; for (let i = -10; i <= 10; i++) { c.beginPath(); c.moveTo(w / 2 + i * 12, hz); c.lineTo(w / 2 + i * 90, h); c.stroke(); } c.globalAlpha = 1;
+      // Neon-Zierstreifen
+      for (const [y, col] of [[h * .2, "#22d3ee"], [h * .215, "#a78bfa"], [h * .23, "#ff5c8a"]]) { c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 12; c.fillRect(0, y, w, 6); }
+      c.shadowBlur = 0;
+      // kleines Pixel-Raumschiff
+      const ship = ["....##....", "...####...", "..##..##..", ".########.", "##.####.##", "#..#..#..#"];
+      c.fillStyle = "#2cff8a"; ship.forEach((r, yy) => [...r].forEach((ch, xx) => { if (ch === "#") c.fillRect(w * .62 + xx * 9, h * .3 + yy * 9, 8, 8); }));
     });
-    const body = new T.MeshLambertMaterial({ color: 0x111a2e }), sideM = new T.MeshLambertMaterial({ map: side }), black = new T.MeshLambertMaterial({ color: 0x04060c });
-    const mats = [sideM, sideM, body, body, body, body];
-    const lower = new T.Mesh(new T.BoxGeometry(.78, 1.0, .72), mats); lower.position.set(0, .5, 0); g.add(lower);
-    const upper = new T.Mesh(new T.BoxGeometry(.78, 1.0, .46), mats); upper.position.set(0, 1.5, -.13); g.add(upper);
-    // Bildschirm: Hauptmenü mit allen Spielen
-    const cv = document.createElement("canvas"); cv.width = 320; cv.height = 256;
-    const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace;
-    const bezel = new T.Mesh(new T.BoxGeometry(.7, .58, .03), black); bezel.position.set(0, 1.45, .105); bezel.rotation.x = -.18; g.add(bezel);
-    const screen = new T.Mesh(new T.PlaneGeometry(.62, .496), new T.MeshBasicMaterial({ map: tex })); screen.position.set(0, 1.45, .123); screen.rotation.x = -.18; g.add(screen);
-    // Bedienfeld
-    const panel = new T.Mesh(new T.BoxGeometry(.78, .07, .34), new T.MeshLambertMaterial({ color: 0x0e7490 })); panel.position.set(0, 1.04, .26); panel.rotation.x = .3; g.add(panel);
-    const stick = new T.Mesh(new T.CylinderGeometry(.012, .012, .12), black); stick.position.set(-.18, 1.12, .27); g.add(stick);
-    const ball = new T.Mesh(new T.SphereGeometry(.035, 12, 10), new T.MeshLambertMaterial({ color: 0xa78bfa })); ball.position.set(-.18, 1.18, .27); g.add(ball);
-    for (const [bx, col] of [[.04, 0x22d3ee], [.15, 0x2cff8a], [.26, 0xa78bfa]]) { const b = new T.Mesh(new T.CylinderGeometry(.03, .03, .03, 16), new T.MeshBasicMaterial({ color: col })); b.position.set(bx, 1.09, .29); b.rotation.x = .3; g.add(b); }
-    // Leuchtschild „ARCADE“ im Chrom-Look
-    const marq = canvasTex(512, 160, (c, w, hh) => {
-      c.fillStyle = "#0b0f1a"; c.fillRect(0, 0, w, hh);
-      const glow = c.createRadialGradient(w / 2, hh / 2, 10, w / 2, hh / 2, w / 2); glow.addColorStop(0, "rgba(34,211,238,.35)"); glow.addColorStop(1, "rgba(34,211,238,0)"); c.fillStyle = glow; c.fillRect(0, 0, w, hh);
-      c.font = "bold 96px Courier New, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
-      c.shadowColor = "#2cff8a"; c.shadowBlur = 24; c.fillStyle = chrome(c, hh / 2 - 40, hh / 2 + 40); c.fillText("ARCADE", w / 2, hh / 2 + 6);
-      c.shadowBlur = 0; c.fillStyle = "#22d3ee"; c.fillRect(20, hh - 14, w - 40, 4);
+    art.repeat.set(1 / .86, 1 / 2.15); art.offset.set(.36 / .86, 0);
+    const artM = pbr(new T.MeshLambertMaterial({ map: art }), .32, 0);
+    const trim = new T.MeshBasicMaterial({ color: 0x22d3ee, toneMapped: false }); // leuchtende T-Kante
+    const bodyM = pbr(new T.MeshLambertMaterial({ color: 0x0a0e18 }), .45, 0), black = pbr(new T.MeshLambertMaterial({ color: 0x030408 }), .2, 0);
+    const metal = pbr(new T.MeshLambertMaterial({ color: 0xb8bec8 }), .28, .9);
+    const core = new T.Mesh(prof(.72), [bodyM, bodyM]); core.position.x = .36; g.add(core);
+    const sideL = new T.Mesh(prof(.03), [artM, trim]); sideL.position.x = -.36; g.add(sideL);
+    const sideR = new T.Mesh(prof(.03), [artM, trim]); sideR.position.x = .39; g.add(sideR);
+    // Hilfsfunktion: Fläche auf ein Profil-Segment legen (Normalenrichtung nach außen)
+    const onSeg = (m, i, off = .002) => {
+      const [z0, y0] = P[i], [z1, y1] = P[i + 1], dz = z1 - z0, dy = y1 - y0, L = Math.hypot(dz, dy);
+      const nz = dy / L, ny = -dz / L; // nach außen
+      m.position.set(0, (y0 + y1) / 2 + ny * off, (z0 + z1) / 2 + nz * off); m.rotation.x = Math.atan2(-ny, nz); return L;
+    };
+    // Front unten: Tür mit zwei beleuchteten Münzschlitzen
+    const front = canvasTex(512, 600, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#111a2e"); gr.addColorStop(1, "#070a12"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.strokeStyle = "rgba(34,211,238,.25)"; c.lineWidth = 3; c.strokeRect(14, 14, w - 28, h - 28);
+      // Münztür (gebürstetes Metall)
+      const dx = w * .27, dy = h * .14, dw = w * .46, dh = h * .5;
+      const mg = c.createLinearGradient(dx, 0, dx + dw, 0); mg.addColorStop(0, "#5d636d"); mg.addColorStop(.5, "#b9c0ca"); mg.addColorStop(1, "#4f555e");
+      c.fillStyle = "#020306"; c.fillRect(dx - 6, dy - 6, dw + 12, dh + 12); c.fillStyle = mg; c.fillRect(dx, dy, dw, dh);
+      for (let y = dy; y < dy + dh; y += 2) { c.fillStyle = `rgba(255,255,255,${Math.random() * .06})`; c.fillRect(dx, y, dw, 1); }
+      for (let k = 0; k < 2; k++) {
+        const cx = dx + dw * (.3 + k * .4), cy = dy + dh * .3;
+        c.fillStyle = "#1a1d22"; c.fillRect(cx - 34, cy - 46, 68, 92); c.fillStyle = "#ff3b2f"; c.fillRect(cx - 24, cy - 36, 48, 36);
+        c.fillStyle = "#fff"; c.font = "bold 22px Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("1 €", cx, cy - 18);
+        c.fillStyle = "#000"; c.fillRect(cx - 3, cy + 6, 6, 30);
+      }
+      c.fillStyle = "#2b2f35"; c.beginPath(); c.arc(dx + dw / 2, dy + dh * .78, 14, 0, Math.PI * 2); c.fill(); c.fillStyle = "#8a9099"; c.fillRect(dx + dw / 2 - 2, dy + dh * .78 - 10, 4, 20);
+      c.fillStyle = "#14161a"; c.fillRect(dx + dw * .2, dy + dh * .9, dw * .6, 10);
+      // Lüftungsgitter + Schriftzug
+      c.fillStyle = "#020306"; for (let k = 0; k < 9; k++) c.fillRect(w * .2, h * .74 + k * 12, w * .6, 6);
+      c.font = "bold 30px Courier New, monospace"; c.textAlign = "center"; c.fillStyle = "#2cff8a"; c.shadowColor = "#2cff8a"; c.shadowBlur = 14; c.fillText("INSERT COIN", w / 2, h * .69); c.shadowBlur = 0;
     });
-    const marquee = new T.Mesh(new T.BoxGeometry(.78, .22, .3), [black, black, black, black, new T.MeshBasicMaterial({ map: marq }), black]); marquee.position.set(0, 2.1, -.05); g.add(marquee);
-    const coin = new T.Mesh(new T.PlaneGeometry(.16, .1), new T.MeshBasicMaterial({ color: 0x22d3ee })); coin.position.set(0, .62, .361); g.add(coin);
+    const frontM = pbr(new T.MeshLambertMaterial({ map: front }), .4, 0, 1.2);
+    const fr = new T.Mesh(new T.PlaneGeometry(.72, 1), frontM); fr.scale.y = onSeg(fr, 1); g.add(fr);
+    // Leuchtende Münzschlitze (für Bloom)
+    for (const k of [0, 1]) { const sl = new T.Mesh(new T.PlaneGeometry(.066, .05), new T.MeshBasicMaterial({ color: 0xff3b2f, toneMapped: false })); sl.position.set(-.72 / 2 + .72 * (.27 + .46 * (.3 + k * .4)), .84 - .84 * (.14 + .5 * .3) + .025, .3645); g.add(sl); }
+    // Bedienfeld-Vorderkante und -fläche
+    const lip = new T.Mesh(new T.PlaneGeometry(.72, 1), black); lip.scale.y = onSeg(lip, 2); g.add(lip);
+    const lip2 = new T.Mesh(new T.PlaneGeometry(.72, 1), new T.MeshBasicMaterial({ color: 0x22d3ee, toneMapped: false })); lip2.scale.y = onSeg(lip2, 3) * .25; g.add(lip2);
+    const cp = canvasTex(720, 272, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#123a4a"); gr.addColorStop(1, "#0b1622"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.strokeStyle = "rgba(34,211,238,.5)"; c.lineWidth = 3; c.strokeRect(8, 8, w - 16, h - 16);
+      for (let i = 0; i < 40; i++) { c.strokeStyle = `rgba(167,139,250,${.05 + Math.random() * .08})`; c.beginPath(); const y = Math.random() * h; c.moveTo(0, y); c.lineTo(w, y + 60); c.stroke(); }
+      c.fillStyle = "rgba(255,255,255,.75)"; c.font = "bold 18px Courier New, monospace"; c.textAlign = "center";
+      c.fillText("1P", w * .2, h * .12 + 10); c.fillText("START", w * .5, h * .12 + 10);
+      c.strokeStyle = "rgba(255,255,255,.18)"; c.lineWidth = 2; c.beginPath(); c.arc(w * .2, h * .55, 70, 0, Math.PI * 2); c.stroke();
+    });
+    const panel = new T.Mesh(new T.PlaneGeometry(.72, 1), pbr(new T.MeshLambertMaterial({ map: cp }), .25, 0)); const pl = onSeg(panel, 4); panel.scale.y = pl; g.add(panel);
+    // Bedienelemente in einer Gruppe, die auf der Bedienfläche liegt (y = Flächennormale)
+    const pg = new T.Group(); onSeg(pg, 4, .0); pg.rotation.x += Math.PI / 2; g.add(pg);
+    // Joystick: Platte, Staubscheibe, Stange, Kugelkopf
+    const jx = -.72 * .3, jz = 0;
+    const plate = new T.Mesh(new T.CylinderGeometry(.045, .05, .006, 24), black); plate.position.set(jx, .003, jz); pg.add(plate);
+    const shaft = new T.Mesh(new T.CylinderGeometry(.007, .009, .085, 12), metal); shaft.position.set(jx, .045, jz); pg.add(shaft);
+    const ballM = pbr(new T.MeshLambertMaterial({ color: 0xff2c4a, emissive: 0x2a0006 }), .18, 0);
+    const knob = new T.Mesh(new T.SphereGeometry(.03, 24, 16), ballM); knob.position.set(jx, .095, jz); pg.add(knob);
+    // 6 Knöpfe in zwei Reihen + Start
+    const cols = [0xff3b5c, 0xffd23f, 0x2cff8a, 0x22d3ee, 0xa78bfa, 0xff8a3d];
+    cols.forEach((col, i) => {
+      const bx = .02 + (i % 3) * .085 + (i < 3 ? 0 : .02), bz = (i < 3 ? -.04 : .045);
+      const rim = new T.Mesh(new T.CylinderGeometry(.03, .031, .012, 24), black); rim.position.set(bx, .006, bz); pg.add(rim);
+      const cap = new T.Mesh(new T.CylinderGeometry(.024, .024, .02, 24), pbr(new T.MeshLambertMaterial({ color: col, emissive: new T.Color(col).multiplyScalar(.25) }), .22, 0)); cap.position.set(bx, .016, bz); pg.add(cap);
+      const hi = new T.Mesh(new T.CircleGeometry(.012, 16), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .28 })); hi.rotation.x = -Math.PI / 2; hi.position.set(bx - .006, .0265, bz - .006); pg.add(hi);
+    });
+    for (const sx of [-.03, .03]) { const st = new T.Mesh(new T.CylinderGeometry(.013, .013, .012, 16), new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false })); st.position.set(sx, .005, -.095); pg.add(st); }
+    // Bildschirm-Einfassung + gewölbter Röhrenbildschirm + Glas
+    const bz = canvasTex(512, 470, (c, w, h) => {
+      c.fillStyle = "#040509"; c.fillRect(0, 0, w, h);
+      const gl = c.createLinearGradient(0, 0, w, h); gl.addColorStop(0, "rgba(255,255,255,.07)"); gl.addColorStop(.5, "rgba(255,255,255,0)"); c.fillStyle = gl; c.fillRect(0, 0, w, h);
+      c.strokeStyle = "#22d3ee"; c.lineWidth = 3; c.strokeRect(22, 22, w - 44, h - 44);
+      c.font = "bold 16px Courier New, monospace"; c.fillStyle = "#6b7280"; c.textAlign = "left"; c.fillText("1 PLAYER", 30, h - 8); c.textAlign = "right"; c.fillText("2 PLAYERS", w - 30, h - 8);
+    });
+    const bezel = new T.Mesh(new T.PlaneGeometry(.72, 1), pbr(new T.MeshLambertMaterial({ map: bz }), .12, 0)); const sl = onSeg(bezel, 5, .003); bezel.scale.y = sl; g.add(bezel);
+    const cv = document.createElement("canvas"); cv.width = 512; cv.height = 400;
+    const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
+    const sw = .58, sh = .45, sg = new T.PlaneGeometry(sw, sh, 16, 12), sp = sg.attributes.position;
+    for (let i = 0; i < sp.count; i++) { const u = sp.getX(i) / (sw / 2), v = sp.getY(i) / (sh / 2); sp.setZ(i, .022 * (1 - u * u * .8) * (1 - v * v * .8)); }
+    sg.computeVertexNormals();
+    const screen = new T.Mesh(sg, new T.MeshBasicMaterial({ map: tex, toneMapped: false })); onSeg(screen, 5, .004); g.add(screen);
+    const glassT = canvasTex(256, 200, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w * .7, h); gr.addColorStop(0, "rgba(255,255,255,.22)"); gr.addColorStop(.35, "rgba(255,255,255,.04)"); gr.addColorStop(.36, "rgba(255,255,255,0)"); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+    const glass = new T.Mesh(new T.PlaneGeometry(sw + .02, sh + .02), new T.MeshBasicMaterial({ map: glassT, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); onSeg(glass, 5, .03); g.add(glass);
+    // Lautsprecherblende
+    const spk = canvasTex(512, 96, (c, w, h) => { c.fillStyle = "#0a0d14"; c.fillRect(0, 0, w, h); for (const cx of [w * .22, w * .78]) for (let yy = 14; yy < h - 8; yy += 10) for (let xx = -60; xx <= 60; xx += 10) if (Math.hypot(xx, yy - h / 2) < 40) { c.fillStyle = "#000"; c.beginPath(); c.arc(cx + xx, yy, 3, 0, 7); c.fill(); } });
+    const speak = new T.Mesh(new T.PlaneGeometry(.72, 1), pbr(new T.MeshLambertMaterial({ map: spk }), .5, 0)); speak.scale.y = onSeg(speak, 6); g.add(speak);
+    // Leuchtschild „ARCADE“ (hinterleuchtet)
+    const marq = canvasTex(1024, 420, (c, w, hh) => {
+      const bg = c.createLinearGradient(0, 0, 0, hh); bg.addColorStop(0, "#1a0b3a"); bg.addColorStop(1, "#071423"); c.fillStyle = bg; c.fillRect(0, 0, w, hh);
+      for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(255,255,255,${Math.random()})`; c.fillRect(Math.random() * w, Math.random() * hh, 2, 2); }
+      const inv = ["..#.....#..", "...#...#...", "..#######..", ".##.###.##.", "###########", "#.#######.#", "#.#.....#.#", "...##.##..."];
+      for (const [ox, col] of [[60, "#ff5c8a"], [w - 60 - 11 * 9, "#a78bfa"]]) { c.fillStyle = col; inv.forEach((r, yy) => [...r].forEach((ch, xx) => { if (ch === "#") c.fillRect(ox + xx * 9, 150 + yy * 9, 8, 8); })); }
+      c.font = "bold 190px Courier New, monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+      c.lineWidth = 10; c.strokeStyle = "#04361d"; c.strokeText("ARCADE", w / 2, hh / 2 + 4);
+      c.shadowColor = "#2cff8a"; c.shadowBlur = 36; c.fillStyle = chrome(c, hh / 2 - 85, hh / 2 + 85); c.fillText("ARCADE", w / 2, hh / 2 + 4);
+      c.shadowBlur = 0; c.font = "bold 34px Courier New, monospace"; c.fillStyle = "#ffd23f"; c.fillText("★ 8 SPIELE ★ 1 € ★", w / 2, hh - 40);
+      c.fillStyle = "#22d3ee"; c.fillRect(30, 20, w - 60, 6); c.fillRect(30, hh - 12, w - 60, 6);
+    });
+    const marquee = new T.Mesh(new T.PlaneGeometry(.72, 1), new T.MeshBasicMaterial({ map: marq, toneMapped: false })); marquee.scale.y = onSeg(marquee, 7, .003); g.add(marquee);
+    // Leuchten am Boden
+    { const cg = canvasTex(128, 128, (c, w, h) => { const gr = c.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(34,211,238,.6)"); gr.addColorStop(1, "rgba(34,211,238,0)"); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+      const fg = new T.Mesh(new T.PlaneGeometry(1.5, 1.5), new T.MeshBasicMaterial({ map: cg, transparent: true, opacity: .35, depthWrite: false, blending: T.AdditiveBlending })); fg.rotation.x = -Math.PI / 2; fg.position.y = .006; fg.userData.noShadow = true; g.add(fg); }
     g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
     colliders.push({ x, z, r: .6 });
-    for (const part of [lower, upper, screen, bezel, marquee, panel]) { part.userData.arcade = true; fixedPicks.push(part); }
+    for (const part of [core, sideL, sideR, screen, bezel, marquee, panel, fr]) { part.userData.arcade = true; fixedPicks.push(part); }
     pickables.push(...fixedPicks);
     // Bildschirm-Vorschau: Spieleliste mit wanderndem Auswahlpfeil
     const ctx = cv.getContext("2d");
     arcade = { draw(t) {
-      const W = 320, H = 256;
-      const bg = ctx.createRadialGradient(W / 2, -20, 10, W / 2, 0, 260); bg.addColorStop(0, "#123a4a"); bg.addColorStop(1, "#0b0f1a");
+      const W = 512, H = 400;
+      const bg = ctx.createRadialGradient(W / 2, H * .3, 20, W / 2, H / 2, 380); bg.addColorStop(0, "#0f3346"); bg.addColorStop(1, "#04070d");
       ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 40px Courier New, monospace";
-      ctx.fillStyle = chrome(ctx, 14, 50); ctx.fillText("ARCADE", W / 2, 34);
+      ctx.textBaseline = "middle"; ctx.font = "bold 16px Courier New, monospace";
+      ctx.textAlign = "left"; ctx.fillStyle = "#ff5c8a"; ctx.fillText("1UP 00000", 18, 18); ctx.textAlign = "right"; ctx.fillStyle = "#ffd23f"; ctx.fillText("HI 99999", W - 18, 18);
+      ctx.textAlign = "center"; ctx.font = "bold 64px Courier New, monospace"; ctx.fillStyle = chrome(ctx, 36, 96); ctx.fillText("ARCADE", W / 2, 66);
       const sel = Math.floor(t / 700) % ARCADE_GAMES.length;
-      ctx.font = "bold 15px Courier New, monospace"; ctx.textAlign = "left";
+      ctx.font = "bold 22px Courier New, monospace"; ctx.textAlign = "left";
       ARCADE_GAMES.forEach((name, i) => {
-        const col = i % 2, row = Math.floor(i / 2), x0 = 28 + col * 148, y0 = 78 + row * 34;
-        const on = i === sel;
-        ctx.fillStyle = on ? "rgba(34,211,238,.22)" : "rgba(255,255,255,.04)"; ctx.fillRect(x0 - 8, y0 - 13, 134, 26);
-        ctx.fillStyle = on ? "#22d3ee" : "rgba(34,211,238,.35)"; ctx.fillRect(x0 - 8, y0 - 13, 4, 26);
+        const col = i % 2, row = Math.floor(i / 2), x0 = 44 + col * 232, y0 = 132 + row * 50, on = i === sel;
+        ctx.fillStyle = on ? "rgba(34,211,238,.22)" : "rgba(255,255,255,.04)"; ctx.fillRect(x0 - 12, y0 - 19, 210, 38);
+        ctx.fillStyle = on ? "#22d3ee" : "rgba(34,211,238,.35)"; ctx.fillRect(x0 - 12, y0 - 19, 5, 38);
         ctx.fillStyle = on ? "#ffffff" : "#9ca3af"; ctx.fillText((on ? "▶ " : "  ") + name, x0, y0);
       });
-      if (Math.floor(t / 600) % 2) { ctx.textAlign = "center"; ctx.fillStyle = "#2cff8a"; ctx.font = "bold 14px Courier New, monospace"; ctx.fillText(matchMedia("(pointer: coarse)").matches ? "ANTIPPEN ZUM SPIELEN" : "KLICKEN ZUM SPIELEN", W / 2, H - 14); }
-      // Scanlines
-      ctx.fillStyle = "rgba(0,0,0,.18)"; for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+      ctx.textAlign = "center"; ctx.font = "bold 18px Courier New, monospace";
+      if (Math.floor(t / 600) % 2) { ctx.fillStyle = "#2cff8a"; ctx.fillText(matchMedia("(pointer: coarse)").matches ? "ANTIPPEN ZUM SPIELEN" : "KLICKEN ZUM SPIELEN", W / 2, H - 42); }
+      ctx.fillStyle = "#6b7280"; ctx.font = "bold 14px Courier New, monospace"; ctx.fillText("CREDIT 0", W / 2, H - 16);
+      // Röhren-Look: Scanlines, Vignette, leichtes Flimmern
+      ctx.fillStyle = "rgba(0,0,0,.22)"; for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+      const vg = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .65); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.7)"); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = `rgba(120,255,200,${.015 + Math.random() * .02})`; ctx.fillRect(0, 0, W, H);
       tex.needsUpdate = true;
     } };
   }
@@ -4351,7 +4451,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "67";
+const APP_VERSION = "68";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
