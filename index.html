@@ -2058,7 +2058,15 @@ document.querySelectorAll("#viewSw button").forEach(b => b.onclick = () => setVi
 
 /* ---------- Begehbarer 3D-Videothek-Raum ---------- */
 const Room = (() => {
-  let maxAniso = 4, blobTex = null, poolTex = null;
+  let maxAniso = 4, blobTex = null, poolTex = null, TEX = {};
+  // Hochauflösende Material-Texturen (Holz, Wand, Decke, Teppichflor, Samt, Metall) – im Programm erzeugt, kachelbar
+  const TEX_FILES = ["wood_light", "wood_light_n", "wood_dark", "wood_dark_n", "wall", "wall_n", "ceiling", "ceiling_n", "carpet_n", "velvet_n", "brushed_n"];
+  async function loadTextures() {
+    const L = new T.TextureLoader();
+    await Promise.all(TEX_FILES.map(n => new Promise(res => L.load(`tex/${n}.jpg`, t => { if (!n.endsWith("_n")) t.colorSpace = T.SRGBColorSpace; t.wrapS = t.wrapT = T.RepeatWrapping; TEX[n] = t; res(); }, undefined, () => res()))));
+  }
+  function tx(name, rx = 1, ry = 1) { const b = TEX[name]; if (!b) return null; const t = b.clone(); t.repeat.set(rx, ry); t.anisotropy = maxAniso; t.needsUpdate = true; return t; }
+  function withNormal(m, name, rx = 1, ry = 1, k = 1) { const n = tx(name, rx, ry); if (n) { m.normalMap = n; m.normalScale.set(k, k); } return m; }
   const perf = { acc: 0, n: 0, prev: 0, pr: 1, max: 1, cool: 0, slow: 0 };
   // ---------- Realistische Grafik: PBR-Materialien, Spiegelungen, echte Schatten, Leuchten (Bloom) ----------
   let FX = null, composer = null, bloom = null;
@@ -2087,7 +2095,8 @@ const Room = (() => {
       let n = PBR_CACHE.get(m); if (n) return n;
       const hex = m.color.getHex(), p = m.userData.pbr || (GOLD.has(hex) ? { r: .3, m: .95 } : METAL.has(hex) ? { r: .38, m: .8 } : { r: .82, m: 0 });
       n = new T.MeshStandardMaterial({ color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side, depthWrite: m.depthWrite, roughness: p.r, metalness: p.m });
-      if (p.nm && m.map) { const nmap = normalFrom(m.map, p.nm); if (nmap) { n.normalMap = nmap; n.normalScale.set(.8, .8); } }
+      if (m.normalMap) { n.normalMap = m.normalMap; n.normalScale.copy(m.normalScale); }
+      else if (p.nm && m.map) { const nmap = normalFrom(m.map, p.nm); if (nmap) { n.normalMap = nmap; n.normalScale.set(.8, .8); } }
       n.userData = m.userData; PBR_CACHE.set(m, n); return n;
     };
     root.traverse(o => {
@@ -2533,6 +2542,7 @@ const Room = (() => {
     t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(7, 7); return t;
   }
   function wood(dark) {
+    if (TEX.wood_light) return tx(dark ? "wood_dark" : "wood_light", 2, .5);
     return canvasTex(256, 64, (g, w, h) => {
       g.fillStyle = dark ? "#2b1d15" : "#5a3d2a"; g.fillRect(0, 0, w, h);
       for (let y = 0; y < h; y += 2) { g.fillStyle = `rgba(0,0,0,${Math.random() * .18})`; g.fillRect(0, y, w, 1); }
@@ -2591,7 +2601,7 @@ const Room = (() => {
       for (let i = 0; i < 900; i++) { c.fillStyle = `rgba(0,0,0,${Math.random() * .12})`; c.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
       for (let x = 16; x < w; x += 32) for (const y of [h * .32, h * .7]) { const gx = x + (y > h / 2 ? 16 : 0); const r = c.createRadialGradient(gx, y, 0, gx, y, 9); r.addColorStop(0, "rgba(0,0,0,.55)"); r.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = r; c.fillRect(gx - 10, y - 10, 20, 20); c.fillStyle = "#5a0e1c"; c.beginPath(); c.arc(gx, y, 2.2, 0, 7); c.fill(); }
     });
-    const velvetM = new T.MeshLambertMaterial({ map: velvet }), frameM = new T.MeshLambertMaterial({ map: wood(true) }), metal = new T.MeshLambertMaterial({ color: 0xc9c2b8 });
+    const velvetM = withNormal(new T.MeshLambertMaterial({ map: velvet }), "velvet_n", 3, 1, .8), frameM = new T.MeshLambertMaterial({ map: wood(true) }), metal = new T.MeshLambertMaterial({ color: 0xc9c2b8 });
     const base = new T.Mesh(new T.BoxGeometry(1.9, .1, .58), frameM); base.position.y = .32; bench.add(base);
     const cushion = new T.Mesh(new T.BoxGeometry(1.82, .13, .52), velvetM); cushion.position.y = .43; bench.add(cushion);
     const roll = new T.Mesh(new T.CylinderGeometry(.065, .065, 1.82, 16), velvetM); roll.rotation.z = Math.PI / 2; roll.position.set(0, .44, .26); bench.add(roll);
@@ -3037,11 +3047,11 @@ const Room = (() => {
     const val = new T.Mesh(new T.PlaneGeometry(CW * 2, .9), curtM); val.position.set(0, 5.5, -CD + .3); g.add(val);
     // Sitzreihen
     // Samtbezug mit Steppnähten und weichem Glanz
-    const fabric = new T.MeshLambertMaterial({ emissive: 0x1a0306, map: canvasTex(128, 128, (c, w, h) => {
+    const fabric = withNormal(new T.MeshLambertMaterial({ emissive: 0x1a0306, map: canvasTex(128, 128, (c, w, h) => {
       const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, "#6e1020"); g.addColorStop(.5, "#a51f35"); g.addColorStop(1, "#6e1020"); c.fillStyle = g; c.fillRect(0, 0, w, h);
       for (let x = 0; x < w; x += 32) { const q = c.createLinearGradient(x, 0, x + 32, 0); q.addColorStop(0, "rgba(0,0,0,.35)"); q.addColorStop(.15, "rgba(0,0,0,0)"); q.addColorStop(.5, "rgba(255,160,170,.10)"); q.addColorStop(.85, "rgba(0,0,0,0)"); q.addColorStop(1, "rgba(0,0,0,.35)"); c.fillStyle = q; c.fillRect(x, 0, 32, h); }
       for (let i = 0; i < 900; i++) { c.fillStyle = `rgba(${Math.random() < .5 ? "0,0,0" : "255,190,200"},${Math.random() * .08})`; c.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
-    }) });
+    }) }), "velvet_n", 2, 2, .8);
     const dark = new T.MeshLambertMaterial({ color: 0x1b1b20 });
     const seatGeo = new T.BoxGeometry(.56, .14, .5), backGeo = new T.BoxGeometry(.56, .7, .12), armGeo = new T.BoxGeometry(.06, .2, .5);
     // Stufen: jede Reihe eine Stufe höher, durchgehend bis zur Rückwand
@@ -3598,7 +3608,7 @@ const Room = (() => {
     glowTex = canvasTex(256, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,120,90,.55)"); gr.addColorStop(.5, "rgba(255,90,90,.15)"); gr.addColorStop(1, "rgba(255,90,90,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 
     // Boden, Decke, Wände
-    const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), pbr(new T.MeshLambertMaterial({ map: carpet() }), .97, 0, 2.5));
+    const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), withNormal(pbr(new T.MeshLambertMaterial({ map: carpet() }), .97, 0, TEX.carpet_n ? 0 : 2.5), "carpet_n", 10, 10, 1.1));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
     const ceilT = canvasTex(256, 256, (g, w, h) => {
       g.fillStyle = "#2a2730"; g.fillRect(0, 0, w, h);
@@ -3607,7 +3617,7 @@ const Room = (() => {
       g.fillStyle = "rgba(255,255,255,.06)"; g.fillRect(6, 6, w - 6, 2); g.fillRect(6, 6, 2, h - 6);
     });
     ceilT.wrapS = ceilT.wrapT = T.RepeatWrapping; ceilT.repeat.set(HALF * 2 / 1.2, HALF * 2 / 1.2);
-    const ceil = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), new T.MeshLambertMaterial({ map: ceilT }));
+    const ceil = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), withNormal(new T.MeshLambertMaterial({ map: tx("ceiling", HALF * 2 / 1.2, HALF * 2 / 1.2) || ceilT }), "ceiling_n", HALF * 2 / 1.2, HALF * 2 / 1.2, 1.2));
     ceil.rotation.x = Math.PI / 2; ceil.position.y = 3.3; scene.add(ceil);
     const wallT = canvasTex(512, 256, (g, w, h) => {
       const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#1d1a24"); gr.addColorStop(1, "#2a2532"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
@@ -3615,7 +3625,7 @@ const Room = (() => {
       for (let i = 0; i < 1800; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * .025})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
     });
     wallT.wrapS = T.RepeatWrapping; wallT.repeat.set(HALF * 2 / 3.2, 1);
-    const wallMat = pbr(new T.MeshLambertMaterial({ map: wallT }), .9, 0, 3);
+    const wallMat = withNormal(pbr(new T.MeshLambertMaterial({ map: tx("wall", 8, 1.65) || wallT }), .9, 0, TEX.wall ? 0 : 3), "wall_n", 8, 1.65, .8);
     for (let i = 0; i < 4; i++) {
       const w = new T.Mesh(new T.PlaneGeometry(HALF * 2, 3.3), wallMat);
       const a = i * Math.PI / 2; w.position.set(Math.sin(a) * -HALF, 1.65, Math.cos(a) * -HALF); w.rotation.y = a; scene.add(w);
@@ -3635,7 +3645,7 @@ const Room = (() => {
       const rail = new T.Mesh(new T.BoxGeometry(HALF * 2, .045, .04), shared.railM); rail.position.set(Math.sin(a) * -(HALF - .03), .91, Math.cos(a) * -(HALF - .03)); rail.rotation.y = a; scene.add(rail);
     }
     // Deckenlampen: Industrie-Pendelleuchten mit Glühbirne und sichtbarem Lichtkegel
-    const shadeM = pbr(new T.MeshLambertMaterial({ color: 0x1b1c20 }), .35, .85);
+    const shadeM = withNormal(pbr(new T.MeshLambertMaterial({ color: 0x1b1c20 }), .35, .85), "brushed_n", 1, 1, .6);
     const shadeIn = new T.MeshBasicMaterial({ color: 0xffd9a0, side: T.BackSide });
     const bulbM = new T.MeshBasicMaterial({ color: 0xfff3dc });
     const cableM = new T.MeshBasicMaterial({ color: 0x0c0c0e });
@@ -3701,8 +3711,8 @@ const Room = (() => {
   function unit(x, z, rotY, label) {
     const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotY;
     blob(g, 0, .05, UNIT_W + .9, 1.5, .75);
-    shared.wood = shared.wood || pbr(new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 }), .5, 0, 3);
-    shared.dark = shared.dark || pbr(new T.MeshLambertMaterial({ map: wood(true) }), .6, 0, 3);
+    shared.wood = shared.wood || withNormal(pbr(new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 }), .5, 0, TEX.wood_light ? 0 : 3), "wood_light_n", 2, .5, .9);
+    shared.dark = shared.dark || withNormal(pbr(new T.MeshLambertMaterial({ map: wood(true) }), .6, 0, TEX.wood_dark ? 0 : 3), "wood_dark_n", 2, .5, .9);
     const back = new T.Mesh(new T.BoxGeometry(UNIT_W, 2.25, .05), shared.dark); back.position.set(0, 1.12, -.2); g.add(back);
     for (const y of BOARD_Y) { const b = new T.Mesh(new T.BoxGeometry(UNIT_W, .035, .4), shared.wood); b.position.set(0, y - .02, 0); g.add(b); }
     const top = new T.Mesh(new T.BoxGeometry(UNIT_W, .04, .42), shared.wood); top.position.set(0, 2.26, 0); g.add(top);
@@ -4149,7 +4159,7 @@ const Room = (() => {
     if (!renderer && !FX) {
       try { const [EC, RP, UB, OP, RE] = await Promise.all(["postprocessing/EffectComposer", "postprocessing/RenderPass", "postprocessing/UnrealBloomPass", "postprocessing/OutputPass", "environments/RoomEnvironment"].map(n => import(`./fx/${n}.js`))); FX = { EC, RP, UB, OP, RE }; } catch { FX = null; }
     }
-    if (!renderer) init();
+    if (!renderer) { if (!TEX.wood_light) await loadTextures(); init(); }
     $("#roomGfx").textContent = quality.real ? "✨ Realistisch" : "⚡ Schnell";
     $("#roomGfx").onclick = () => { setQuality(!quality.real); toast(quality.real ? "✨ Realistische Grafik: Licht, Schatten, Spiegelungen, Leuchten" : "⚡ Schnelle Grafik"); };
     resize();
@@ -4223,7 +4233,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "61";
+const APP_VERSION = "62";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
