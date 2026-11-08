@@ -2064,7 +2064,22 @@ const Room = (() => {
   let FX = null, composer = null, bloom = null;
   const quality = { real: (() => { try { const v = localStorage.getItem("watchlist-gfx"); return v ? v === "real" : matchMedia("(pointer: fine)").matches; } catch { return true; } })() };
   const PBR_CACHE = new Map(), GOLD = new Set([0xe8b94a, 0xc9a24a, 0xd4a94a]), METAL = new Set([0xc9c2b8, 0x55585f, 0x3a3d45, 0x555555, 0x2a2a30, 0x2b2f36]);
-  const pbr = (m, r, mt = 0) => { m.userData.pbr = { r, m: mt }; return m; };
+  const pbr = (m, r, mt = 0, nm = 0) => { m.userData.pbr = { r, m: mt, nm }; return m; };
+  // Reliefkarte aus dem Bild erzeugen: helle Stellen stehen etwas hervor (Holzmaserung, Teppichflor)
+  const NM_CACHE = new Map();
+  function normalFrom(tex, k = 2) {
+    if (!tex || !tex.image || !tex.image.getContext) return null;
+    if (NM_CACHE.has(tex)) return NM_CACHE.get(tex);
+    const src = tex.image, w = src.width, h = src.height, d = src.getContext("2d").getImageData(0, 0, w, h).data;
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const cx = c.getContext("2d"), out = cx.createImageData(w, h), o = out.data;
+    const L = (x, y) => { x = (x + w) % w; y = (y + h) % h; const i = (y * w + x) * 4; return (d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11) / 255; };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = (L(x + 1, y) - L(x - 1, y)) * k, dy = (L(x, y + 1) - L(x, y - 1)) * k, inv = 1 / Math.hypot(dx, dy, 1), i = (y * w + x) * 4;
+      o[i] = (-dx * inv * .5 + .5) * 255; o[i + 1] = (dy * inv * .5 + .5) * 255; o[i + 2] = (inv * .5 + .5) * 255; o[i + 3] = 255;
+    }
+    cx.putImageData(out, 0, 0);
+    const n = new T.CanvasTexture(c); n.wrapS = tex.wrapS; n.wrapT = tex.wrapT; n.repeat.copy(tex.repeat); n.anisotropy = maxAniso; NM_CACHE.set(tex, n); return n;
+  }
   function realify(root) {
     if (!renderer || !quality.real) return;
     const conv = m => {
@@ -2072,6 +2087,7 @@ const Room = (() => {
       let n = PBR_CACHE.get(m); if (n) return n;
       const hex = m.color.getHex(), p = m.userData.pbr || (GOLD.has(hex) ? { r: .3, m: .95 } : METAL.has(hex) ? { r: .38, m: .8 } : { r: .82, m: 0 });
       n = new T.MeshStandardMaterial({ color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side, depthWrite: m.depthWrite, roughness: p.r, metalness: p.m });
+      if (p.nm && m.map) { const nmap = normalFrom(m.map, p.nm); if (nmap) { n.normalMap = nmap; n.normalScale.set(.8, .8); } }
       n.userData = m.userData; PBR_CACHE.set(m, n); return n;
     };
     root.traverse(o => {
@@ -3582,7 +3598,7 @@ const Room = (() => {
     glowTex = canvasTex(256, 128, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,120,90,.55)"); gr.addColorStop(.5, "rgba(255,90,90,.15)"); gr.addColorStop(1, "rgba(255,90,90,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
 
     // Boden, Decke, Wände
-    const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), pbr(new T.MeshLambertMaterial({ map: carpet() }), .97));
+    const floor = new T.Mesh(new T.PlaneGeometry(HALF * 2, HALF * 2), pbr(new T.MeshLambertMaterial({ map: carpet() }), .97, 0, 2.5));
     floor.rotation.x = -Math.PI / 2; scene.add(floor);
     const ceilT = canvasTex(256, 256, (g, w, h) => {
       g.fillStyle = "#2a2730"; g.fillRect(0, 0, w, h);
@@ -3599,7 +3615,7 @@ const Room = (() => {
       for (let i = 0; i < 1800; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * .025})`; g.fillRect(Math.random() * w, Math.random() * h, 1, 1); }
     });
     wallT.wrapS = T.RepeatWrapping; wallT.repeat.set(HALF * 2 / 3.2, 1);
-    const wallMat = new T.MeshLambertMaterial({ map: wallT });
+    const wallMat = pbr(new T.MeshLambertMaterial({ map: wallT }), .9, 0, 3);
     for (let i = 0; i < 4; i++) {
       const w = new T.Mesh(new T.PlaneGeometry(HALF * 2, 3.3), wallMat);
       const a = i * Math.PI / 2; w.position.set(Math.sin(a) * -HALF, 1.65, Math.cos(a) * -HALF); w.rotation.y = a; scene.add(w);
@@ -3608,21 +3624,36 @@ const Room = (() => {
       strip.position.set(Math.sin(a) * -(HALF - .01), .04, Math.cos(a) * -(HALF - .01)); strip.rotation.y = a; scene.add(strip);
       const topStrip = new T.Mesh(new T.PlaneGeometry(HALF * 2, .04), new T.MeshBasicMaterial({ color: 0xff9f43 }));
       topStrip.position.set(Math.sin(a) * -(HALF - .01), 3.12, Math.cos(a) * -(HALF - .01)); topStrip.rotation.y = a; scene.add(topStrip);
-      const wains = new T.Mesh(new T.PlaneGeometry(HALF * 2, .9), new T.MeshLambertMaterial({ color: 0x17141d }));
+      shared.wainsM = shared.wainsM || pbr(new T.MeshLambertMaterial({ map: (() => { const t = canvasTex(512, 128, (c, w, h) => {
+        c.fillStyle = "#24171a"; c.fillRect(0, 0, w, h);
+        for (let x = 0; x < w; x += 32) { const gr = c.createLinearGradient(x, 0, x + 32, 0); gr.addColorStop(0, "rgba(0,0,0,.45)"); gr.addColorStop(.08, "rgba(255,220,190,.06)"); gr.addColorStop(.5, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.25)"); c.fillStyle = gr; c.fillRect(x, 0, 32, h);
+          for (let k = 0; k < 4; k++) { c.strokeStyle = `rgba(255,200,170,${.03 + Math.random() * .04})`; c.beginPath(); c.moveTo(x + 4 + Math.random() * 24, 0); c.bezierCurveTo(x + Math.random() * 32, h * .3, x + Math.random() * 32, h * .7, x + 4 + Math.random() * 24, h); c.stroke(); } }
+      }); t.wrapS = T.RepeatWrapping; t.repeat.set(HALF * 2 / 2.4, 1); return t; })() }), .55, 0, 4);
+      const wains = new T.Mesh(new T.PlaneGeometry(HALF * 2, .9), shared.wainsM);
       wains.position.set(Math.sin(a) * -(HALF - .02), .45, Math.cos(a) * -(HALF - .02)); wains.rotation.y = a; scene.add(wains);
+      shared.railM = shared.railM || pbr(new T.MeshLambertMaterial({ color: 0x3a2620 }), .45);
+      const rail = new T.Mesh(new T.BoxGeometry(HALF * 2, .045, .04), shared.railM); rail.position.set(Math.sin(a) * -(HALF - .03), .91, Math.cos(a) * -(HALF - .03)); rail.rotation.y = a; scene.add(rail);
     }
-    // Deckenlampen
-    const lamp = new T.MeshBasicMaterial({ toneMapped: false, map: canvasTex(256, 64, (g, w, h) => {
-      const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#fff1dc"); gr.addColorStop(.5, "#ffffff"); gr.addColorStop(1, "#fff1dc"); g.fillStyle = gr; g.fillRect(0, 0, w, h);
-      g.strokeStyle = "rgba(160,140,120,.35)"; g.lineWidth = 2; for (let x = 0; x <= w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y <= h; y += 16) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-    }) });
-    const lampFrame = new T.MeshLambertMaterial({ color: 0x3a3d45 });
+    // Deckenlampen: Industrie-Pendelleuchten mit Glühbirne und sichtbarem Lichtkegel
+    const shadeM = pbr(new T.MeshLambertMaterial({ color: 0x1b1c20 }), .35, .85);
+    const shadeIn = new T.MeshBasicMaterial({ color: 0xffd9a0, side: T.BackSide });
+    const bulbM = new T.MeshBasicMaterial({ color: 0xfff3dc });
+    const cableM = new T.MeshBasicMaterial({ color: 0x0c0c0e });
+    const coneT = canvasTex(32, 256, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "rgba(255,226,180,.9)"); gr.addColorStop(.35, "rgba(255,220,170,.28)"); gr.addColorStop(1, "rgba(255,210,160,0)"); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+    const coneM = new T.MeshBasicMaterial({ map: coneT, transparent: true, opacity: .085, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide });
+    const shadeGeo = new T.CylinderGeometry(.07, .27, .28, 32, 1, true), capGeo = new T.CylinderGeometry(.07, .07, .05, 20), coneGeo = new T.ConeGeometry(1.25, 2.35, 32, 1, true);
     for (let x = -5; x <= 5; x += 5) for (let z = -5; z <= 5; z += 5) {
-      const fr = new T.Mesh(new T.BoxGeometry(1.74, .05, .49), lampFrame); fr.position.set(x, 3.285, z); scene.add(fr);
-      const l = new T.Mesh(new T.PlaneGeometry(1.6, .35), lamp); l.rotation.x = Math.PI / 2; l.position.set(x, 3.255, z); scene.add(l);
-      // Lichthof an der Decke und Lichtkegel auf dem Boden
-      const halo = new T.Mesh(new T.PlaneGeometry(3.2, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffe2b8, transparent: true, opacity: .35, depthWrite: false, blending: T.AdditiveBlending })); halo.rotation.x = Math.PI / 2; halo.position.set(x, 3.28, z); scene.add(halo);
-      const pool = new T.Mesh(new T.PlaneGeometry(4.2, 3.2), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .16, depthWrite: false, blending: T.AdditiveBlending })); pool.rotation.x = -Math.PI / 2; pool.position.set(x, .004, z); scene.add(pool);
+      if (x === 0 && z === 0) continue; // dort hängt das Neon-Schild
+      const y = 2.62, g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
+      const cable = new T.Mesh(new T.CylinderGeometry(.006, .006, 3.3 - y - .14, 6), cableM); cable.position.y = (3.3 + y + .14) / 2; g.add(cable);
+      const canopy = new T.Mesh(new T.CylinderGeometry(.06, .07, .03, 20), shadeM); canopy.position.y = 3.285; g.add(canopy);
+      const cap = new T.Mesh(capGeo, shadeM); cap.position.y = y + .16; g.add(cap);
+      const shade = new T.Mesh(shadeGeo, shadeM); shade.position.y = y; g.add(shade);
+      const inner = new T.Mesh(shadeGeo, shadeIn); inner.position.y = y; inner.scale.setScalar(.985); g.add(inner);
+      const bulb = new T.Mesh(new T.SphereGeometry(.055, 16, 12), bulbM); bulb.position.y = y - .06; g.add(bulb);
+      const cone = new T.Mesh(coneGeo, coneM); cone.position.y = y - .14 - 2.35 / 2; g.add(cone); cone.userData.noShadow = true;
+      const pool = new T.Mesh(new T.PlaneGeometry(3.4, 3.4), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .2, depthWrite: false, blending: T.AdditiveBlending })); pool.rotation.x = -Math.PI / 2; pool.position.y = .004; g.add(pool);
+      const halo = new T.Mesh(new T.PlaneGeometry(1.6, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffe2b8, transparent: true, opacity: .22, depthWrite: false, blending: T.AdditiveBlending })); halo.rotation.x = Math.PI / 2; halo.position.y = 3.29; g.add(halo);
     }
     // Teppich-Insel mit Logo in der Mitte
     const rug = new T.Mesh(new T.CircleGeometry(2.2, 48), new T.MeshBasicMaterial({ map: canvasTex(512, 512, (g, w, h) => {
@@ -3670,8 +3701,8 @@ const Room = (() => {
   function unit(x, z, rotY, label) {
     const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = rotY;
     blob(g, 0, .05, UNIT_W + .9, 1.5, .75);
-    shared.wood = shared.wood || pbr(new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 }), .5);
-    shared.dark = shared.dark || pbr(new T.MeshLambertMaterial({ map: wood(true) }), .6);
+    shared.wood = shared.wood || pbr(new T.MeshLambertMaterial({ map: wood(false), emissive: 0x1a0f08 }), .5, 0, 3);
+    shared.dark = shared.dark || pbr(new T.MeshLambertMaterial({ map: wood(true) }), .6, 0, 3);
     const back = new T.Mesh(new T.BoxGeometry(UNIT_W, 2.25, .05), shared.dark); back.position.set(0, 1.12, -.2); g.add(back);
     for (const y of BOARD_Y) { const b = new T.Mesh(new T.BoxGeometry(UNIT_W, .035, .4), shared.wood); b.position.set(0, y - .02, 0); g.add(b); }
     const top = new T.Mesh(new T.BoxGeometry(UNIT_W, .04, .42), shared.wood); top.position.set(0, 2.26, 0); g.add(top);
@@ -4051,7 +4082,7 @@ const Room = (() => {
     perf.fc = (perf.fc || 0) + 1; if (t - (perf.ft || 0) > 500) { const f = Math.round(perf.fc * 1000 / (t - (perf.ft || t - 500))); perf.fc = 0; perf.ft = t; const el = $("#roomFps"); if (el && el.classList.contains("show")) el.textContent = `${f} FPS · ${Math.round(perf.pr * 100)} % · ${quality.real ? "Realistisch" : "Schnell"}${perf.gpuShort ? " · " + perf.gpuShort : ""}`; }
     if (perf.acc > 1.5) {
       const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
-      if (avg > 1 / 40 && perf.pr <= .5 && quality.real && ++perf.slow >= 3) { perf.slow = 0; setQuality(false); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig läuft (oben rechts umschaltbar)"); }
+      if (avg > 1 / 40 && perf.pr <= .5 && quality.real && !window.__noAutoFast && ++perf.slow >= 3) { perf.slow = 0; setQuality(false); toast("⚡ Grafik auf „Schnell“ gestellt, damit es flüssig läuft (oben rechts umschaltbar)"); }
       if (avg > 1 / 50 && perf.pr > .5) { perf.pr = Math.max(.5, +(perf.pr - (avg > 1 / 30 ? .25 : .15)).toFixed(2)); perf.cool = t + 8000; renderer.setPixelRatio(perf.pr); resize(); }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
@@ -4192,7 +4223,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "60";
+const APP_VERSION = "61";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 const Sync = (() => {
   const GH = (window.WATCHLIST_GH_BASE || "https://api.github.com"), FILE = "watchlist-sync.json";
