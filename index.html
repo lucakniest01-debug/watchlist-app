@@ -3473,7 +3473,7 @@ const Room = (() => {
     randomPodium(0, 0);
     arcadeCabinet(3.4, 4.6, Math.atan2(-3.4, -4.6));
     drinkMachine(-4.75, 3.2, Math.atan2(4.75, -3.2));
-    buildClerk(6.3, -6.3, Math.atan2(-6.3, 6.3));
+    buildClerk(4.6, -3.2, Math.atan2(-4.6, 3.2));
     trashBin(-4.45, 4.55, Math.atan2(4.45, -4.55));
     // Sitzbank vor der Mitte
     // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
@@ -5362,7 +5362,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "73";
+const APP_VERSION = "74";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
