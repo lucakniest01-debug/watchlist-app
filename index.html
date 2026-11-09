@@ -2968,6 +2968,85 @@ const Room = (() => {
     P.p.position.set(P.x, Math.abs(sw) * .025, P.z); P.p.rotation.y = P.yaw;
     P.col.x = P.x; P.col.z = P.z;
   }
+  // ---------- Maya: Kino-Kasse – schlägt dir einen Film für den Kinoabend vor und bringt dich in den Saal ----------
+  let maya = null;
+  function buildMaya(x, z, rot) {
+    const g = new T.Group();
+    // Ticket-Pult
+    const front = canvasTex(256, 320, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#4c1d95"); gr.addColorStop(1, "#1e0b3d"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.strokeStyle = "#f5c542"; c.lineWidth = 5; c.strokeRect(10, 10, w - 20, h - 20);
+      c.font = "64px Segoe UI Emoji, sans-serif"; c.textAlign = "center"; c.fillText("🎟", w / 2, h * .36);
+      c.font = "bold 40px Segoe UI, sans-serif"; c.fillStyle = "#fde68a"; c.shadowColor = "#f5c542"; c.shadowBlur = 14; c.fillText("KINO", w / 2, h * .6);
+      c.shadowBlur = 0; c.font = "bold 22px Segoe UI, sans-serif"; c.fillStyle = "#e9d5ff"; c.fillText("TICKETS", w / 2, h * .74); c.font = "16px Segoe UI"; c.fillText("Saal 1 · heute", w / 2, h * .86);
+    });
+    const purple = pbr(new T.MeshLambertMaterial({ color: 0x3b1677 }), .4, .1), goldM = pbr(new T.MeshLambertMaterial({ color: 0xf5c542 }), .25, .95);
+    const stand = new T.Mesh(new T.BoxGeometry(.7, 1.05, .42), [purple, purple, purple, purple, new T.MeshLambertMaterial({ map: front }), purple]); stand.position.y = .525; g.add(stand);
+    const top = new T.Mesh(new T.BoxGeometry(.78, .04, .5), goldM); top.position.y = 1.07; g.add(top);
+    // Ticketrolle und kleiner Bildschirm
+    const roll = new T.Mesh(new T.CylinderGeometry(.05, .05, .1, 20), new T.MeshLambertMaterial({ color: 0xfff7d6 })); roll.rotation.z = Math.PI / 2; roll.position.set(-.22, 1.14, .05); g.add(roll);
+    const tick = new T.Mesh(new T.PlaneGeometry(.08, .14), new T.MeshLambertMaterial({ map: canvasTex(64, 112, (c, w, h) => { c.fillStyle = "#fff7d6"; c.fillRect(0, 0, w, h); c.fillStyle = "#b91c1c"; c.font = "bold 14px Arial"; c.textAlign = "center"; c.fillText("ADMIT", w / 2, 30); c.fillText("ONE", w / 2, 48); c.setLineDash([3, 3]); c.strokeStyle = "#b91c1c"; c.beginPath(); c.moveTo(0, 70); c.lineTo(w, 70); c.stroke(); }), side: T.DoubleSide }));
+    tick.position.set(-.22, 1.1, .16); tick.rotation.x = -1.2; g.add(tick);
+    const scr = new T.Mesh(new T.BoxGeometry(.2, .14, .02), pbr(new T.MeshLambertMaterial({ color: 0x111111 }), .3, .3)); scr.position.set(.18, 1.17, -.02); scr.rotation.x = -.35; g.add(scr);
+    const scrT = canvasTex(128, 96, (c, w, h) => { c.fillStyle = "#0b1020"; c.fillRect(0, 0, w, h); c.fillStyle = "#a78bfa"; c.font = "bold 16px Arial"; c.fillText("SAAL 1", 10, 24); c.fillStyle = "#22c55e"; for (let r = 0; r < 4; r++) for (let k = 0; k < 7; k++) { c.fillStyle = Math.random() < .3 ? "#ef4444" : "#22c55e"; c.fillRect(10 + k * 16, 36 + r * 14, 11, 9); } });
+    const sc = new T.Mesh(new T.PlaneGeometry(.18, .12), new T.MeshBasicMaterial({ map: scrT, toneMapped: false })); sc.position.set(.18, 1.172, -.008); sc.rotation.x = -.35; g.add(sc);
+    // Figur
+    const person = new T.Group(); person.position.set(0, 0, -.55); g.add(person);
+    const blazer = new T.MeshLambertMaterial({ color: 0x6d28d9 }), blouse = new T.MeshLambertMaterial({ color: 0xfaf5ff }), skin = new T.MeshLambertMaterial({ color: 0xf3cba5 });
+    const pants = new T.MeshLambertMaterial({ color: 0x1c1530 }), hairM = new T.MeshLambertMaterial({ color: 0x8a5a2b });
+    const legs = new T.Mesh(new T.CylinderGeometry(.14, .12, .88, 16), pants); legs.position.y = .44; person.add(legs);
+    const torso = new T.Mesh(new T.CylinderGeometry(.17, .15, .56, 20), blazer); torso.position.y = 1.16; torso.scale.z = .9; person.add(torso);
+    const col = new T.Mesh(new T.ConeGeometry(.07, .14, 3), blouse); col.position.set(0, 1.36, .14); col.rotation.x = Math.PI; col.scale.z = .3; person.add(col);
+    const sh = new T.Mesh(new T.SphereGeometry(.17, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), blazer); sh.position.y = 1.43; sh.scale.set(1, .4, .9); person.add(sh);
+    const tag = new T.Mesh(new T.PlaneGeometry(.09, .042), new T.MeshBasicMaterial({ map: canvasTex(128, 60, (c, w, h) => { c.fillStyle = "#fde68a"; c.fillRect(0, 0, w, h); c.fillStyle = "#4c1d95"; c.font = "bold 28px Segoe UI"; c.textAlign = "center"; c.fillText("MAYA", w / 2, 40); }) })); tag.position.set(.08, 1.3, .155); tag.rotation.y = .3; person.add(tag);
+    const neck = new T.Mesh(new T.CylinderGeometry(.045, .05, .08, 12), skin); neck.position.y = 1.5; person.add(neck);
+    const head = new T.Group(); head.position.y = 1.66; person.add(head);
+    const faceT = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = "#f3cba5"; c.fillRect(0, 0, w, h);
+      const cx = w * .25;
+      c.fillStyle = "#3a2414"; for (const dx of [-13, 13]) { c.beginPath(); c.ellipse(cx + dx, h * .46, 4.5, 6, 0, 0, 7); c.fill(); }
+      c.fillStyle = "#fff"; for (const dx of [-12, 14]) { c.beginPath(); c.arc(cx + dx, h * .44, 1.5, 0, 7); c.fill(); }
+      c.strokeStyle = "#1a0f08"; c.lineWidth = 2; for (const dx of [-13, 13]) { for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(cx + dx + k * 4, h * .38); c.lineTo(cx + dx + k * 6, h * .33); c.stroke(); } }
+      c.strokeStyle = "#6b3a1f"; c.lineWidth = 2; for (const dx of [-13, 13]) { c.beginPath(); c.arc(cx + dx, h * .37, 9, 1.15 * Math.PI, 1.85 * Math.PI); c.stroke(); }
+      c.fillStyle = "#c2416a"; c.beginPath(); c.ellipse(cx, h * .63, 9, 4, 0, 0, Math.PI); c.fill(); c.beginPath(); c.ellipse(cx, h * .63, 9, 2, 0, Math.PI, 2 * Math.PI); c.fill();
+      c.fillStyle = "rgba(240,120,140,.35)"; for (const dx of [-24, 24]) { c.beginPath(); c.arc(cx + dx, h * .58, 6, 0, 7); c.fill(); }
+    });
+    const skull = new T.Mesh(new T.SphereGeometry(.13, 32, 20), new T.MeshLambertMaterial({ map: faceT })); skull.scale.set(1, 1.12, 1); head.add(skull);
+    const hair = new T.Mesh(new T.SphereGeometry(.14, 28, 16, 0, Math.PI * 2, 0, Math.PI * .5), hairM); hair.position.set(0, .02, -.012); hair.rotation.x = -.3; head.add(hair);
+    const bangs = new T.Mesh(new T.SphereGeometry(.135, 24, 10, -Math.PI * .45, Math.PI * .9, 0, Math.PI * .28), hairM); bangs.position.set(0, .03, .008); head.add(bangs);
+    // Pferdeschwanz (schwingt leicht)
+    const tail = new T.Group(); tail.position.set(0, .06, -.13); head.add(tail);
+    const tie = new T.Mesh(new T.TorusGeometry(.025, .008, 6, 14), new T.MeshLambertMaterial({ color: 0xf5c542 })); tail.add(tie);
+    const pony = new T.Mesh(new T.CylinderGeometry(.035, .015, .3, 10), hairM); pony.position.set(0, -.15, -.03); pony.rotation.x = .25; tail.add(pony);
+    for (const sx of [-1, 1]) { const ear = new T.Mesh(new T.SphereGeometry(.026, 10, 8), skin); ear.position.set(sx * .13, 0, 0); ear.scale.set(.6, 1, 1); head.add(ear); const ring = new T.Mesh(new T.TorusGeometry(.012, .003, 6, 12), goldM); ring.position.set(sx * .135, -.04, 0); head.add(ring); }
+    // Headset
+    const band = new T.Mesh(new T.TorusGeometry(.142, .006, 6, 24, Math.PI), new T.MeshLambertMaterial({ color: 0x222222 })); band.rotation.y = Math.PI / 2; band.position.y = .02; head.add(band);
+    const mic = new T.Mesh(new T.CylinderGeometry(.004, .004, .12, 6), new T.MeshLambertMaterial({ color: 0x222222 })); mic.position.set(.11, -.06, .06); mic.rotation.set(.3, 0, 1.2); head.add(mic);
+    const arms = [];
+    for (const sx of [-1, 1]) {
+      const arm = new T.Group(); arm.position.set(sx * .2, 1.4, 0); person.add(arm);
+      const up = new T.Mesh(new T.CylinderGeometry(.045, .04, .48, 12), blazer); up.position.y = -.24; arm.add(up);
+      const hand = new T.Mesh(new T.SphereGeometry(.045, 12, 10), skin); hand.position.y = -.5; arm.add(hand);
+      arm.rotation.z = sx * .1; arms.push(arm);
+    }
+    const glow = new T.Mesh(new T.PlaneGeometry(1.8, 1.4), new T.MeshBasicMaterial({ map: poolTex, color: 0xc4b5fd, transparent: true, opacity: .22, depthWrite: false, blending: T.AdditiveBlending })); glow.rotation.x = -Math.PI / 2; glow.position.set(0, .007, .3); g.add(glow);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .7 });
+    for (const m of [stand, top, torso, skull, legs, sh, hair]) { m.userData.maya = true; fixedPicks.push(m); }
+    maya = { g, head, arms, tail, person, wave: 0, greeted: false };
+  }
+  function mayaTick(dt, t) {
+    const M = maya; if (!M || inCinema) return;
+    const wp = new T.Vector3(); M.head.getWorldPosition(wp);
+    const d = Math.hypot(pos.x - wp.x, pos.z - wp.z);
+    const ang = Math.atan2(pos.x - wp.x, pos.z - wp.z) - M.g.rotation.y, a = Math.atan2(Math.sin(ang), Math.cos(ang));
+    const want = d < 6 ? Math.max(-1, Math.min(1, a)) : Math.sin(t / 2100) * .3;
+    M.head.rotation.y += (want - M.head.rotation.y) * Math.min(1, dt * 4);
+    M.tail.rotation.x = Math.sin(t / 500) * .08 - M.head.rotation.y * .1; M.tail.rotation.z = -M.head.rotation.y * .25;
+    if (d < 3.2 && !M.greeted) { M.greeted = true; M.wave = 2; } if (d > 6) M.greeted = false;
+    M.wave = Math.max(0, M.wave - dt);
+    const L = M.arms[0]; L.rotation.z = M.wave > 0 ? -2.6 - Math.sin(t / 110) * .35 : L.rotation.z + (-.1 - L.rotation.z) * Math.min(1, dt * 5);
+    M.person.position.y = Math.sin(t / 1000 + 1) * .005;
+  }
   const Clerk = (() => {
     const LINES = ["Weil du <b>{a}</b> mochtest, gefällt dir bestimmt <b>{b}</b>.", "Kenn ich! Wer <b>{a}</b> schaut, landet oft bei <b>{b}</b> – probier's mal.", "Mein Tipp nach <b>{a}</b>: <b>{b}</b>. Ganz ehrlich, lohnt sich!", "Hmm … <b>{a}</b>? Dann nimm <b>{b}</b> mit, das passt perfekt."];
     let last = null;
@@ -2983,10 +3062,21 @@ const Room = (() => {
     // Pascal: was diese Woche angesagt ist
     const PL = ["Frisch reingekommen – alle reden gerade über <b>{b}</b>!", "Hab gerade <b>{b}</b> einsortiert. Läuft diese Woche richtig gut!", "Psst – <b>{b}</b> ist gerade der Renner. Würd ich mitnehmen.", "Die Leute fragen ständig nach <b>{b}</b>. Kennst du das schon?"];
     let pBusy = false;
+    const PC = ["Ein echter Klassiker: <b>{b}</b>. Den muss man einfach gesehen haben!", "Kennst du <b>{b}</b>? Älter, aber Pflichtprogramm – wirklich.", "Aus der Kategorie „Muss man kennen“: <b>{b}</b>. Zeitlos gut!", "Bevor du was Neues schaust: <b>{b}</b> ist ein Meilenstein. Lohnt sich!"];
+    async function classic() {
+      const tv = Math.random() < .25, d = tv ? "first_air_date.lte" : "primary_release_date.lte";
+      const r = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/discover/${tv ? "tv" : "movie"}`, language: "de-DE", sort_by: "vote_average.desc", "vote_count.gte": tv ? 3000 : 8000, [d]: "2008-12-31", page: 1 + Math.floor(Math.random() * 4), include_adult: "false" }));
+      return (r.results || []).map(x => Shop.toR(x, tv ? "tv" : "movie")).filter(x => x.poster && !Shop.onList(x) && (!last || x.tmdbId !== last.tmdbId));
+    }
     async function talkPascal() {
       if (pBusy) return; pBusy = true; who = "pascal"; if (pascal) pascal.talking = 2.5;
       if (document.pointerLockElement) document.exitPointerLock();
       say("<b>Pascal:</b> Oh, hi! Warte, ich hab hier was im Karton … 📦");
+      // Abwechselnd: Klassiker, die man gesehen haben muss, oder was gerade angesagt ist
+      if (Math.random() < .5) try {
+        const list = await classic(), rec = list[Math.floor(Math.random() * Math.min(15, list.length))];
+        if (rec) { last = rec; say("<b>Pascal:</b> " + PC[Math.floor(Math.random() * PC.length)].replace("{b}", esc(rec.title) + (rec.year ? ` (${esc(rec.year)})` : "")) + (rec.vote ? ` <span style="opacity:.7">⭐ ${rec.vote.toFixed(1)}</span>` : ""), rec); SFX.fx.notify(); pBusy = false; return; }
+      } catch {}
       try {
         const t = ["all", "movie", "tv"][Math.floor(Math.random() * 3)];
         const r = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/trending/${t}/week`, language: "de-DE" }));
@@ -3024,7 +3114,27 @@ const Room = (() => {
       } catch { say(settings.apiKey ? "Hm, gerade finde ich nichts – frag mich gleich nochmal!" : "Ohne TMDB-Schlüssel (⚙ Einstellungen) kann ich leider nicht ins Regal schauen."); }
       clerk.busy = false;
     }
-    return { talk, talkPascal, hide: () => box().classList.remove("show") };
+    // Maya: Film für den Kinoabend von deiner Liste
+    const ML = ["Heute Abend in Saal 1: <b>{b}</b> – steht eh auf deiner Liste! Soll ich dir den besten Platz geben?", "Ich hätte da noch ein Ticket für <b>{b}</b>. Popcorn holen und ab in den Saal? 🍿", "Wie wär's mit Kino? <b>{b}</b> wartet schon auf deiner Watchlist.", "Mein Tipp für heute: <b>{b}</b> auf der großen Leinwand. Reihe 4 ist noch frei!"];
+    let mLast = null;
+    function talkMaya() {
+      who = "maya"; if (maya) maya.wave = 1.2;
+      if (document.pointerLockElement) document.exitPointerLock();
+      const pool = items.filter(i => i.status !== "gesehen" && i.poster && i.id !== (mLast && mLast.id));
+      const films = pool.filter(i => i.mediaType === "movie"), pick = (films.length ? films : pool)[Math.floor(Math.random() * (films.length || pool.length))];
+      const b = box();
+      if (!pick) {
+        b.innerHTML = `<div style="font-size:40px">🎟</div><div><p><b>Maya:</b> Deine Watchlist ist noch leer! Schnapp dir was aus den Regalen – dann reserviere ich dir einen Platz im Kino. 🎬</p><div class="row"><button class="btn primary" id="myGo">Trotzdem ins Kino</button><button class="btn" id="clkBye">Danke!</button></div></div>`;
+      } else {
+        mLast = pick;
+        b.innerHTML = `<img src="${esc(pick.poster)}" alt=""><div><p><b>Maya:</b> ${ML[Math.floor(Math.random() * ML.length)].replace("{b}", esc(pick.title) + (pick.year ? ` (${esc(pick.year)})` : ""))}</p><div class="row"><button class="btn primary" id="myGo">🎬 Ab ins Kino</button><button class="btn" id="myOther">🎟 Anderer Film</button><button class="btn" id="clkBye">Danke!</button></div></div>`;
+        $("#myOther").onclick = talkMaya;
+      }
+      b.classList.add("show"); SFX.fx.notify();
+      $("#myGo").onclick = () => { b.classList.remove("show"); keys = {}; enterCinema(); sitDown(null); if (pick) setTimeout(() => Cinema.pick(pick.id), 300); };
+      $("#clkBye").onclick = () => b.classList.remove("show");
+    }
+    return { talk, talkPascal, talkMaya, hide: () => box().classList.remove("show") };
   })();
   // Getränkeautomat: Leuchtkopf, Glasfront mit echten 3D-Dosen und -Flaschen, Tastenfeld, Kartenleser und Ausgabefach
   function drinkMachine(x, z, rot) {
@@ -3589,6 +3699,7 @@ const Room = (() => {
     buildClerk(4.6, -3.2, Math.atan2(-4.6, 3.2));
     trashBin(-4.45, 4.55, Math.atan2(4.45, -4.55));
     buildPascal();
+    buildMaya(-4.0, -2.4, Math.atan2(4.0, 2.4));
     // Sitzbank vor der Mitte
     // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
     const bench = new T.Group();
@@ -4724,7 +4835,8 @@ const Room = (() => {
     }
     function menu() { view = "menu"; render(); }
     function back() { if (view === "youtube" || view === "browser" || view === "stream") { view = "menu"; render(); return true; } if (view === "trailer") { view = "detail"; render(); return true; } if (view === "file" || view === "detail") { view = "menu"; render(); return true; } return false; }
-    return { show, hide, place, playFile, menu, back, openRealYT, kinoNav, go, full: () => (fullOn ? exitFull(false) : enterFull(false)), openStream, streamCheck };
+    function pick(id) { const it = items.find(i => i.id === id); if (!it) return; cur = it; view = "detail"; render(); }
+    return { pick, show, hide, place, playFile, menu, back, openRealYT, kinoNav, go, full: () => (fullOn ? exitFull(false) : enterFull(false)), openStream, streamCheck };
   })();
 
   // ---------- Szene ----------
@@ -5076,7 +5188,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !m.userData.maya && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -5208,6 +5320,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.maya) { lab.innerHTML = `🎟 <b>Maya</b> · Kino-Kasse<span class="hint"> – ${tap}: Film für den Kinoabend</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.pascal) { lab.innerHTML = `📦 <b>Pascal</b> · räumt die Regale ein<span class="hint"> – ${tap}: Was ist gerade angesagt?</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.trash) { const h = Popcorn.holding() || Drink.holding(); lab.innerHTML = `🗑 <b>Mülleimer</b><span class="hint"> – ${h ? tap + " zum Wegwerfen von Tüte/Becher" : "gerade nichts zum Wegwerfen"}</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.clerk) { lab.innerHTML = `🧑‍💼 <b>Kevin</b> · Verkäufer<span class="hint"> – ${tap} für einen Tipp nach deinem Geschmack</span>`; lab.style.opacity = 1; return; }
@@ -5235,6 +5348,7 @@ const Room = (() => {
     if (m.userData.clerk) { Clerk.talk(); return; }
     if (m.userData.trash) { useTrash(); return; }
     if (m.userData.pascal) { Clerk.talkPascal(); return; }
+    if (m.userData.maya) { Clerk.talkMaya(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -5337,7 +5451,7 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -5443,7 +5557,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -5478,7 +5592,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "75";
+const APP_VERSION = "76";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
