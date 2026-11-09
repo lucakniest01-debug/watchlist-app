@@ -2874,19 +2874,132 @@ const Room = (() => {
     R.rotation.z = clerk.wave > 0 ? 2.6 + Math.sin(t / 110) * .35 : R.rotation.z + (.12 - R.rotation.z) * Math.min(1, dt * 5);
     clerk.person.position.y = Math.sin(t / 900) * .006;
   }
+  // ---------- Pascal: läuft mit einem Karton durch den Laden, sortiert Regale und kennt die Trends ----------
+  let pascal = null;
+  const PASCAL_PATH = [[-1.8, 2.6], [-5.3, 1.5], [-5.3, -3.5], [-2.6, -5.6], [1.2, -5.6]];
+  function buildPascal() {
+    const p = new T.Group();
+    const vest = new T.MeshLambertMaterial({ color: 0x1f7a4d }), shirt = new T.MeshLambertMaterial({ color: 0xf2f2f2 }), skin = new T.MeshLambertMaterial({ color: 0xe2b08c });
+    const jeans = new T.MeshLambertMaterial({ color: 0x2b3a5c }), shoe = new T.MeshLambertMaterial({ color: 0x1a1a1a }), hairM = new T.MeshLambertMaterial({ color: 0x14100c });
+    // Beine (schwingen beim Gehen)
+    const legs = [];
+    for (const sx of [-1, 1]) {
+      const hip = new T.Group(); hip.position.set(sx * .085, .92, 0); p.add(hip);
+      const leg = new T.Mesh(new T.CylinderGeometry(.07, .06, .86, 12), jeans); leg.position.y = -.43; hip.add(leg);
+      const foot = new T.Mesh(new T.BoxGeometry(.1, .06, .2), shoe); foot.position.set(0, -.88, .04); hip.add(foot);
+      legs.push(hip);
+    }
+    const torso = new T.Mesh(new T.CylinderGeometry(.19, .17, .58, 20), shirt); torso.position.y = 1.22; p.add(torso);
+    // Weste vorne offen: zwei Hälften
+    const vestG = new T.CylinderGeometry(.197, .177, .56, 20, 1, true, Math.PI * .12, Math.PI * 1.76);
+    const v = new T.Mesh(vestG, vest); v.position.y = 1.22; v.rotation.y = Math.PI; p.add(v);
+    const sh = new T.Mesh(new T.SphereGeometry(.19, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), vest); sh.position.y = 1.5; sh.scale.y = .45; p.add(sh);
+    const tag = new T.Mesh(new T.PlaneGeometry(.1, .045), new T.MeshBasicMaterial({ map: canvasTex(128, 56, (c, w, h) => { c.fillStyle = "#fff"; c.fillRect(0, 0, w, h); c.fillStyle = "#1f7a4d"; c.font = "bold 24px Segoe UI"; c.textAlign = "center"; c.fillText("PASCAL", w / 2, 37); }) }));
+    tag.position.set(-.1, 1.38, .182); tag.rotation.y = -.35; p.add(tag);
+    const neck = new T.Mesh(new T.CylinderGeometry(.055, .06, .08, 12), skin); neck.position.y = 1.57; p.add(neck);
+    const head = new T.Group(); head.position.y = 1.73; p.add(head);
+    const faceT = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = "#e2b08c"; c.fillRect(0, 0, w, h);
+      const cx = w * .25;
+      c.fillStyle = "#1a120c"; for (const dx of [-14, 14]) { c.beginPath(); c.ellipse(cx + dx, h * .46, 4.5, 6, 0, 0, 7); c.fill(); }
+      c.fillStyle = "#fff"; for (const dx of [-13, 15]) { c.beginPath(); c.arc(cx + dx, h * .44, 1.5, 0, 7); c.fill(); }
+      // Brille
+      c.strokeStyle = "#222"; c.lineWidth = 3; for (const dx of [-14, 14]) { c.beginPath(); c.arc(cx + dx, h * .46, 10, 0, 7); c.stroke(); } c.beginPath(); c.moveTo(cx - 4, h * .45); c.lineTo(cx + 4, h * .45); c.stroke();
+      c.strokeStyle = "#8a3a22"; c.lineWidth = 3; c.beginPath(); c.arc(cx, h * .6, 10, .2 * Math.PI, .8 * Math.PI); c.stroke();
+      c.fillStyle = "rgba(60,40,30,.25)"; c.beginPath(); c.ellipse(cx, h * .72, 22, 10, 0, 0, Math.PI); c.fill(); // leichter Bart
+    });
+    const skull = new T.Mesh(new T.SphereGeometry(.14, 32, 20), new T.MeshLambertMaterial({ map: faceT })); skull.scale.set(1, 1.1, 1); head.add(skull);
+    const hair = new T.Mesh(new T.SphereGeometry(.15, 28, 14, 0, Math.PI * 2, 0, Math.PI * .42), hairM); hair.position.set(0, .03, -.01); hair.rotation.x = -.35; head.add(hair);
+    const quiff = new T.Mesh(new T.SphereGeometry(.07, 14, 10), hairM); quiff.position.set(0, .14, .06); quiff.scale.set(1.6, .7, 1); head.add(quiff);
+    for (const sx of [-1, 1]) { const ear = new T.Mesh(new T.SphereGeometry(.03, 10, 8), skin); ear.position.set(sx * .14, 0, 0); ear.scale.set(.6, 1, 1); head.add(ear); }
+    // Arme tragen einen Karton
+    const arms = [];
+    for (const sx of [-1, 1]) {
+      const arm = new T.Group(); arm.position.set(sx * .22, 1.45, 0); p.add(arm);
+      const up = new T.Mesh(new T.CylinderGeometry(.05, .045, .48, 12), shirt); up.position.y = -.24; arm.add(up);
+      const hand = new T.Mesh(new T.SphereGeometry(.05, 12, 10), skin); hand.position.y = -.5; arm.add(hand);
+      arm.rotation.x = -.85; arm.rotation.z = sx * -.06; arms.push(arm);
+    }
+    const boxT = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = "#b98a52"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.08)"; for (let k = 0; k < 200; k++) c.fillRect(Math.random() * w, Math.random() * h, 2, 1);
+      c.fillStyle = "#a4733d"; c.fillRect(0, h * .42, w, 14);
+      c.fillStyle = "#3a2410"; c.font = "bold 30px Segoe UI, sans-serif"; c.textAlign = "center"; c.fillText("NEUHEITEN", w / 2, h * .36); c.font = "bold 18px Segoe UI"; c.fillText("↑ OBEN ↑", w / 2, h * .82);
+    });
+    const crate = new T.Group(); crate.position.set(0, 1.04, .33); p.add(crate);
+    const cbox = new T.Mesh(new T.BoxGeometry(.42, .2, .3), [new T.MeshLambertMaterial({ color: 0xb98a52 }), new T.MeshLambertMaterial({ color: 0xb98a52 }), new T.MeshLambertMaterial({ color: 0x8a6538 }), new T.MeshLambertMaterial({ color: 0xb98a52 }), new T.MeshLambertMaterial({ map: boxT }), new T.MeshLambertMaterial({ color: 0xb98a52 })]); crate.add(cbox);
+    // ein paar Hüllen schauen oben heraus
+    const cols = [0xe11d48, 0x2563eb, 0x16a34a, 0xf59e0b, 0x7c3aed];
+    cols.forEach((col, k) => { const d = new T.Mesh(new T.BoxGeometry(.035, .2, .14), new T.MeshLambertMaterial({ color: col })); d.position.set(-.15 + k * .075, .1, 0); d.rotation.z = (k - 2) * .06; crate.add(d); });
+    p.traverse(o => { if (o.isMesh) { o.userData.pascal = true; fixedPicks.push(o); } });
+    scene.add(p);
+    const col = { x: PASCAL_PATH[0][0], z: PASCAL_PATH[0][1], r: .35, dyn: true }; colliders.push(col); blob(p, 0, 0, .8, .8, .55);
+    pascal = { p, legs, arms, head, crate, col, i: 0, dir: 1, wait: 1.5, x: PASCAL_PATH[0][0], z: PASCAL_PATH[0][1], yaw: 0, step: 0, talking: 0, sort: 0 };
+    p.position.set(pascal.x, 0, pascal.z);
+  }
+  function pascalTick(dt, t) {
+    const P = pascal; if (!P || inCinema) return;
+    const d = Math.hypot(pos.x - P.x, pos.z - P.z), near = d < 2.1 || P.talking > 0;
+    P.talking = Math.max(0, P.talking - dt);
+    let want = P.yaw, moving = false;
+    if (near) {
+      // stehen bleiben und dich anschauen
+      want = Math.atan2(pos.x - P.x, pos.z - P.z);
+    } else if (P.wait > 0) {
+      P.wait -= dt; P.sort = P.wait > 0 ? 1 : 0;
+    } else {
+      const nx = P.i + P.dir; if (nx < 0 || nx >= PASCAL_PATH.length) { P.dir *= -1; }
+      const [tx, tz] = PASCAL_PATH[P.i + P.dir], dx = tx - P.x, dz = tz - P.z, L = Math.hypot(dx, dz);
+      if (L < .05) { P.i += P.dir; P.wait = 2 + Math.random() * 3; }
+      else {
+        const sp = Math.min(L, 1.05 * dt); P.x += dx / L * sp; P.z += dz / L * sp; want = Math.atan2(dx, dz); moving = true;
+        // nicht durch dich hindurchlaufen
+        if (Math.hypot(pos.x - P.x, pos.z - P.z) < .75) { P.x -= dx / L * sp; P.z -= dz / L * sp; moving = false; }
+      }
+    }
+    let a = want - P.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); P.yaw += a * Math.min(1, dt * 5);
+    P.step += moving ? dt * 7.5 : 0;
+    const sw = moving ? Math.sin(P.step) : 0;
+    P.legs[0].rotation.x = sw * .45; P.legs[1].rotation.x = -sw * .45;
+    // beim Sortieren eine Hand zum Regal, beim Reden kurz winken
+    const sortK = P.sort && !near ? Math.sin(t / 260) : 0;
+    P.arms[0].rotation.x = -.85 + sw * .06; P.arms[1].rotation.x = near && P.talking > 1.2 ? -2.7 + Math.sin(t / 110) * .3 : -.85 - sw * .06 + sortK * .25;
+    P.crate.rotation.z = sw * .04;
+    P.head.rotation.y = near ? 0 : Math.sin(t / 1400) * .25; P.head.rotation.x = P.sort && !near ? .15 : 0;
+    P.p.position.set(P.x, Math.abs(sw) * .025, P.z); P.p.rotation.y = P.yaw;
+    P.col.x = P.x; P.col.z = P.z;
+  }
   const Clerk = (() => {
     const LINES = ["Weil du <b>{a}</b> mochtest, gefällt dir bestimmt <b>{b}</b>.", "Kenn ich! Wer <b>{a}</b> schaut, landet oft bei <b>{b}</b> – probier's mal.", "Mein Tipp nach <b>{a}</b>: <b>{b}</b>. Ganz ehrlich, lohnt sich!", "Hmm … <b>{a}</b>? Dann nimm <b>{b}</b> mit, das passt perfekt."];
     let last = null;
     const box = () => $("#clerkTalk");
+    let who = "kevin";
     function say(html, r) {
       const b = box();
-      b.innerHTML = `${r && r.poster ? `<img src="${esc(r.poster)}" alt="">` : `<div style="font-size:40px">🧑‍💼</div>`}<div><p>${html}</p><div class="row">${r ? `<button class="btn primary" id="clkOpen">Ansehen</button>` : ""}<button class="btn" id="clkMore">💡 Noch ein Tipp</button><button class="btn" id="clkBye">Danke!</button></div></div>`;
+      b.innerHTML = `${r && r.poster ? `<img src="${esc(r.poster)}" alt="">` : `<div style="font-size:40px">${who === "pascal" ? "📦" : "🧑‍💼"}</div>`}<div><p>${html}</p><div class="row">${r ? `<button class="btn primary" id="clkOpen">Ansehen</button>` : ""}<button class="btn" id="clkMore">💡 Noch ein Tipp</button><button class="btn" id="clkBye">Danke!</button></div></div>`;
       b.classList.add("show");
       if (r) $("#clkOpen").onclick = () => { b.classList.remove("show"); keys = {}; Shop.openItem(r); };
-      $("#clkMore").onclick = () => talk(); $("#clkBye").onclick = () => b.classList.remove("show");
+      $("#clkMore").onclick = () => who === "pascal" ? talkPascal() : talk(); $("#clkBye").onclick = () => b.classList.remove("show");
+    }
+    // Pascal: was diese Woche angesagt ist
+    const PL = ["Frisch reingekommen – alle reden gerade über <b>{b}</b>!", "Hab gerade <b>{b}</b> einsortiert. Läuft diese Woche richtig gut!", "Psst – <b>{b}</b> ist gerade der Renner. Würd ich mitnehmen.", "Die Leute fragen ständig nach <b>{b}</b>. Kennst du das schon?"];
+    let pBusy = false;
+    async function talkPascal() {
+      if (pBusy) return; pBusy = true; who = "pascal"; if (pascal) pascal.talking = 2.5;
+      if (document.pointerLockElement) document.exitPointerLock();
+      say("<b>Pascal:</b> Oh, hi! Warte, ich hab hier was im Karton … 📦");
+      try {
+        const t = ["all", "movie", "tv"][Math.floor(Math.random() * 3)];
+        const r = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/trending/${t}/week`, language: "de-DE" }));
+        const list = (r.results || []).filter(x => x.media_type === "movie" || x.media_type === "tv" || t !== "all").map(x => Shop.toR(x, x.media_type || t)).filter(x => x.poster && !Shop.onList(x) && (!last || x.tmdbId !== last.tmdbId));
+        const rec = list[Math.floor(Math.random() * Math.min(10, list.length))]; if (!rec) throw new Error("leer");
+        last = rec;
+        say("<b>Pascal:</b> " + PL[Math.floor(Math.random() * PL.length)].replace("{b}", esc(rec.title) + (rec.year ? ` (${esc(rec.year)})` : "")) + (rec.vote ? ` <span style="opacity:.7">⭐ ${rec.vote.toFixed(1)}</span>` : ""), rec);
+        SFX.fx.notify();
+      } catch { say(settings.apiKey ? "<b>Pascal:</b> Mist, der Karton ist gerade leer – frag mich gleich nochmal!" : "<b>Pascal:</b> Ohne TMDB-Schlüssel (⚙ Einstellungen) weiß ich leider nicht, was gerade läuft."); }
+      pBusy = false;
     }
     async function talk() {
-      if (clerk.busy) return; clerk.busy = true; clerk.wave = 1;
+      if (clerk.busy) return; clerk.busy = true; clerk.wave = 1; who = "kevin";
       if (document.pointerLockElement) document.exitPointerLock();
       say("<b>Kevin:</b> Moment, ich schau mal ins Regal … 🤔");
       try {
@@ -2911,7 +3024,7 @@ const Room = (() => {
       } catch { say(settings.apiKey ? "Hm, gerade finde ich nichts – frag mich gleich nochmal!" : "Ohne TMDB-Schlüssel (⚙ Einstellungen) kann ich leider nicht ins Regal schauen."); }
       clerk.busy = false;
     }
-    return { talk, hide: () => box().classList.remove("show") };
+    return { talk, talkPascal, hide: () => box().classList.remove("show") };
   })();
   // Getränkeautomat: Leuchtkopf, Glasfront mit echten 3D-Dosen und -Flaschen, Tastenfeld, Kartenleser und Ausgabefach
   function drinkMachine(x, z, rot) {
@@ -3475,6 +3588,7 @@ const Room = (() => {
     drinkMachine(-4.75, 3.2, Math.atan2(4.75, -3.2));
     buildClerk(4.6, -3.2, Math.atan2(-4.6, 3.2));
     trashBin(-4.45, 4.55, Math.atan2(4.45, -4.55));
+    buildPascal();
     // Sitzbank vor der Mitte
     // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
     const bench = new T.Group();
@@ -4743,7 +4857,7 @@ const Room = (() => {
     buildDecor(); buildCinema(); buildStoreDoor(); buildExitDoor();
     setTimeout(() => { realify(scene); applyGfx(true); }, 0);
     // Kontaktschatten unter Pflanzen, Bank, Automaten
-    for (const c of colliders) blob(scene, c.x, c.z, c.r * 2.4, c.r * 2.4, .7);
+    for (const c of colliders) if (!c.dyn) blob(scene, c.x, c.z, c.r * 2.4, c.r * 2.4, .7);
     // Leuchtende Flächen (Schilder, Neon, Hüllen-Cover) nicht vom Tonemapping abdunkeln lassen
     scene.traverse(o => { const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : []; for (const m of ms) if (m.isMeshBasicMaterial && m.blending !== T.AdditiveBlending) m.toneMapped = false; });
     pickables.push(...fixedPicks.filter(m => m.userData.cinema));
@@ -4962,7 +5076,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -5094,6 +5208,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.pascal) { lab.innerHTML = `📦 <b>Pascal</b> · räumt die Regale ein<span class="hint"> – ${tap}: Was ist gerade angesagt?</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.trash) { const h = Popcorn.holding() || Drink.holding(); lab.innerHTML = `🗑 <b>Mülleimer</b><span class="hint"> – ${h ? tap + " zum Wegwerfen von Tüte/Becher" : "gerade nichts zum Wegwerfen"}</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.clerk) { lab.innerHTML = `🧑‍💼 <b>Kevin</b> · Verkäufer<span class="hint"> – ${tap} für einen Tipp nach deinem Geschmack</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.drinks) { lab.innerHTML = `🥤 <b>Getränkeautomat</b><span class="hint"> – ${tap} für einen Becher</span>`; lab.style.opacity = 1; return; }
@@ -5119,6 +5234,7 @@ const Room = (() => {
     if (m.userData.drinks) { Drink.get(); return; }
     if (m.userData.clerk) { Clerk.talk(); return; }
     if (m.userData.trash) { useTrash(); return; }
+    if (m.userData.pascal) { Clerk.talkPascal(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -5221,7 +5337,7 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -5327,7 +5443,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -5362,7 +5478,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "74";
+const APP_VERSION = "75";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
