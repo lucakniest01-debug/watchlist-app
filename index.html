@@ -2295,6 +2295,7 @@ const SFX = (() => {
     can() { noise(.18, { gain: .16, type: "lowpass", freq: 700 }); tone(160, .25, { type: "square", gain: .04, to: 70, filter: 900, at: .08 }); noise(.4, { gain: .06, type: "highpass", freq: 3000, at: .35, attack: .02 }); },
     dice() { for (let i = 0; i < 14; i++) tone(500 + Math.random() * 600, .05, { type: "square", gain: .035, at: i * (.05 + i * .006), filter: 2200 }); tone(880, .35, { type: "triangle", gain: .09, at: 1.3 }); tone(1320, .45, { type: "triangle", gain: .07, at: 1.38 }); },
     shuffle() { for (let i = 0; i < 8; i++) noise(.06, { gain: .05, type: "bandpass", freq: 2000 + i * 150, q: 2, at: i * .04 }); },
+    trash() { tone(180, .25, { type: "triangle", gain: .09, to: 90 }); noise(.18, { gain: .12, type: "bandpass", freq: 900, q: 1.5, at: .05 }); tone(620, .4, { type: "sine", gain: .03, at: .08, to: 540 }); noise(.08, { gain: .06, type: "highpass", freq: 3000, at: .3 }); },
     curtain() { noise(2.2, { gain: .07, freq: 900, attack: .5, type: "lowpass" }); },
     bleep(pan = 0, g = .05) { const base = [262, 330, 392, 523, 659, 784][Math.floor(Math.random() * 6)], k = Math.random();
       if (k < .4) { tone(base, .08, { type: "square", gain: g, pan, filter: 3000 }); tone(base * 1.5, .08, { type: "square", gain: g, pan, at: .09, filter: 3000 }); }
@@ -2556,7 +2557,7 @@ const Room = (() => {
   // ---------- Popcorn: am Automaten holen, mit F (oder Klick auf die Tüte) essen ----------
   const Popcorn = (() => {
     const MAX = 30, PIECES = 46;
-    let left = 0, busy = false, model = null, pieces = null, show = 0, munch = 0, flyers = [], chew = 0;
+    let left = 0, busy = false, model = null, pieces = null, show = 0, munch = 0, flyers = [], chew = 0, toss = 0;
     const el = () => $("#popHand");
     // 3D-Tüte, die du vor dir in der Hand hältst (hängt an der Kamera)
     function build() {
@@ -2641,6 +2642,7 @@ const Room = (() => {
       model.visible = show > .02;
       if (!model.visible) return;
       munch = Math.max(0, munch - dt * 1.25);
+      if (toss > 0) { toss = Math.max(0, toss - dt * 2.2); const k = 1 - toss; model.position.set(-.25 + k * .2, -.215 + Math.sin(k * Math.PI) * .12 - k * .25, -.46 - k * .5); model.rotation.set(.28 + k * 3, .3, .1 + k * 2); show = toss; model.visible = toss > .02; return; }
       const ph = 1 - munch, up = munch > 0 ? ease(ph / .3) * (1 - ease((ph - .65) / .35)) : 0;
       const bob = walking ? Math.sin(t / 140) * .008 : Math.sin(t / 900) * .003, shake = munch > 0 ? Math.sin(t / 25) * .004 * up : 0;
       model.position.set(-.25 + up * .1, -.215 - (1 - show) * .35 + up * .1 + bob + shake, -.46 + up * .1);
@@ -2648,7 +2650,8 @@ const Room = (() => {
     }
     function hide() { left = 0; badge(); if (model) { model.visible = false; show = 0; } }
     document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#popHand")) eat(); });
-    return { get, eat, hide, tick, has: () => left > 0, chew: () => chew };
+    function throwAway() { if (!model || !model.visible) return false; left = 0; badge(); toss = 1; munch = 0; return true; }
+    return { get, eat, hide, tick, throwAway, holding: () => !!(model && model.visible), has: () => left > 0, chew: () => chew };
   })();
 
   // ---------- Ausgedachte Getränkemarken (Dosen-Etiketten, Flaschen, Becher) ----------
@@ -2700,7 +2703,7 @@ const Room = (() => {
 
   // ---------- Getränk: Becher mit Deckel und Strohhalm in der rechten Hand ----------
   const Drink = (() => {
-    const MAX = 14; let left = 0, busy = false, model = null, show = 0, sipT = 0, flavor = 0;
+    const MAX = 14; let left = 0, busy = false, model = null, show = 0, sipT = 0, flavor = 0, toss = 0;
     const FLAV = BRANDS.slice(0, 6).map(b => [b.name]);
     const cupTex = i => brandLabel(i, 512, 256);
     function cupTexOld(i) {
@@ -2745,6 +2748,7 @@ const Room = (() => {
       const want = left > 0 || sipT > 0;
       show += ((want ? 1 : 0) - show) * Math.min(1, dt * (want ? 6 : 3));
       model.visible = show > .02; if (!model.visible) return;
+      if (toss > 0) { toss = Math.max(0, toss - dt * 2.2); const k = 1 - toss; model.position.set(.31 - k * .2, -.25 + Math.sin(k * Math.PI) * .12 - k * .25, -.48 - k * .5); model.rotation.set(k * 3, -.2, -k * 2); show = toss; model.visible = toss > .02; return; }
       sipT = Math.max(0, sipT - dt * .85);
       const e = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x), ph = 1 - sipT;
       const m = sipT > 0 ? e(ph / .28) * (1 - e((ph - .72) / .28)) : 0, suck = m > .95 ? Math.sin(t / 60) * .004 : 0;
@@ -2755,9 +2759,53 @@ const Room = (() => {
     }
     function hide() { left = 0; badge(); if (model) { model.visible = false; show = 0; } }
     document.addEventListener("click", e => { if (e.target.closest && e.target.closest("#drinkHand")) sip(); });
-    return { get, sip, hide, tick, has: () => left > 0 };
+    function throwAway() { if (!model || !model.visible) return false; left = 0; badge(); toss = 1; sipT = 0; return true; }
+    return { get, sip, hide, tick, throwAway, holding: () => !!(model && model.visible), has: () => left > 0 };
   })();
   let machine = null;
+  // ---------- Mülleimer: Edelstahl mit Schwingdeckel, Pfandring und Recycling-Aufkleber ----------
+  let bin = null;
+  function trashBin(x, z, rot) {
+    const g = new T.Group();
+    const steel = withNormal(pbr(new T.MeshLambertMaterial({ color: 0xb9bfc8 }), .32, .9), "brushed_n", 2, 1, .5), dark = pbr(new T.MeshLambertMaterial({ color: 0x22262c }), .45, .3), black = pbr(new T.MeshLambertMaterial({ color: 0x0b0c0e }), .7, 0);
+    // Korpus mit Rillen
+    const body = new T.Mesh(new T.CylinderGeometry(.24, .21, .78, 40, 1, true), pbr(new T.MeshLambertMaterial({ color: 0xb9bfc8, side: T.DoubleSide }), .32, .9)); body.position.y = .41; g.add(body);
+    for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2, rib = new T.Mesh(new T.BoxGeometry(.008, .7, .01), steel); rib.position.set(Math.sin(a) * .228, .42, Math.cos(a) * .228); rib.rotation.y = a; rib.rotation.x = Math.atan2(.03, .78) * Math.cos(0); g.add(rib); }
+    const foot = new T.Mesh(new T.CylinderGeometry(.215, .22, .04, 40), dark); foot.position.y = .02; g.add(foot);
+    const ring = new T.Mesh(new T.TorusGeometry(.243, .012, 8, 48), steel); ring.rotation.x = Math.PI / 2; ring.position.y = .8; g.add(ring);
+    // Müllbeutel-Rand, der über den Rand hängt
+    const bag = new T.Mesh(new T.CylinderGeometry(.247, .246, .05, 40, 1, true), black); bag.position.y = .78; g.add(bag);
+    // Kuppel-Deckel mit Schwingklappe
+    const dome = new T.Mesh(new T.SphereGeometry(.245, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2), steel); dome.position.y = .8; dome.scale.y = .55; g.add(dome);
+    const mouthT = canvasTex(256, 128, (c, w, h) => { c.fillStyle = "#0a0b0d"; c.beginPath(); c.ellipse(w / 2, h / 2, w / 2 - 4, h / 2 - 4, 0, 0, 7); c.fill(); });
+    const mouth = new T.Mesh(new T.PlaneGeometry(.26, .13), new T.MeshBasicMaterial({ map: mouthT, transparent: true })); mouth.position.set(0, .88, .2); mouth.rotation.x = -.55; g.add(mouth);
+    const flapPivot = new T.Group(); flapPivot.position.set(0, .935, .155); flapPivot.rotation.x = -.55; g.add(flapPivot);
+    const flap = new T.Mesh(new T.PlaneGeometry(.24, .11), pbr(new T.MeshLambertMaterial({ color: 0x9aa1ab, side: T.DoubleSide }), .3, .9)); flap.position.y = -.055; flapPivot.add(flap);
+    // Aufkleber vorne
+    const sticker = canvasTex(256, 256, (c, w, h) => {
+      c.fillStyle = "#1f8f3a"; c.beginPath(); c.arc(w / 2, h / 2, w / 2 - 6, 0, 7); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 8; c.stroke();
+      c.fillStyle = "#fff"; c.font = "bold 120px Segoe UI Symbol, Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("♻", w / 2, h / 2 - 12);
+      c.font = "bold 28px Segoe UI, sans-serif"; c.fillText("DANKE!", w / 2, h * .8);
+    });
+    const st = new T.Mesh(new T.CircleGeometry(.075, 32), new T.MeshLambertMaterial({ map: sticker })); st.position.set(0, .5, .228); st.rotation.x = Math.atan2(.03, .78); g.add(st);
+    const lab = canvasTex(256, 64, (c, w, h) => { c.fillStyle = "#14161a"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8eef5"; c.font = "bold 30px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("RESTMÜLL", w / 2, h / 2 + 2); });
+    const lb = new T.Mesh(new T.PlaneGeometry(.18, .045), new T.MeshLambertMaterial({ map: lab })); lb.position.set(0, .66, .227); lb.rotation.x = Math.atan2(.03, .78); g.add(lb);
+    g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .32 });
+    for (const m of [body, dome, flap, st, lb, mouth]) { m.userData.trash = true; fixedPicks.push(m); }
+    bin = { flapPivot, swing: 0 };
+  }
+  function binTick(dt, t) {
+    if (!bin) return;
+    bin.swing = Math.max(0, bin.swing - dt * .9);
+    bin.flapPivot.rotation.x = -.55 - Math.sin(bin.swing * 14) * bin.swing * 1.1;
+  }
+  function useTrash() {
+    const a = Popcorn.throwAway(), b = Drink.throwAway();
+    if (!a && !b) { $("#roomLabel").innerHTML = "🗑 Du hast gerade nichts zum Wegwerfen"; $("#roomLabel").style.opacity = 1; return; }
+    if (bin) bin.swing = 1;
+    setTimeout(() => SFX.fx.trash(), 260);
+    toast(a && b ? "🗑 Tüte und Becher weggeworfen – danke!" : a ? "🗑 Popcorn-Tüte weggeworfen" : "🗑 Becher weggeworfen");
+  }
   // ---------- Verkäufer an der Info-Theke: gibt Tipps nach deinem Geschmack ----------
   let clerk = null;
   function buildClerk(x, z, rot) {
@@ -3426,6 +3474,7 @@ const Room = (() => {
     arcadeCabinet(3.4, 4.6, Math.atan2(-3.4, -4.6));
     drinkMachine(-4.75, 3.2, Math.atan2(4.75, -3.2));
     buildClerk(6.3, -6.3, Math.atan2(-6.3, 6.3));
+    trashBin(-4.45, 4.55, Math.atan2(4.45, -4.55));
     // Sitzbank vor der Mitte
     // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
     const bench = new T.Group();
@@ -4913,7 +4962,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -5045,6 +5094,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.trash) { const h = Popcorn.holding() || Drink.holding(); lab.innerHTML = `🗑 <b>Mülleimer</b><span class="hint"> – ${h ? tap + " zum Wegwerfen von Tüte/Becher" : "gerade nichts zum Wegwerfen"}</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.clerk) { lab.innerHTML = `🧑‍💼 <b>Kevin</b> · Verkäufer<span class="hint"> – ${tap} für einen Tipp nach deinem Geschmack</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.drinks) { lab.innerHTML = `🥤 <b>Getränkeautomat</b><span class="hint"> – ${tap} für einen Becher</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.popcorn) { lab.innerHTML = `🍿 <b>Popcorn-Automat</b><span class="hint"> – ${tap} für eine Tüte Popcorn</span>`; lab.style.opacity = 1; return; }
@@ -5068,6 +5118,7 @@ const Room = (() => {
     if (m.userData.popcorn) { Popcorn.get(); return; }
     if (m.userData.drinks) { Drink.get(); return; }
     if (m.userData.clerk) { Clerk.talk(); return; }
+    if (m.userData.trash) { useTrash(); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -5170,7 +5221,7 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -5276,7 +5327,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -5311,7 +5362,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "72";
+const APP_VERSION = "73";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
