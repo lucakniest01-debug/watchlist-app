@@ -2989,12 +2989,12 @@ const Room = (() => {
       c.fillStyle = "#9a3a2a"; c.beginPath(); c.ellipse(cx, cy + 30, 12, 4.5, 0, 0, P); c.fill(); c.fillStyle = "#fff"; c.fillRect(cx - 7, cy + 30, 14, 2);
       // Drei-Tage-Bart: dunkler Schatten + viele feine Stoppeln an Kinn, Kiefer, Wangen und Oberlippe
       const inBeard = (x, y) => { const dx = (x - cx) / 66, dy = (y - (cy + 34)) / 48; const jaw = dx * dx + dy * dy < 1 && y > cy + 8; const lip = Math.abs(x - cx) < 18 && y > cy + 18 && y < cy + 26; const mouth = Math.abs(x - cx) < 13 && y > cy + 25 && y < cy + 36; return (jaw || lip) && !mouth; };
-      const shade = c.createRadialGradient(cx, cy + 52, 6, cx, cy + 52, 60); shade.addColorStop(0, "rgba(70,48,32,.2)"); shade.addColorStop(.6, "rgba(70,48,32,.14)"); shade.addColorStop(1, "rgba(70,48,32,0)");
+      const shade = c.createRadialGradient(cx, cy + 52, 6, cx, cy + 52, 62); shade.addColorStop(0, "rgba(66,44,30,.27)"); shade.addColorStop(.6, "rgba(66,44,30,.19)"); shade.addColorStop(1, "rgba(70,48,32,0)");
       c.save(); c.beginPath(); c.ellipse(cx, cy + 34, 66, 48, 0, 0, 7); c.clip(); c.fillStyle = shade; c.fillRect(0, cy + 8, w, h); c.restore();
       c.fillStyle = "#9a3a2a"; c.beginPath(); c.ellipse(cx, cy + 30, 12, 4.5, 0, 0, P); c.fill(); c.fillStyle = "#fff"; c.fillRect(cx - 7, cy + 30, 14, 2);
-      for (let k = 0; k < 1700; k++) { const x = cx - 70 + Math.random() * 140, y = cy + 6 + Math.random() * 90; if (!inBeard(x, y)) continue;
+      for (let k = 0; k < 2500; k++) { const x = cx - 70 + Math.random() * 140, y = cy + 6 + Math.random() * 90; if (!inBeard(x, y)) continue;
         const dx = (x - cx) / 66, dy = (y - (cy + 34)) / 48, edge = Math.min(1, Math.sqrt(dx * dx + dy * dy)); if (Math.random() < Math.pow(edge, 3) || (y < cy + 22 && Math.random() < (cy + 22 - y) / 14)) continue; // zu den Rändern hin auslaufen
-        c.fillStyle = `rgba(${35 + Math.random() * 25},${24 + Math.random() * 12},14,${(.18 + Math.random() * .28) * (1 - edge * .6)})`; c.fillRect(x, y, 1, 1.4); }
+        c.fillStyle = `rgba(${35 + Math.random() * 25},${24 + Math.random() * 12},14,${(.24 + Math.random() * .32) * (1 - edge * .55)})`; c.fillRect(x, y, 1.1, 1.5); }
     });
     const skull = new T.Mesh(new T.SphereGeometry(.14, 40, 28), pbr(new T.MeshLambertMaterial({ map: faceT }), .32, 0)); skull.scale.set(.98, 1.1, 1); head.add(skull);
     const nose = new T.Mesh(new T.SphereGeometry(.022, 12, 10), skin); nose.position.set(0, -.005, .138); nose.scale.set(.9, 1.15, 1.2); head.add(nose);
@@ -3194,6 +3194,104 @@ const Room = (() => {
     L.rotation.z += ((wv ? -2.5 : -.12) - L.rotation.z) * Math.min(1, dt * 8); L.rotation.x += ((wv ? 0 : -.25) - L.rotation.x) * Math.min(1, dt * 8);
     L.userData.elbow.rotation.x = wv ? -.35 + Math.sin(t / 110) * .35 : L.userData.elbow.rotation.x + (-1 - L.userData.elbow.rotation.x) * Math.min(1, dt * 8);
     M.person.position.y = Math.sin(t / 1000 + 1) * .005;
+  }
+  // ---------- Gürteltier „Dillo“: wuselt durch den Laden, schnüffelt, rollt sich bei Nähe zur Kugel ----------
+  let dillo = null;
+  function buildDillo() {
+    const g = new T.Group(), P = Math.PI;
+    const shellT = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = "#8b7a63"; c.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 10) for (let x = (y / 10) % 2 * 8; x < w; x += 16) { const gr = c.createLinearGradient(x, y, x + 14, y + 9); gr.addColorStop(0, "#a8967c"); gr.addColorStop(1, "#6e604d"); c.fillStyle = gr; c.beginPath(); c.roundRect(x + 1, y + 1, 13, 8, 3); c.fill(); }
+      c.fillStyle = "rgba(40,30,20,.35)"; for (let x = 0; x < w; x += 32) c.fillRect(x, 0, 3, h);
+    });
+    shellT.wrapS = T.RepeatWrapping; shellT.repeat.set(2, 1);
+    const shellM = pbr(new T.MeshLambertMaterial({ map: shellT }), .55, 0), skinM = pbr(new T.MeshLambertMaterial({ color: 0xd9b8a0 }), .8, 0), bandM = pbr(new T.MeshLambertMaterial({ color: 0x6a5a46 }), .5, 0);
+    const body = new T.Group(); body.position.y = .17; g.add(body);
+    // Panzer (oben) und Bauch (unten)
+    const shell = new T.Mesh(new T.SphereGeometry(1, 32, 16, 0, P * 2, 0, P * .58), shellM); shell.scale.set(.15, .13, .26); body.add(shell);
+    const belly = new T.Mesh(new T.SphereGeometry(1, 20, 10, 0, P * 2, P * .5, P * .5), skinM); belly.scale.set(.13, .07, .23); belly.position.y = .01; body.add(belly);
+    // Gürtel-Bänder quer über den Rücken
+    for (let k = -3; k <= 3; k++) { const zz = k * .045, r = Math.sqrt(Math.max(.01, 1 - (zz / .26) ** 2)); const band = new T.Mesh(new T.TorusGeometry(1, .06, 6, 20, P * 1.12), bandM); band.rotation.set(0, 0, -P * .06); band.scale.set(.152 * r, .132 * r, .12); band.position.set(0, 0, zz); body.add(band); }
+    // Kopf mit langer Schnauze, Ohren, Augen
+    const head = new T.Group(); head.position.set(0, .02, .25); body.add(head);
+    const skull = new T.Mesh(new T.SphereGeometry(.06, 16, 12), skinM); skull.scale.set(1, .9, 1.1); head.add(skull);
+    const cap = new T.Mesh(new T.SphereGeometry(.062, 16, 10, 0, P * 2, 0, P * .45), shellM); cap.scale.set(1, .9, 1.15); head.add(cap);
+    const snout = new T.Mesh(new T.ConeGeometry(.032, .13, 14), skinM); snout.rotation.x = P / 2; snout.position.set(0, -.015, .1); head.add(snout);
+    const nose = new T.Mesh(new T.SphereGeometry(.012, 10, 8), new T.MeshLambertMaterial({ color: 0x5a3a3a })); nose.position.set(0, -.015, .165); head.add(nose);
+    for (const sx of [-1, 1]) {
+      const ear = new T.Mesh(new T.ConeGeometry(.02, .07, 10), skinM); ear.position.set(sx * .04, .06, -.01); ear.rotation.set(-.3, 0, sx * -.35); ear.scale.z = .5; head.add(ear);
+      const eye = new T.Mesh(new T.SphereGeometry(.009, 10, 8), new T.MeshLambertMaterial({ color: 0x111111 })); eye.position.set(sx * .042, .012, .04); head.add(eye);
+      const glint = new T.Mesh(new T.SphereGeometry(.003, 6, 4), new T.MeshBasicMaterial({ color: 0xffffff })); glint.position.set(sx * .044, .016, .048); head.add(glint);
+    }
+    // Schwanz mit Ringen
+    const tail = new T.Group(); tail.position.set(0, -.02, -.24); body.add(tail);
+    const tailM = new T.Mesh(new T.ConeGeometry(.035, .24, 12), shellM); tailM.rotation.x = -P / 2 - .25; tailM.position.set(0, -.03, -.11); tail.add(tailM);
+    // Beine mit Krallen
+    const legs = [];
+    for (const [lx, lz] of [[-.09, .13], [.09, .13], [-.09, -.13], [.09, -.13]]) {
+      const hip = new T.Group(); hip.position.set(lx, .12, lz); g.add(hip);
+      const leg = new T.Mesh(new T.CylinderGeometry(.022, .018, .11, 8), skinM); leg.position.y = -.06; hip.add(leg);
+      const paw = new T.Mesh(new T.SphereGeometry(.024, 8, 6), skinM); paw.position.set(0, -.115, .01); paw.scale.set(1, .5, 1.4); hip.add(paw);
+      legs.push(hip);
+    }
+    g.traverse(o => { if (o.isMesh) { o.userData.dillo = true; fixedPicks.push(o); if (!pickables.includes(o)) pickables.push(o); } });
+    scene.add(g); blob(g, 0, 0, .45, .6, .5);
+    const col = { x: -1.2, z: 1.2, r: .22, dyn: true }; colliders.push(col);
+    dillo = { g, body, shell, head, tail, legs, col, x: -1.2, z: 1.2, yaw: 0, tx: -1.2, tz: 1.2, wait: 1, step: 0, roll: 0, rollT: 0, sniff: 0, flee: 0 };
+    g.position.set(dillo.x, 0, dillo.z);
+  }
+  // freier Punkt im Laden (nicht in Möbeln, nicht in Regalen)
+  function dilloFree(x, z) {
+    if (Math.abs(x) > 6.2 || Math.abs(z) > 6.2) return false;
+    for (const c of colliders) { if (c.dyn) continue; if (Math.hypot(x - c.x, z - c.z) < c.r + .35) return false; }
+    return true;
+  }
+  function dilloPathFree(x0, z0, x1, z1) { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / .25); for (let i = 1; i <= n; i++) { const k = i / n; if (!dilloFree(x0 + (x1 - x0) * k, z0 + (z1 - z0) * k)) return false; } return true; }
+  function dilloTarget(awayX, awayZ) {
+    const D = dillo;
+    for (let tries = 0; tries < 40; tries++) {
+      let x, z;
+      if (awayX != null) { const a = Math.atan2(D.x - awayX, D.z - awayZ) + (Math.random() - .5) * 1.2, r = 1.5 + Math.random() * 1.5; x = D.x + Math.sin(a) * r; z = D.z + Math.cos(a) * r; }
+      else { const a = Math.random() * Math.PI * 2, r = 1 + Math.random() * 3; x = D.x + Math.sin(a) * r; z = D.z + Math.cos(a) * r; }
+      if (dilloFree(x, z) && dilloPathFree(D.x, D.z, x, z)) { D.tx = x; D.tz = z; return true; }
+    }
+    return false;
+  }
+  function dilloRoll(sec) { if (!dillo) return; dillo.rollT = Math.max(dillo.rollT, sec); }
+  function dilloTick(dt, t) {
+    const D = dillo; if (!D || inCinema) return;
+    const dp = Math.hypot(pos.x - D.x, pos.z - D.z);
+    // zu nah? → einrollen, danach weglaufen
+    if (dp < 1.1 && D.rollT <= 0 && D.roll < .1 && D.flee <= 0) { dilloRoll(2.2); SFX.fx.shuffle(); }
+    D.rollT = Math.max(0, D.rollT - dt);
+    D.roll += ((D.rollT > 0 ? 1 : 0) - D.roll) * Math.min(1, dt * 7);
+    if (D.rollT <= 0 && D.roll < .05 && D.wasRolled) { D.wasRolled = false; D.flee = 2.5; dilloTarget(pos.x, pos.z); }
+    if (D.rollT > 0) D.wasRolled = true;
+    D.flee = Math.max(0, D.flee - dt);
+    let moving = false;
+    if (D.roll < .05) {
+      if (D.wait > 0) { D.wait -= dt; D.sniff += dt; }
+      else {
+        const dx = D.tx - D.x, dz = D.tz - D.z, L = Math.hypot(dx, dz);
+        if (L < .05) { D.wait = .8 + Math.random() * 2.5; dilloTarget(); }
+        else {
+          const sp = Math.min(L, (D.flee > 0 ? 1.4 : .55) * dt), nx = D.x + dx / L * sp, nz = D.z + dz / L * sp;
+          if (Math.hypot(pos.x - nx, pos.z - nz) < .5) { D.wait = .5; dilloTarget(pos.x, pos.z); }
+          else { D.x = nx; D.z = nz; moving = true; let a = Math.atan2(dx, dz) - D.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); D.yaw += a * Math.min(1, dt * 6); }
+        }
+      }
+    }
+    D.step += moving ? dt * (D.flee > 0 ? 26 : 16) : 0;
+    const sw = moving ? Math.sin(D.step) : 0, R = D.roll;
+    D.legs.forEach((l, i) => { l.rotation.x = (i === 0 || i === 3 ? sw : -sw) * .6; l.scale.setScalar(1 - R); });
+    // Einrollen: Panzer wird zur Kugel, Kopf/Schwanz verschwinden
+    D.shell.scale.set(.15 + R * .02, .13 + R * .06, .26 - R * .09);
+    D.head.scale.setScalar(1 - R * .95); D.tail.scale.setScalar(1 - R * .95);
+    D.body.rotation.x = R * Math.sin(t / 60) * .15; D.body.position.y = .17 - R * .02 + (moving ? Math.abs(sw) * .01 : 0);
+    // Schnüffeln: Kopf wippt beim Warten
+    D.head.rotation.x = !moving && R < .05 ? Math.sin(t / 90) * .12 + .15 : 0; D.head.rotation.y = !moving && R < .05 ? Math.sin(t / 700) * .4 : 0;
+    D.tail.rotation.y = moving ? Math.sin(D.step * .5) * .25 : Math.sin(t / 900) * .1;
+    D.g.position.set(D.x, 0, D.z); D.g.rotation.y = D.yaw; D.col.x = D.x; D.col.z = D.z;
   }
   const Clerk = (() => {
     const LINES = ["Weil du <b>{a}</b> mochtest, gefällt dir bestimmt <b>{b}</b>.", "Kenn ich! Wer <b>{a}</b> schaut, landet oft bei <b>{b}</b> – probier's mal.", "Mein Tipp nach <b>{a}</b>: <b>{b}</b>. Ganz ehrlich, lohnt sich!", "Hmm … <b>{a}</b>? Dann nimm <b>{b}</b> mit, das passt perfekt."];
@@ -3843,6 +3941,7 @@ const Room = (() => {
     trashBin(-4.45, 4.55, Math.atan2(4.45, -4.55));
     buildPascal();
     buildMaya(-4.0, -2.4, Math.atan2(4.0, 2.4));
+    setTimeout(() => { if (scene) { buildDillo(); dilloTarget(); } }, 0);
     // Sitzbank vor der Mitte
     // Gepolsterte Sitzbank: Holzrahmen, Samtpolster mit Knöpfen, Metallfüße
     const bench = new T.Group();
@@ -5331,7 +5430,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !m.userData.maya && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !m.userData.maya && !m.userData.dillo && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -5463,6 +5562,7 @@ const Room = (() => {
         : `💺 <b>Reihe ${m.userData.row + 1}, Platz ${m.userData.col + 1}</b><span class="hint"> – ${tap} zum Hinsetzen</span>`;
       lab.style.opacity = 1; return;
     }
+    if (m && m.userData.dillo) { lab.innerHTML = `🐾 <b>Dillo</b> · das Gürteltier der Videothek<span class="hint"> – ${tap} zum Streicheln</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.maya) { lab.innerHTML = `🎟 <b>Maya</b> · Kino-Kasse<span class="hint"> – ${tap}: Film für den Kinoabend</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.pascal) { lab.innerHTML = `📼 <b>Pascal</b> · Klassiker-Experte<span class="hint"> – ${tap}: alter Film, den man gesehen haben muss</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.trash) { const h = Popcorn.holding() || Drink.holding(); lab.innerHTML = `🗑 <b>Mülleimer</b><span class="hint"> – ${h ? tap + " zum Wegwerfen von Tüte/Becher" : "gerade nichts zum Wegwerfen"}</span>`; lab.style.opacity = 1; return; }
@@ -5492,6 +5592,7 @@ const Room = (() => {
     if (m.userData.trash) { useTrash(); return; }
     if (m.userData.pascal) { Clerk.talkPascal(); return; }
     if (m.userData.maya) { Clerk.talkMaya(); return; }
+    if (m.userData.dillo) { dilloRoll(2.5); dillo.flee = 0; SFX.fx.notify(); toast(["🐾 Dillo rollt sich vor Freude ein!", "🐾 Dillo mag dich – aber er ist schüchtern.", "🐾 *schnüff schnüff* – Dillo sucht Popcorn-Krümel."][Math.floor(Math.random() * 3)]); return; }
     setAim(m); keys = {}; if (m.userData.arcade) openArcade(); else Shop.openItem(m.userData.r);
   }
 
@@ -5594,7 +5695,7 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); dilloTick(dt, t); if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -5700,7 +5801,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -5735,7 +5836,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "82";
+const APP_VERSION = "83";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
