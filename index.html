@@ -3348,7 +3348,7 @@ const Room = (() => {
     D.g.position.set(D.x, 0, D.z); D.g.rotation.y = D.yaw; D.col.x = D.x; D.col.z = D.z;
   }
   // ---------- WC: eigener Raum hinter der Tür in der linken Wand ----------
-  const WC = { x: -11, z: -2.5 }, WC_DOOR_Z = -2.5;   // WC grenzt an die linke Ladenwand
+  const WC = { x: -11, z: -2.5 }, WC_DOOR_Z = -2.5, SCREEN_X = 1.75, SCREEN_Z = .8;   // WC grenzt an die linke Ladenwand
   let inWC = false;
   function tileTex(c1, c2, n, grout = "#c8ccd2") {
     return canvasTex(256, 256, (c, w, h) => { const s = w / n; c.fillStyle = grout; c.fillRect(0, 0, w, h);
@@ -3386,6 +3386,15 @@ const Room = (() => {
       const pt = new T.Mesh(new T.BoxGeometry(1.5, 1.95, .035), partM); pt.position.set(-W / 2 + .75, 1.125, pz); g.add(pt);
       for (const fx of [-W / 2 + .2, -W / 2 + 1.3]) { const ft2 = new T.Mesh(new T.CylinderGeometry(.018, .022, .15, 10), chromeM); ft2.position.set(fx, .075, pz); g.add(ft2); }
     }
+    // Sichtschutz direkt hinter der Tür: vom Laden aus sieht man nicht auf die Toiletten
+    { const scr = new T.Mesh(new T.BoxGeometry(.05, 2.0, 1.6), partM); scr.position.set(SCREEN_X, 1.12, 0); g.add(scr);
+      for (const fz of [-.7, .7]) { const ft = new T.Mesh(new T.CylinderGeometry(.018, .022, .12, 10), chromeM); ft.position.set(SCREEN_X, .06, fz); g.add(ft); }
+      const capS = new T.Mesh(new T.BoxGeometry(.07, .03, 1.62), chromeM); capS.position.set(SCREEN_X, 2.135, 0); g.add(capS);
+      const sgT = canvasTex(512, 200, (c, w, h) => { c.fillStyle = "#f8fafc"; c.beginPath(); c.roundRect(0, 0, w, h, 22); c.fill(); c.strokeStyle = "#2f8f7a"; c.lineWidth = 8; c.beginPath(); c.roundRect(8, 8, w - 16, h - 16, 16); c.stroke();
+        c.fillStyle = "#2f8f7a"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 46px Segoe UI Emoji, Segoe UI"; c.fillText("🚻 Willkommen", w / 2, 58);
+        c.font = "bold 27px Segoe UI"; c.fillStyle = "#334155"; c.fillText("← Waschbecken", w * .25, 140); c.fillText("WC & Urinale →", w * .75, 140); c.fillStyle = "#cbd5e1"; c.fillRect(w / 2 - 2, 115, 4, 50); });
+      const sg = new T.Mesh(new T.PlaneGeometry(.95, .37), new T.MeshLambertMaterial({ map: sgT, transparent: true })); sg.position.set(SCREEN_X + .03, 1.55, 0); sg.rotation.y = P / 2; g.add(sg);
+      const hook = new T.Mesh(new T.BoxGeometry(.02, .3, .02), chromeM); hook.position.set(SCREEN_X - .04, 1.65, .4); g.add(hook); }
     const rail = new T.Mesh(new T.CylinderGeometry(.015, .015, 2.9, 10), chromeM); rail.rotation.x = P / 2; rail.position.set(-W / 2 + 1.5, 2.12, -1.05); g.add(rail);
     for (const [z0, z1, open] of [[-2.5, -1.0, .6], [-1.0, .4, .15]]) {
       const zc = (z0 + z1) / 2, wdt = z1 - z0;
@@ -3649,6 +3658,9 @@ const Room = (() => {
     const door = Math.abs(pos.z - WC.z) < .3;
     pos.x = Math.max(WC.x - 1.3, Math.min(WC.x + (door ? 3.8 : 2.6), pos.x)); pos.z = Math.max(WC.z - 2.15, Math.min(WC.z + 1.95, pos.z));
     if (pos.x > WC.x + 2.6) pos.z = Math.max(WC.z - .3, Math.min(WC.z + .3, pos.z));
+    { const lx = pos.x - WC.x, lz = pos.z - WC.z, px = .3, pz = SCREEN_Z + .28;
+      if (Math.abs(lx - SCREEN_X) < px && Math.abs(lz) < pz) { const dx = px - Math.abs(lx - SCREEN_X), dz = pz - Math.abs(lz);
+        if (dx < dz) pos.x = WC.x + SCREEN_X + Math.sign(lx - SCREEN_X || 1) * px; else pos.z = WC.z + Math.sign(lz || 1) * pz; } }
   }
   // ---------- Spielfigur „Du“ – nur im Spiegel sichtbar (Ebene 1) ----------
   let avatar = null;
@@ -3820,7 +3832,7 @@ const Room = (() => {
     const N = V.N, hear = inWC;
     if (V.phase === "toDoor") { npcPose(N, dt, t, "walk"); if (npcMove(dt)) { intoWC(V.walker);
         if (hear) SFX.fx.door();
-        const sp = V.spot; V.path = sp.kind === "stall" ? [[.2, stalls[sp.i].sz], [-1.0, stalls[sp.i].sz]] : sp.kind === "urinal" ? [[shared.urinals[sp.i].x, -1.75]] : [[sinkX(V), 1.75]];
+        const sp = V.spot; V.path = sp.kind === "stall" ? [[2.3, -1.2], [.2, stalls[sp.i].sz], [-1.0, stalls[sp.i].sz]] : sp.kind === "urinal" ? [[2.3, -1.2], [shared.urinals[sp.i].x, -1.75]] : [[2.3, 1.2], [sinkX(V), 1.75]];
         V.phase = "inWalk"; } }
     else if (V.phase === "inWalk") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) {
         const sp = V.spot;
@@ -3951,7 +3963,7 @@ const Room = (() => {
   function mayaCleanTick(dt, t) {
     const M = maya, wk = M.walker, C = mayaCart();
     if (!M.job) { M.jobs = MAYA_JOBS.slice(); M.job = null; }
-    if (!M.job) { const j = M.jobs.shift(); if (!j) return true; M.job = { kind: j[0], x: j[1], z: j[2], face: j[3], t: j[0] === "mop" ? 5.5 : 4.2, walked: false }; M.path = [[j[1], j[2]]]; }
+    if (!M.job) { const j = M.jobs.shift(); if (!j) return true; M.job = { kind: j[0], x: j[1], z: j[2], face: j[3], t: j[0] === "mop" ? 5.5 : 4.2, walked: false }; M.path = [[j[1], j[2]]]; if (wk.position.x > SCREEN_X && j[1] < SCREEN_X) M.path.unshift([2.3, j[2] >= 0 ? 1.2 : -1.2]); }
     const J = M.job;
     if (!J.walked) {
       // Mopp beim Gehen locker mitnehmen, Wagen steht in der Raummitte
@@ -3997,7 +4009,7 @@ const Room = (() => {
     else if (M.state === "clean") {
       M.timer -= dt;
       const done = mayaCleanTick(dt, t);
-      if (done || M.timer <= 0) { M.job = null; M.person.rotation.x = 0; M.mop.visible = true; M.mop.position.set(.24, .02, .22); M.mop.rotation.set(.15, 0, 0); if (shared.cart) shared.cart.visible = false; wetSpots.forEach(w => w.grow = false); M.path = [[2.4, 0], [3.45, 0]]; M.state = "outWC"; shared.wet.forEach(s => s.visible = false); }
+      if (done || M.timer <= 0) { M.job = null; M.person.rotation.x = 0; M.mop.visible = true; M.mop.position.set(.24, .02, .22); M.mop.rotation.set(.15, 0, 0); if (shared.cart) shared.cart.visible = false; wetSpots.forEach(w => w.grow = false); M.path = [[2.3, 1.2], [2.4, 0], [3.45, 0]]; M.state = "outWC"; shared.wet.forEach(s => s.visible = false); }
     } else if (M.state === "outWC") {
       mayaPose(dt, t, true, false);
       if (mayaWalk(dt, t)) { outOfWC(M.walker); M.path = [DOOR_IN, M.home]; M.state = "back"; }
@@ -6598,7 +6610,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "93";
+const APP_VERSION = "94";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
