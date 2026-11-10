@@ -3497,15 +3497,6 @@ const Room = (() => {
       const pt = new T.Mesh(new T.BoxGeometry(1.5, 1.95, .035), partM); pt.position.set(-W / 2 + .75, 1.125, pz); g.add(pt);
       for (const fx of [-W / 2 + .2, -W / 2 + 1.3]) { const ft2 = new T.Mesh(new T.CylinderGeometry(.018, .022, .15, 10), chromeM); ft2.position.set(fx, .075, pz); g.add(ft2); }
     }
-    // Sichtschutz direkt hinter der Tür: vom Laden aus sieht man nicht auf die Toiletten
-    { const scr = new T.Mesh(new T.BoxGeometry(.05, 2.0, 1.6), partM); scr.position.set(SCREEN_X, 1.12, 0); g.add(scr);
-      for (const fz of [-.7, .7]) { const ft = new T.Mesh(new T.CylinderGeometry(.018, .022, .12, 10), chromeM); ft.position.set(SCREEN_X, .06, fz); g.add(ft); }
-      const capS = new T.Mesh(new T.BoxGeometry(.07, .03, 1.62), chromeM); capS.position.set(SCREEN_X, 2.135, 0); g.add(capS);
-      const sgT = canvasTex(512, 200, (c, w, h) => { c.fillStyle = "#f8fafc"; c.beginPath(); c.roundRect(0, 0, w, h, 22); c.fill(); c.strokeStyle = "#2f8f7a"; c.lineWidth = 8; c.beginPath(); c.roundRect(8, 8, w - 16, h - 16, 16); c.stroke();
-        c.fillStyle = "#2f8f7a"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 46px Segoe UI Emoji, Segoe UI"; c.fillText("🚻 Willkommen", w / 2, 58);
-        c.font = "bold 27px Segoe UI"; c.fillStyle = "#334155"; c.fillText("← Waschbecken", w * .25, 140); c.fillText("WC & Urinale →", w * .75, 140); c.fillStyle = "#cbd5e1"; c.fillRect(w / 2 - 2, 115, 4, 50); });
-      const sg = new T.Mesh(new T.PlaneGeometry(.95, .37), new T.MeshLambertMaterial({ map: sgT, transparent: true })); sg.position.set(SCREEN_X + .03, 1.55, 0); sg.rotation.y = P / 2; /* Schild entfernt */
-      const hook = new T.Mesh(new T.BoxGeometry(.02, .3, .02), chromeM); hook.position.set(SCREEN_X - .04, 1.65, .4); g.add(hook); }
     const rail = new T.Mesh(new T.CylinderGeometry(.015, .015, 2.9, 10), chromeM); rail.rotation.x = P / 2; rail.position.set(-W / 2 + 1.5, 2.12, -1.05); g.add(rail);
     for (const [z0, z1, open] of [[-2.5, -1.0, .6], [-1.0, .4, .15]]) {
       const zc = (z0 + z1) / 2, wdt = z1 - z0;
@@ -3771,7 +3762,7 @@ const Room = (() => {
     pos.x = Math.max(WC.x - 1.3, Math.min(WC.x + (door ? 3.8 : 2.6), pos.x)); pos.z = Math.max(WC.z - 2.15, Math.min(WC.z + 1.95, pos.z));
     if (pos.x > WC.x + 2.6) pos.z = Math.max(WC.z - .3, Math.min(WC.z + .3, pos.z));
     { const lx = pos.x - WC.x, lz = pos.z - WC.z, px = .3, pz = SCREEN_Z + .28;
-      if (Math.abs(lx - SCREEN_X) < px && Math.abs(lz) < pz) { const dx = px - Math.abs(lx - SCREEN_X), dz = pz - Math.abs(lz);
+      if (false && Math.abs(lx - SCREEN_X) < px && Math.abs(lz) < pz) { // Sichtschutzwand entfernt const dx = px - Math.abs(lx - SCREEN_X), dz = pz - Math.abs(lz);
         if (dx < dz) pos.x = WC.x + SCREEN_X + Math.sign(lx - SCREEN_X || 1) * px; else pos.z = WC.z + Math.sign(lz || 1) * pz; } }
   }
   // ---------- Spielfigur „Du“ – nur im Spiegel sichtbar (Ebene 1) ----------
@@ -6728,7 +6719,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "99";
+const APP_VERSION = "100";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
