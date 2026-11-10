@@ -3348,7 +3348,7 @@ const Room = (() => {
     D.g.position.set(D.x, 0, D.z); D.g.rotation.y = D.yaw; D.col.x = D.x; D.col.z = D.z;
   }
   // ---------- WC: eigener Raum hinter der Tür in der linken Wand ----------
-  const WC = { x: -40, z: 0 }, WC_DOOR_Z = -2.5;
+  const WC = { x: -11, z: -2.5 }, WC_DOOR_Z = -2.5;   // WC grenzt an die linke Ladenwand
   let inWC = false;
   function tileTex(c1, c2, n, grout = "#c8ccd2") {
     return canvasTex(256, 256, (c, w, h) => { const s = w / n; c.fillStyle = grout; c.fillRect(0, 0, w, h);
@@ -3369,12 +3369,12 @@ const Room = (() => {
     wt.wrapS = T.RepeatWrapping;
     for (const [px, pz, ry, len] of [[0, -D / 2, 0, W], [0, D / 2, P, W], [-W / 2, 0, P / 2, D], [W / 2, 0, -P / 2, D]]) {
       const t = wt.clone(); t.needsUpdate = true; t.repeat.set(len / 2.5, 1);
-      const wall = new T.Mesh(new T.PlaneGeometry(len, H), pbr(new T.MeshLambertMaterial({ map: t }), .4, 0)); wall.position.set(px, H / 2, pz); wall.rotation.y = ry; g.add(wall);
+      const wall = new T.Mesh(px === W / 2 ? holedGeo(len, H, [[0, 0, .94, 2.46]]) : new T.PlaneGeometry(len, H), pbr(new T.MeshLambertMaterial({ map: t }), .4, 0)); wall.position.set(px, H / 2, pz); wall.rotation.y = ry; g.add(wall);
     }
     const ceil = new T.Mesh(new T.PlaneGeometry(W, D), new T.MeshLambertMaterial({ color: 0xe9edf0 })); ceil.rotation.x = P / 2; ceil.position.y = H; g.add(ceil);
     const panel = new T.Mesh(new T.PlaneGeometry(1.6, .5), new T.MeshBasicMaterial({ color: 0xf4f8ff, toneMapped: false })); panel.rotation.x = P / 2; panel.position.set(0, H - .01, 0); g.add(panel);
-    const lamp = new T.PointLight(0xeef4ff, 5, 9, 1.3); lamp.position.set(0, H - .3, 0); g.add(lamp);
-    const fill = new T.HemisphereLight(0xffffff, 0x8899aa, .5); g.add(fill);
+    const lamp = new T.PointLight(0xeef4ff, 5, 9, 1.3); lamp.position.set(0, H - .3, 0); g.add(lamp); shared.wcLamp = lamp;
+    const fill = new T.HemisphereLight(0xffffff, 0x8899aa, 0); g.add(fill); shared.wcFill = fill;
     // Tür zurück in die Videothek (Ostwand)
     const doorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#6b4a32"; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 12) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 4, h); c.stroke(); }
       c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .5, 26, 10); c.fillStyle = "#1f8f5a"; c.fillRect(w * .2, h * .12, w * .6, 54); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .12 + 38); });
@@ -3545,7 +3545,7 @@ const Room = (() => {
     shared.wet = [wetIn, wetOut];
     // WC-Tür im Laden (linke Wand)
     const sd = new T.Group(); sd.position.set(-HALF + .02, 0, WC_DOOR_Z); sd.rotation.y = P / 2; scene.add(sd);
-    const sframe = new T.Mesh(new T.BoxGeometry(1.0, 2.3, .05), new T.MeshLambertMaterial({ color: 0x2b2f36 })); sframe.position.y = 1.15; sd.add(sframe);
+    doorFrame(sd, 0, 0, -.02, 0, .94, 2.3, 0xdfe3e8);
     const sdoorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#e6e9ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#b7bdc6"; c.lineWidth = 6; c.strokeRect(14, 14, w - 28, h - 28);
       c.fillStyle = "#2f8f7a"; c.beginPath(); c.arc(w / 2, h * .26, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 70px Segoe UI Emoji, Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🚻", w / 2, h * .26 + 4);
       c.fillStyle = "#2f8f7a"; c.font = "bold 48px Segoe UI"; c.fillText("WC", w / 2, h * .45); c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .52, 24, 10); });
@@ -3555,28 +3555,51 @@ const Room = (() => {
   }
   // ---------- Türen: schwingen beim Näherkommen auf, Raumwechsel mit kurzem Abblenden ----------
   const swingDoors = [];
-  function corridorTex(style) {
-    const pal = { wc: ["#cfd8dc", "#eef3f5", "#9fb3bb"], kino: ["#2a0d16", "#5a1a2a", "#14060b"], store: ["#3b3f48", "#c8b89a", "#24272d"] }[style] || ["#333", "#999", "#222"];
-    return canvasTex(256, 512, (c, w, h) => {
-      c.fillStyle = pal[2]; c.fillRect(0, 0, w, h);
-      // Flur in die Tiefe: Wände, Boden, Licht am Ende
-      const vx = w / 2, vy = h * .45;
-      for (let k = 0; k < 7; k++) { const f = 1 - k * .13, x0 = vx - w / 2 * f, y0 = vy - vy * f, x1 = vx + w / 2 * f, y1 = vy + (h - vy) * f;
-        c.strokeStyle = `rgba(255,255,255,${.05 + k * .02})`; c.lineWidth = 2; c.strokeRect(x0, y0, x1 - x0, y1 - y0); }
-      const fl = c.createLinearGradient(0, vy, 0, h); fl.addColorStop(0, pal[0]); fl.addColorStop(1, pal[2]);
-      c.fillStyle = fl; c.beginPath(); c.moveTo(0, h); c.lineTo(vx - 30, vy + 40); c.lineTo(vx + 30, vy + 40); c.lineTo(w, h); c.fill();
-      const lg = c.createRadialGradient(vx, vy, 4, vx, vy, 110); lg.addColorStop(0, pal[1]); lg.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = lg; c.fillRect(0, 0, w, h);
-    });
+  // Wandfläche mit Türloch(en): holes = [[mitteX, unterkanteY (ab Wandunterkante), breite, höhe]]
+  function holedGeo(w, h, holes) {
+    const sh = new T.Shape(); sh.moveTo(-w / 2, -h / 2); sh.lineTo(w / 2, -h / 2); sh.lineTo(w / 2, h / 2); sh.lineTo(-w / 2, h / 2); sh.lineTo(-w / 2, -h / 2);
+    // Löcher, die unten offen sind, als Einschnitt in die Außenkontur
+    const cuts = holes.filter(([, y0]) => y0 <= 0).sort((a, b) => a[0] - b[0]);
+    const pts = [new T.Vector2(-w / 2, -h / 2)];
+    for (const [cx, , hw, hh] of cuts) { pts.push(new T.Vector2(cx - hw / 2, -h / 2), new T.Vector2(cx - hw / 2, -h / 2 + hh), new T.Vector2(cx + hw / 2, -h / 2 + hh), new T.Vector2(cx + hw / 2, -h / 2)); }
+    pts.push(new T.Vector2(w / 2, -h / 2), new T.Vector2(w / 2, h / 2), new T.Vector2(-w / 2, h / 2));
+    const shape = new T.Shape(pts);
+    for (const [cx, y0, hw, hh] of holes.filter(([, y0]) => y0 > 0)) { const hp = new T.Path(); hp.moveTo(cx - hw / 2, -h / 2 + y0); hp.lineTo(cx + hw / 2, -h / 2 + y0); hp.lineTo(cx + hw / 2, -h / 2 + y0 + hh); hp.lineTo(cx - hw / 2, -h / 2 + y0 + hh); shape.holes.push(hp); }
+    const g = new T.ShapeGeometry(shape); const uv = g.attributes.uv, ps = g.attributes.position;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (ps.getX(i) + w / 2) / w, (ps.getY(i) + h / 2) / h);
+    return g;
   }
-  function swingDoor(mesh, w, side, style, maxA = 1.35) {
-    const par = mesh.parent, y = mesh.position.y, ry = mesh.rotation.y;
-    // dunkler Durchgang hinter der Tür (statt Wand), nur sichtbar wenn offen
-    const way = new T.Mesh(new T.PlaneGeometry(w - .02, mesh.geometry.parameters.height - .01), new T.MeshBasicMaterial({ map: corridorTex(style), toneMapped: false }));
-    way.position.copy(mesh.position).add(new T.Vector3(0, 0, -.006).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); way.rotation.y = ry; way.visible = false; par.add(way);
-    const pv = new T.Group(); pv.position.copy(mesh.position).add(new T.Vector3(side * w / 2, 0, .004).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); pv.position.y = 0; pv.rotation.y = ry; par.add(pv);
+  // Teilstücke einer Wandleiste links/rechts der Türöffnung
+  const wallSegs = (len, hx, hw) => hx == null ? [[0, len]] : [[(-len / 2 + hx - hw / 2) / 2, hx - hw / 2 + len / 2], [(hx + hw / 2 + len / 2) / 2, len / 2 - hx - hw / 2]];
+  // Türzarge: zwei Pfosten + Sturz, ragt in beide Räume
+  function doorFrame(par, x, y0, z, ry, w, h, color = 0x2b2f36) {
+    const m = pbr(new T.MeshLambertMaterial({ color }), .45, .1), dir = new T.Vector3(Math.cos(ry), 0, -Math.sin(ry));
+    for (const sx of [-1, 1]) { const p = new T.Mesh(new T.BoxGeometry(.09, h + .09, .2), m); p.position.set(x, y0 + (h + .09) / 2, z).addScaledVector(dir, sx * (w / 2 + .045)); p.rotation.y = ry; par.add(p); }
+    const top = new T.Mesh(new T.BoxGeometry(w + .18, .09, .2), m); top.position.set(x, y0 + h + .045, z); top.rotation.y = ry; par.add(top);
+    const sill = new T.Mesh(new T.BoxGeometry(w, .012, .2), new T.MeshLambertMaterial({ color: 0x8a8f98 })); sill.position.set(x, y0 + .006, z); sill.rotation.y = ry; par.add(sill);
+  }
+  // Türblatt als echtes Brett (mit Dicke, Kante, Klinken beidseitig, Trittblech) an einem Scharnier
+  function swingDoor(mesh, w, side, style, maxA = 1.4) {
+    const par = mesh.parent, y = mesh.position.y, ry = mesh.rotation.y, h = mesh.geometry.parameters.height, map = mesh.material.map;
+    const face = mesh.material; face.side = T.FrontSide;
+    const edge = pbr(new T.MeshLambertMaterial({ color: style === "kino" ? 0x2a0a15 : style === "wc" ? 0xc9ced6 : 0x3b2a1f }), .5, .1);
+    const back = face;
+    mesh.geometry.dispose(); mesh.geometry = new T.BoxGeometry(w, h, .045); mesh.material = [edge, edge, edge, edge, face, back];
+    const pv = new T.Group(); pv.position.copy(mesh.position).add(new T.Vector3(side * w / 2, 0, .0).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); pv.position.y = 0; pv.rotation.y = ry; par.add(pv);
     par.remove(mesh); mesh.rotation.y = 0; mesh.position.set(-side * w / 2, y, 0); pv.add(mesh);
-    mesh.material.side = T.DoubleSide;
-    const D = { pv, way, side, maxA, k: 0, target: 0, wp: null }; swingDoors.push(D); return D;
+    // Klinken (Chrom) auf beiden Seiten, Rosette, Trittblech
+    const chrome = pbr(new T.MeshLambertMaterial({ color: style === "kino" ? 0xe8b94a : 0xd5dae1 }), .15, .9);
+    const hy = 1.02 - y;
+    for (const sz of [1, -1]) {
+      const ro = new T.Mesh(new T.CylinderGeometry(.028, .028, .012, 16), chrome); ro.rotation.x = Math.PI / 2; ro.position.set(-side * (w / 2 - .07) + 0, hy, sz * .029); mesh.add(ro);
+      const nk = new T.Mesh(new T.CylinderGeometry(.009, .009, .05, 8), chrome); nk.rotation.x = Math.PI / 2; nk.position.set(-side * (w / 2 - .07), hy, sz * .05); mesh.add(nk);
+      const lv = new T.Mesh(new T.CapsuleGeometry(.011, .1, 4, 8), chrome); lv.rotation.z = Math.PI / 2; lv.position.set(-side * (w / 2 - .07) + side * .055, hy, sz * .074); mesh.add(lv);
+      const kp = new T.Mesh(new T.BoxGeometry(w - .06, .18, .004), pbr(new T.MeshLambertMaterial({ color: 0xaab0b8 }), .3, .7)); kp.position.set(0, -h / 2 + .12, sz * .0245); mesh.add(kp);
+    }
+    // Scharniere
+    for (const hy2 of [.25, 1.0, 1.85]) { const hg = new T.Mesh(new T.CylinderGeometry(.012, .012, .1, 8), chrome); hg.position.set(side * w / 2, hy2 - y, 0); mesh.add(hg); }
+    mesh.traverse(o => { if (o !== mesh) o.userData = mesh.userData; });
+    const D = { pv, side, maxA, k: 0, target: 0, wp: null }; swingDoors.push(D); return D;
   }
   function doubleDoor(mesh, w, h, style) {
     const par = mesh.parent, ry = mesh.rotation.y, mapL = mesh.material.map, ud = mesh.userData;
@@ -3584,10 +3607,8 @@ const Room = (() => {
       const map = mapL.clone(); map.repeat.set(.5, 1); map.offset.set(side < 0 ? 0 : .5, 0); map.needsUpdate = true;
       const leaf = new T.Mesh(new T.PlaneGeometry(w / 2, h), new T.MeshLambertMaterial({ map }));
       leaf.position.copy(mesh.position).add(new T.Vector3(side * w / 4, 0, 0).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); leaf.rotation.y = ry; leaf.userData = ud; par.add(leaf); fixedPicks.push(leaf);
-      const D = swingDoor(leaf, w / 2, side, style, 1.25); if (side > 0) D.way.visible = false, D.noWay = true;
+      swingDoor(leaf, w / 2, side, style, 1.3);
     }
-    // ein gemeinsamer Durchgang für beide Flügel
-    swingDoors[swingDoors.length - 2].way.scale.x = 2; swingDoors[swingDoors.length - 2].way.position.copy(mesh.position).add(new T.Vector3(0, 0, -.006).applyAxisAngle(new T.Vector3(0, 1, 0), ry));
     par.remove(mesh); const fi = fixedPicks.indexOf(mesh); if (fi >= 0) fixedPicks.splice(fi, 1);
   }
   function doorsTick(dt) {
@@ -3596,13 +3617,12 @@ const Room = (() => {
     for (const D of swingDoors) {
       if (!D.wp) { D.wp = new T.Vector3(); D.pv.children[0].getWorldPosition(D.wp); }
       const d = Math.min(...near.map(([x, z]) => Math.hypot(x - D.wp.x, z - D.wp.z)));
-      const tg = d < 2.0 ? 1 : 0;
+      const tg = d < 2.3 ? 1 : 0;
       if (tg && !D.target && Math.hypot(pos.x - D.wp.x, pos.z - D.wp.z) < 6) SFX.fx.open();
       D.target = tg;
       D.k += (D.target - D.k) * Math.min(1, dt * (D.target ? 4.5 : 3));
       const e = D.k * D.k * (3 - 2 * D.k);
       D.pv.rotation.y = D.pv.userData.ry0 ?? (D.pv.userData.ry0 = D.pv.rotation.y); D.pv.rotation.y = D.pv.userData.ry0 + D.side * D.maxA * e;
-      if (!D.noWay) D.way.visible = D.k > .02;
     }
   }
   function transit(fn) {
@@ -3615,15 +3635,16 @@ const Room = (() => {
       requestAnimationFrame(() => { f.style.transition = "opacity .4s ease-out"; f.style.opacity = 0; setTimeout(() => transitT = 0, 300); });
     }, 180);
   }
-  function enterWC() {
-    SFX.fx.door(); inWC = true; inCinema = false;
-    pos.x = WC.x + 2.2; pos.z = WC.z; yaw = Math.PI / 2; pitch = -.05; keys = {};
+  function enterWC(walk) {
+    inWC = true; inCinema = false;
+    if (!walk) { SFX.fx.door(); pos.x = WC.x + 2.2; pos.z = WC.z; yaw = Math.PI / 2; pitch = -.05; keys = {}; }
     toast(maya && maya.state === "clean" ? "🧹 Maya putzt gerade – Vorsicht, rutschig!" : "🚻 WC – zurück durch die Tür rechts");
   }
-  function leaveWC() { if (wcSit != null) standToilet(); SFX.fx.door(); inWC = false; pos.x = -HALF + MARGIN + .7; pos.z = WC_DOOR_Z; yaw = -Math.PI / 2; pitch = -.05; }
+  function leaveWC(walk) { if (wcSit != null) standToilet(); inWC = false; if (walk) return; SFX.fx.door(); pos.x = -HALF + MARGIN + .7; pos.z = WC_DOOR_Z; yaw = -Math.PI / 2; pitch = -.05; }
   function wcClamp() {
-    pos.x = Math.max(WC.x - 1.3, Math.min(WC.x + 2.85, pos.x)); pos.z = Math.max(WC.z - 2.15, Math.min(WC.z + 1.95, pos.z));
-    if (pos.x > WC.x + 2.6 && Math.abs(pos.z - WC.z) > .42) pos.x = WC.x + 2.6;
+    const door = Math.abs(pos.z - WC.z) < .3;
+    pos.x = Math.max(WC.x - 1.3, Math.min(WC.x + (door ? 3.8 : 2.6), pos.x)); pos.z = Math.max(WC.z - 2.15, Math.min(WC.z + 1.95, pos.z));
+    if (pos.x > WC.x + 2.6) pos.z = Math.max(WC.z - .3, Math.min(WC.z + .3, pos.z));
   }
   // ---------- Spielfigur „Du“ – nur im Spiegel sichtbar (Ebene 1) ----------
   let avatar = null;
@@ -3720,7 +3741,9 @@ const Room = (() => {
     if (dryT > 0) dryT -= dt;
   }
   // ---------- Alle Figuren gehen ab und zu aufs WC (Kabine oder Urinal), waschen danach die Hände ----------
-  const DOOR_IN = [-6.3, WC_DOOR_Z], DOOR_AT = [-7.75, WC_DOOR_Z];
+  const DOOR_IN = [-6.3, WC_DOOR_Z], DOOR_AT = [-8.45, WC_DOOR_Z];
+  const intoWC = o => { const x = o.position.x, z = o.position.z; shared.wcGroup.add(o); o.position.set(x - WC.x, 0, z - WC.z); };
+  const outOfWC = o => { const x = o.position.x, z = o.position.z; scene.add(o); o.position.set(x + WC.x, 0, z + WC.z); };
   let wcVisitor = null;
   const NPC = {
     kevin: {
@@ -3791,7 +3814,7 @@ const Room = (() => {
   function npcVisitTick(dt, t) {
     const V = wcVisitor; if (!V) return;
     const N = V.N, hear = inWC;
-    if (V.phase === "toDoor") { npcPose(N, dt, t, "walk"); if (npcMove(dt)) { shared.wcGroup.add(V.walker); V.walker.position.set(2.6, 0, 0); V.walker.rotation.y = -Math.PI / 2;
+    if (V.phase === "toDoor") { npcPose(N, dt, t, "walk"); if (npcMove(dt)) { intoWC(V.walker);
         if (hear) SFX.fx.door();
         const sp = V.spot; V.path = sp.kind === "stall" ? [[.2, stalls[sp.i].sz], [-1.0, stalls[sp.i].sz]] : sp.kind === "urinal" ? [[shared.urinals[sp.i].x, -1.75]] : [[sinkX(V), 1.75]];
         V.phase = "inWalk"; } }
@@ -3806,8 +3829,8 @@ const Room = (() => {
     else if (V.phase === "toSink") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { V.phase = "wash"; V.t = 3.2; washOn(V); } }
     else if (V.phase === "wash") { npcPose(N, dt, t, "wash"); turnTo(dt, 0); V.t -= dt; if (V.t <= 0) { washOff(V); V.path = [[2.0, 1.95]]; V.phase = "toDryer"; } }
     else if (V.phase === "toDryer") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { V.phase = "dry"; V.t = 2.4; if (hear) SFX.fx.dryer(); } }
-    else if (V.phase === "dry") { npcPose(N, dt, t, "dry"); turnTo(dt, 0); V.t -= dt; if (V.t <= 0) { V.path = [[2.4, 0], [2.9, 0]]; V.phase = "outWalk"; } }
-    else if (V.phase === "outWalk") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { if (hear) SFX.fx.door(); scene.add(V.walker); V.walker.position.set(DOOR_AT[0], 0, DOOR_AT[1]); V.walker.rotation.y = Math.PI / 2; V.path = N.routeHome(); V.phase = "home"; } }
+    else if (V.phase === "dry") { npcPose(N, dt, t, "dry"); turnTo(dt, 0); V.t -= dt; if (V.t <= 0) { V.path = [[2.4, 0], [3.45, 0]]; V.phase = "outWalk"; } }
+    else if (V.phase === "outWalk") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { outOfWC(V.walker); V.path = N.routeHome(); V.phase = "home"; } }
     else if (V.phase === "home") { npcPose(N, dt, t, "walk"); if (npcMove(dt)) {
         const own = V.walker === N.body(); if (!own) scene.remove(V.walker);
         N.finish(); N.next = 150 + Math.random() * 150; wcVisitor = null; } }
@@ -3864,7 +3887,7 @@ const Room = (() => {
     const M = maya, w = mayaWorld();
     const walker = new T.Group(); walker.position.set(w.x, 0, w.z); walker.rotation.y = M.g.rotation.y; scene.add(walker);
     M.person.position.set(0, 0, 0); M.person.rotation.set(0, 0, 0); walker.add(M.person);
-    M.walker = walker; M.home = [w.x, w.z]; M.path = [[-6.3, WC_DOOR_Z], [-7.75, WC_DOOR_Z]]; M.state = "toWC"; M.mop.visible = true; M.away.visible = true;
+    M.walker = walker; M.home = [w.x, w.z]; M.path = [DOOR_IN, DOOR_AT]; M.state = "toWC"; M.mop.visible = true; M.away.visible = true;
   }
   function mayaWalk(dt, t) {
     const M = maya, wk = M.walker, [tx, tz] = M.path[0], dx = tx - wk.position.x, dz = tz - wk.position.z, L = Math.hypot(dx, dz);
@@ -3966,11 +3989,14 @@ const Room = (() => {
   }
   function mayaTrip(dt, t) {
     const M = maya;
-    if (M.state === "toWC") { mayaPose(dt, t, true, false); if (mayaWalk(dt, t)) { shared.wcGroup.add(M.walker); M.walker.position.set(-.3, 0, .4); M.walker.rotation.y = Math.PI / 2; M.state = "clean"; M.timer = 60; M.jobs = MAYA_JOBS.slice(); M.job = null; const C = mayaCart(); C.position.set(.15, 0, .25); C.rotation.y = .4; C.visible = true; shared.wet.forEach(s => s.visible = true); } }
+    if (M.state === "toWC") { mayaPose(dt, t, true, false); if (mayaWalk(dt, t)) { intoWC(M.walker); M.state = "clean"; M.timer = 60; M.jobs = MAYA_JOBS.slice(); M.job = null; const C = mayaCart(); C.position.set(.15, 0, .25); C.rotation.y = .4; C.visible = true; shared.wet.forEach(s => s.visible = true); } }
     else if (M.state === "clean") {
       M.timer -= dt;
       const done = mayaCleanTick(dt, t);
-      if (done || M.timer <= 0) { M.job = null; M.person.rotation.x = 0; M.mop.visible = true; M.mop.position.set(.24, .02, .22); M.mop.rotation.set(.15, 0, 0); if (shared.cart) shared.cart.visible = false; wetSpots.forEach(w => w.grow = false); scene.add(M.walker); M.walker.position.set(-7.75, 0, WC_DOOR_Z); M.walker.rotation.y = Math.PI / 2; M.path = [[-6.3, WC_DOOR_Z], M.home]; M.state = "back"; shared.wet.forEach(s => s.visible = false); }
+      if (done || M.timer <= 0) { M.job = null; M.person.rotation.x = 0; M.mop.visible = true; M.mop.position.set(.24, .02, .22); M.mop.rotation.set(.15, 0, 0); if (shared.cart) shared.cart.visible = false; wetSpots.forEach(w => w.grow = false); M.path = [[2.4, 0], [3.45, 0]]; M.state = "outWC"; shared.wet.forEach(s => s.visible = false); }
+    } else if (M.state === "outWC") {
+      mayaPose(dt, t, true, false);
+      if (mayaWalk(dt, t)) { outOfWC(M.walker); M.path = [DOOR_IN, M.home]; M.state = "back"; }
     } else if (M.state === "back") {
       mayaPose(dt, t, true, false);
       if (mayaWalk(dt, t)) {
@@ -4659,7 +4685,7 @@ const Room = (() => {
       const leg = new T.Mesh(new T.CylinderGeometry(.025, .018, .28, 10), metal); leg.position.set(sx, .14, sz); bench.add(leg);
       const foot = new T.Mesh(new T.CylinderGeometry(.04, .04, .015, 12), metal); foot.position.set(sx, .008, sz); bench.add(foot);
     }
-    bench.position.set(0, 0, -3.4); scene.add(bench); colliders.push({ x: 0, z: -3.4, r: .95 });
+    bench.position.set(0, 0, -3.4); scene.add(bench); for (const bx of [-.62, 0, .62]) colliders.push({ x: bx, z: -3.4, r: .36, h: .55 }); // Bank: drüberspringen möglich
     bench.traverse(o => { if (o.isMesh) { o.userData.bench = true; fixedPicks.push(o); } });
   }
   // Blatt-Textur: Blattform mit Verlauf, Mittelrippe und Seitenadern (transparent drumherum)
@@ -5133,6 +5159,7 @@ const Room = (() => {
       if (side % 2 === 0) continue; // Vorder-/Rückwand: dort stehen die Regale dicht, mit Kino-Tür und Ausgang
       const d = HALF - .03, a = side * Math.PI / 2;
       spots.push({ x: side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d, z: side === 0 ? -d : side === 1 ? o : side === 2 ? d : -o, rot: -a });
+      const sp = spots[spots.length - 1]; if (side === 3 && Math.abs(sp.z - WC_DOOR_Z) < 1) sp.z = WC_DOOR_Z - 1.6; // nicht in die WC-Tür hängen
     }
     const frameM = new T.MeshLambertMaterial({ color: 0xd4a94a });
     spots.forEach((s, i) => {
@@ -5170,16 +5197,17 @@ const Room = (() => {
 
   // ---------- Kinosaal ----------
   // Der Saal liegt weit weg vom Laden (z = -40); eine Tür in der Videothek bringt dich hin.
-  const CIN = { x: 0, z: -40 }, CW = 6, CD = 8;            // halbe Breite/Tiefe
+  const CIN = { x: -2.45, z: -16 }, CW = 6, CD = 8;   // Kino grenzt an die Rückwand (hinten oben ist der Eingang)            // halbe Breite/Tiefe
   const STORE_DOOR = { x: 2.05, z: -HALF + .02 }, EXIT_DOOR = { x: -2.05, z: HALF - .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
   let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62, scrPointFn = null, kinoActive = false;
   const RISE = .32, GAP = 1.7, ROW_Z = r => -2.4 + r * GAP, STEP0 = ROW_Z(1) - .5;
   // Bodenhöhe im Saal (Treppen in den Gängen, Podest hinten)
+  const CY = -5 * RISE; // Kino liegt tiefer: die letzte Reihe ist auf Ladenhöhe
   const cinFloorY = lz => lz < STEP0 ? 0 : Math.min(5, Math.floor((lz - STEP0) / GAP) + 1) * RISE;
 
   function buildCinema() {
-    const g = new T.Group(); g.position.set(CIN.x, 0, CIN.z); scene.add(g); shared.cinGroup = g; g.visible = false;
+    const g = new T.Group(); g.position.set(CIN.x, CY, CIN.z); scene.add(g); shared.cinGroup = g; g.visible = false;
     const tex = (w, h, draw, rx = 1, ry = 1) => { const t = canvasTex(w, h, draw); if (rx !== 1 || ry !== 1) { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rx, ry); } return t; };
     // Boden: dunkler Kinoteppich
     const carpetT = tex(256, 256, (c, w, h) => {
@@ -5197,7 +5225,7 @@ const Room = (() => {
     const wallM = new T.MeshLambertMaterial({ map: wallT });
     const H = 6;
     const walls = [[0, H / 2, -CD, 0, CW * 2], [0, H / 2, CD, Math.PI, CW * 2], [-CW, H / 2, 0, Math.PI / 2, CD * 2], [CW, H / 2, 0, -Math.PI / 2, CD * 2]];
-    for (const [x, y, z, ry, w] of walls) { const m = new T.Mesh(new T.PlaneGeometry(w, H), wallM); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); }
+    for (const [x, y, z, ry, w] of walls) { const back = z === CD; const m = new T.Mesh(back ? holedGeo(w, H, [[-CIN_DOOR.x, 5 * RISE, 1.42, 2.46]]) : new T.PlaneGeometry(w, H), wallM); m.position.set(x, y, z); m.rotation.y = ry; g.add(m); }
     // Decke mit Sternenhimmel
     const ceilT = tex(512, 512, (c, w, h) => { c.fillStyle = "#07060c"; c.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { c.fillStyle = `rgba(255,240,220,${.3 + Math.random() * .7})`; const r = Math.random() * 1.6 + .3; c.beginPath(); c.arc(Math.random() * w, Math.random() * h, r, 0, 7); c.fill(); } });
     const ceil = new T.Mesh(new T.PlaneGeometry(CW * 2, CD * 2), new T.MeshBasicMaterial({ map: ceilT })); ceil.rotation.x = Math.PI / 2; ceil.position.y = H; g.add(ceil);
@@ -5332,7 +5360,7 @@ const Room = (() => {
   // Tür in der Videothek (statt eines Plakats)
   function buildStoreDoor() {
     const g = new T.Group(); g.position.set(STORE_DOOR.x, 0, STORE_DOOR.z); scene.add(g);
-    const frame = new T.Mesh(new T.BoxGeometry(1.5, 2.5, .06), new T.MeshLambertMaterial({ color: 0x3a2a20 })); frame.position.y = 1.25; g.add(frame);
+    doorFrame(g, 0, 0, -.02, 0, 1.42, 2.42, 0x3a2a20);
     // zweiflügelige, gepolsterte Kinotür mit Bullaugen und goldenen Griffen
     const doorT = canvasTex(256, 448, (c, w, h) => {
       for (const x0 of [0, w / 2]) {
@@ -5386,16 +5414,18 @@ const Room = (() => {
     cinScreenTex.needsUpdate = true;
   }
 
-  function enterCinema() {
-    SFX.fx.door(); SFX.music(false); inWC = false;
-    inCinema = true; pos.x = CIN.x + CIN_DOOR.x; pos.z = CIN.z + CD - 1.3; yaw = 0; pitch = .05;
+  function enterCinema(walk) {
+    SFX.music(false); inWC = false; inCinema = true;
+    if (!walk) { SFX.fx.door(); pos.x = CIN.x + CIN_DOOR.x; pos.z = CIN.z + CD - 1.3; yaw = 0; pitch = .05; }
     drawScreenIdle(); toast("🎬 Willkommen im Kino – such dir einen Platz");
   }
-  function leaveCinema() {
-    SFX.fx.door(); standUp(); inCinema = false; pos.x = STORE_DOOR.x; pos.z = -HALF + 1.6; yaw = Math.PI; pitch = -.05;
+  function leaveCinema(walk) {
+    standUp(); inCinema = false; if (walk) return; SFX.fx.door(); pos.x = STORE_DOOR.x; pos.z = -HALF + 1.6; yaw = Math.PI; pitch = -.05;
   }
   function cinemaClamp() {
-    const mx = CW - .5; pos.x = Math.max(CIN.x - mx, Math.min(CIN.x + mx, pos.x)); pos.z = Math.max(CIN.z - CD + 1.9, Math.min(CIN.z + CD - .5, pos.z));
+    const mx = CW - .5, door = Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .5;
+    pos.x = Math.max(CIN.x - mx, Math.min(CIN.x + mx, pos.x)); pos.z = Math.max(CIN.z - CD + 1.9, Math.min(CIN.z + CD + (door ? .8 : -.5), pos.z));
+    if (pos.z > CIN.z + CD - .5) pos.x = Math.max(CIN.x + CIN_DOOR.x - .5, Math.min(CIN.x + CIN_DOOR.x + .5, pos.x));
     // Sitzreihen umgehen – zwischen den Reihen ist Platz zum Durchgehen
     const lx = pos.x - CIN.x, lz = pos.z - CIN.z, pad = .22;
     for (let r = 0; r < 6; r++) {
@@ -5852,11 +5882,12 @@ const Room = (() => {
     wallT.wrapS = T.RepeatWrapping; wallT.repeat.set(HALF * 2 / 3.2, 1);
     const wallMat = withNormal(pbr(new T.MeshLambertMaterial({ map: tx("wall", 8, 1.65) || wallT }), .9, 0, TEX.wall ? 0 : 3), "wall_n", 8, 1.65, .8);
     for (let i = 0; i < 4; i++) {
-      const w = new T.Mesh(new T.PlaneGeometry(HALF * 2, 3.3), wallMat);
-      const a = i * Math.PI / 2; w.position.set(Math.sin(a) * -HALF, 1.65, Math.cos(a) * -HALF); w.rotation.y = a; scene.add(w);
+      const a = i * Math.PI / 2, hole = i === 0 ? [STORE_DOOR.x, 1.42] : i === 1 ? [-WC_DOOR_Z, .94] : null;
+      const w = new T.Mesh(hole ? holedGeo(HALF * 2, 3.3, [[hole[0], 0, hole[1], 2.46]]) : new T.PlaneGeometry(HALF * 2, 3.3), wallMat);
+      const dirW = new T.Vector3(Math.cos(a), 0, -Math.sin(a)), segs = wallSegs(HALF * 2, hole && hole[0], hole && hole[1] + .2); w.position.set(Math.sin(a) * -HALF, 1.65, Math.cos(a) * -HALF); w.rotation.y = a; scene.add(w);
       // Leuchtstreifen unten an der Wand
-      const strip = new T.Mesh(new T.PlaneGeometry(HALF * 2, .05), new T.MeshBasicMaterial({ color: 0xff6b5c }));
-      strip.position.set(Math.sin(a) * -(HALF - .01), .04, Math.cos(a) * -(HALF - .01)); strip.rotation.y = a; scene.add(strip);
+      for (const [cx, l] of segs) { const strip = new T.Mesh(new T.PlaneGeometry(l, .05), new T.MeshBasicMaterial({ color: 0xff6b5c }));
+      strip.position.set(Math.sin(a) * -(HALF - .01), .04, Math.cos(a) * -(HALF - .01)).addScaledVector(dirW, cx); strip.rotation.y = a; scene.add(strip); }
       const topStrip = new T.Mesh(new T.PlaneGeometry(HALF * 2, .04), new T.MeshBasicMaterial({ color: 0xff9f43 }));
       topStrip.position.set(Math.sin(a) * -(HALF - .01), 3.12, Math.cos(a) * -(HALF - .01)); topStrip.rotation.y = a; scene.add(topStrip);
       shared.wainsM = shared.wainsM || pbr(new T.MeshLambertMaterial({ map: (() => { const t = canvasTex(512, 128, (c, w, h) => {
@@ -5864,10 +5895,10 @@ const Room = (() => {
         for (let x = 0; x < w; x += 32) { const gr = c.createLinearGradient(x, 0, x + 32, 0); gr.addColorStop(0, "rgba(0,0,0,.45)"); gr.addColorStop(.08, "rgba(255,220,190,.06)"); gr.addColorStop(.5, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.25)"); c.fillStyle = gr; c.fillRect(x, 0, 32, h);
           for (let k = 0; k < 4; k++) { c.strokeStyle = `rgba(255,200,170,${.03 + Math.random() * .04})`; c.beginPath(); c.moveTo(x + 4 + Math.random() * 24, 0); c.bezierCurveTo(x + Math.random() * 32, h * .3, x + Math.random() * 32, h * .7, x + 4 + Math.random() * 24, h); c.stroke(); } }
       }); t.wrapS = T.RepeatWrapping; t.repeat.set(HALF * 2 / 2.4, 1); return t; })() }), .55, 0, 4);
-      const wains = new T.Mesh(new T.PlaneGeometry(HALF * 2, .9), shared.wainsM);
-      wains.position.set(Math.sin(a) * -(HALF - .02), .45, Math.cos(a) * -(HALF - .02)); wains.rotation.y = a; scene.add(wains);
+      for (const [cx, l] of segs) { const wains = new T.Mesh(new T.PlaneGeometry(l, .9), shared.wainsM);
+      wains.position.set(Math.sin(a) * -(HALF - .02), .45, Math.cos(a) * -(HALF - .02)).addScaledVector(dirW, cx); wains.rotation.y = a; scene.add(wains); }
       shared.railM = shared.railM || pbr(new T.MeshLambertMaterial({ color: 0x3a2620 }), .45);
-      const rail = new T.Mesh(new T.BoxGeometry(HALF * 2, .045, .04), shared.railM); rail.position.set(Math.sin(a) * -(HALF - .03), .91, Math.cos(a) * -(HALF - .03)); rail.rotation.y = a; scene.add(rail);
+      for (const [cx, l] of segs) { const rail = new T.Mesh(new T.BoxGeometry(l, .045, .04), shared.railM); rail.position.set(Math.sin(a) * -(HALF - .03), .91, Math.cos(a) * -(HALF - .03)).addScaledVector(dirW, cx); rail.rotation.y = a; scene.add(rail); }
     }
     // Deckenlampen: Industrie-Pendelleuchten mit Glühbirne und sichtbarem Lichtkegel
     const shadeM = withNormal(pbr(new T.MeshLambertMaterial({ color: 0x1b1c20 }), .35, .85), "brushed_n", 1, 1, .6);
@@ -6244,8 +6275,12 @@ const Room = (() => {
   function clampPos() {
     if (inCinema) { cinemaClamp(); return; }
     if (inWC) { wcClamp(); return; }
-    const m = HALF - MARGIN; pos.x = Math.max(-m, Math.min(m, pos.x)); pos.z = Math.max(-m, Math.min(m, pos.z));
-    for (const c of colliders) { const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + .35; if (d < min && d > 0) { pos.x = c.x + dx / d * min; pos.z = c.z + dz / d * min; } }
+    const m = HALF - MARGIN, inWcDoor = Math.abs(pos.z - WC_DOOR_Z) < .3, inCinDoor = Math.abs(pos.x - STORE_DOOR.x) < .5;
+    pos.x = Math.max(inWcDoor ? -HALF - .8 : -m, Math.min(m, pos.x)); pos.z = Math.max(inCinDoor ? -HALF - .8 : -m, Math.min(m, pos.z));
+    // im Türdurchgang seitlich führen
+    if (pos.x < -m) pos.z = Math.max(WC_DOOR_Z - .3, Math.min(WC_DOOR_Z + .3, pos.z));
+    if (pos.z < -m) pos.x = Math.max(STORE_DOOR.x - .5, Math.min(STORE_DOOR.x + .5, pos.x));
+    for (const c of colliders) { if (c.h && jumpY > c.h) continue; const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + .35; if (d < min && d > 0) { pos.x = c.x + dx / d * min; pos.z = c.z + dz / d * min; } }
   }
 
   function setAim(m) {
@@ -6361,7 +6396,7 @@ const Room = (() => {
     const gp = padTick(dt, t) || { x: 0, y: 0 };
     const mv = KM.down(keys, "forward") || KM.down(keys, "back") || KM.down(keys, "left") || KM.down(keys, "right") || keys.ArrowUp || keys.ArrowDown || Math.abs(gp.x) + Math.abs(gp.y) > .2;
     { const jd = KM.down(keys, "stand");
-      if (jd && !jumpHeld && !benchSit && wcSit == null && !seated && jumpY <= 0 && !shared.myU && !(hands && hands.t > 0)) { jumpV = 3.4; SFX.fx.step && SFX.fx.step(); }
+      if (jd && !jumpHeld && !benchSit && wcSit == null && !seated && jumpY <= 0 && !shared.myU && !(hands && hands.t > 0)) { jumpV = 4.3; SFX.fx.step && SFX.fx.step(); }
       jumpHeld = jd;
       if (jumpV || jumpY > 0) { jumpV -= 9.81 * dt; jumpY += jumpV * dt; if (jumpY <= 0) { jumpY = 0; if (jumpV < -1.5) { SFX.fx.step && SFX.fx.step(); landK = 1; } jumpV = 0; } } }
     if (benchSit && (mv || KM.down(keys, "stand") || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standBench();
@@ -6397,7 +6432,8 @@ const Room = (() => {
     const where = inCinema ? "c" : inWC ? "w" : "s";
     if (shared.lastIn !== where) {
       shared.lastIn = where;
-      for (const c of scene.children) { if (c.isLight || c.isCamera) continue; c.visible = c === shared.cinGroup ? inCinema : c === shared.wcGroup ? inWC : !inCinema && !inWC; }
+      for (const c of scene.children) { if (c.isLight || c.isCamera) continue; c.visible = c === shared.cinGroup ? !inWC : c === shared.wcGroup ? !inCinema : true; }
+      if (shared.wcFill) shared.wcFill.intensity = inWC ? .5 : 0; if (shared.wcLamp) shared.wcLamp.intensity = inWC ? 5 : 1.6;
     }
     // Auflösung automatisch anpassen, wenn es ruckelt
     perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
@@ -6433,19 +6469,20 @@ const Room = (() => {
     for (const u of units) { const b = u.btn; if (u.busy) b.rotation.z -= dt * 8; else if (b.rotation.z) b.rotation.z = 0; }
     // Türen: einfach hindurchgehen
     doorsTick(dt);
-    if (!transitT && !inCinema && !inWC && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) transit(enterCinema);
-    if (!transitT && !inCinema && !inWC && Math.abs(pos.z - WC_DOOR_Z) < .42 && pos.x < -HALF + MARGIN + .12) transit(enterWC);
-    if (!transitT && inWC && pos.x > WC.x + 2.75) transit(leaveWC);
-    if (!transitT && inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) transit(leaveCinema);
+    // Räume sind verbunden: einfach durch die offene Tür gehen
+    if (!transitT && !inCinema && !inWC && pos.z < -HALF) enterCinema(true);
+    if (!transitT && !inCinema && !inWC && pos.x < -HALF) enterWC(true);
+    if (!transitT && inWC && pos.x > -HALF) leaveWC(true);
+    if (!transitT && inCinema && !seated && pos.z > -HALF) leaveCinema(true);
     if (!inCinema && !inWC && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
     if (hemi) hemi.intensity = inCinema ? .35 - .31 * lk : (quality.real ? .42 : .95) * (gfx.daylight ? DAY[curPhase || "abend"].k : 1);
     if (t - lastDayCheck > 30000) { lastDayCheck = t; dayNight(); }
     renderer.toneMappingExposure = quality.real && !inCinema ? 1.12 : 1.5;
     if (scene.environment) scene.environmentIntensity = inCinema ? .1 - .085 * lk : .22;
-    const targetY = seated ? seated.row * RISE + 1.15 : benchSit ? 1.18 : wcSit != null ? 1.12 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
+    const targetY = seated ? seated.row * RISE + 1.15 + CY : benchSit ? 1.18 : wcSit != null ? 1.12 : (inCinema ? cinFloorY(pos.z - CIN.z) + CY : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
     const chewK = Popcorn.chew(); landK = Math.max(0, landK - dt * 5); camera.position.set(pos.x, eyeY + jumpY - Math.sin(landK * Math.PI) * .05 + (seated ? 0 : bob) + (chewK > 0 ? Math.sin(t / 70) * .0035 * chewK : 0), pos.z);
-    if (inCinema) lightsTick(dt, t);
+    if (inCinema) lightsTick(dt, t); else if (cinLights.length && cinLights[0].intensity) cinLights.forEach(l => l.intensity = 0);
     camera.rotation.set(pitch, yaw, 0);
     if (Math.abs(camera.fov - zoom.target) > .01) { camera.fov += (zoom.target - camera.fov) * Math.min(1, dt * 12); camera.updateProjectionMatrix(); }
     if (zoom.hideAt && t > zoom.hideAt) { zoom.hideAt = 0; const z = $("#roomZoom"); if (z) z.classList.remove("show"); }
@@ -6522,7 +6559,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _urinal: i => useUrinal(i), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _jy: () => jumpY, _doorK: () => swingDoors.map(d => +d.k.toFixed(2)), _job: () => maya.job && maya.job.kind, _keys: (c, v) => { keys[c] = v; }, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _urinal: i => useUrinal(i), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _jy: () => jumpY, _jumpTest: () => { const r = []; pos.x = 0; pos.z = -1.9; yaw = 0; keys = {}; keys[KM.get('forward')] = true; keys[KM.get('stand')] = true; return 1; }, _where: () => inCinema ? 'c' : inWC ? 'w' : 's', _pos: () => [pos.x, pos.z, eyeY], _doorK: () => swingDoors.map(d => +d.k.toFixed(2)), _job: () => maya.job && maya.job.kind, _keys: (c, v) => { keys[c] = v; }, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; inWC = x < -HALF; inCinema = z < -HALF; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -6557,7 +6594,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "91";
+const APP_VERSION = "92";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
