@@ -3093,7 +3093,11 @@ const Room = (() => {
     const front = canvasTex(256, 320, (c, w, h) => {
       const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#4c1d95"); gr.addColorStop(1, "#1e0b3d"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
       c.strokeStyle = "#f5c542"; c.lineWidth = 5; c.strokeRect(10, 10, w - 20, h - 20);
-      c.font = "64px Segoe UI Emoji, sans-serif"; c.textAlign = "center"; c.fillText("🎟", w / 2, h * .36);
+      c.save(); c.translate(w / 2, h * .3); c.rotate(-.12); c.fillStyle = "#f5c542"; c.beginPath(); c.roundRect(-58, -30, 116, 60, 8); c.fill();
+      c.fillStyle = "#1e0b3d"; for (const sx of [-58, 58]) { c.beginPath(); c.arc(sx, 0, 11, 0, 7); c.fill(); }
+      c.setLineDash([5, 4]); c.strokeStyle = "#7c3aed"; c.lineWidth = 2; c.beginPath(); c.moveTo(22, -26); c.lineTo(22, 26); c.stroke(); c.setLineDash([]);
+      c.fillStyle = "#4c1d95"; c.font = "bold 18px Segoe UI"; c.textAlign = "center"; c.fillText("ADMIT", -14, -2); c.fillText("ONE", -14, 18); c.restore();
+      c.textAlign = "center";
       c.font = "bold 40px Segoe UI, sans-serif"; c.fillStyle = "#fde68a"; c.shadowColor = "#f5c542"; c.shadowBlur = 14; c.fillText("KINO", w / 2, h * .6);
       c.shadowBlur = 0; c.font = "bold 22px Segoe UI, sans-serif"; c.fillStyle = "#e9d5ff"; c.fillText("TICKETS", w / 2, h * .74); c.font = "16px Segoe UI"; c.fillText("Saal 1 · heute", w / 2, h * .86);
     });
@@ -3204,8 +3208,21 @@ const Room = (() => {
     const stick = new T.Mesh(new T.CylinderGeometry(.012, .012, 1.35, 8), new T.MeshLambertMaterial({ color: 0x3b82f6 })); stick.position.y = .7; mop.add(stick);
     const mh = new T.Mesh(new T.BoxGeometry(.32, .04, .1), new T.MeshLambertMaterial({ color: 0x1e3a8a })); mh.position.y = .03; mop.add(mh);
     for (let k = 0; k < 9; k++) { const f = new T.Mesh(new T.CylinderGeometry(.012, .016, .08, 6), new T.MeshLambertMaterial({ color: 0xe5e7eb })); f.position.set(-.14 + k * .035, .0, .03 * ((k % 2) * 2 - 1)); f.rotation.z = (k - 4) * .08; mop.add(f); }
-    const away = new T.Mesh(new T.PlaneGeometry(.42, .2), new T.MeshBasicMaterial({ map: canvasTex(256, 120, (c, w, h) => { c.fillStyle = "#fde68a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#4c1d95"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6); c.fillStyle = "#4c1d95"; c.font = "bold 30px Segoe UI"; c.textAlign = "center"; c.fillText("Bin gleich", w / 2, 50); c.fillText("zurück 🧹", w / 2, 90); }), side: T.DoubleSide }));
-    away.position.set(0, 1.22, .12); away.rotation.x = -.25; away.visible = false; g.add(away);
+    const awayT = canvasTex(512, 300, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#5b21b6"); gr.addColorStop(1, "#9333ea"); c.fillStyle = gr; c.beginPath(); c.roundRect(0, 0, w, h, 26); c.fill();
+      c.strokeStyle = "#fde68a"; c.lineWidth = 5; c.beginPath(); c.roundRect(12, 12, w - 24, h - 24, 18); c.stroke();
+      // Besen
+      c.save(); c.translate(92, 150); c.rotate(-.5); c.fillStyle = "#b45309"; c.fillRect(-6, -90, 12, 120); c.fillStyle = "#fde68a"; c.beginPath(); c.moveTo(-30, 30); c.lineTo(30, 30); c.lineTo(38, 82); c.lineTo(-38, 82); c.closePath(); c.fill();
+      c.strokeStyle = "#d4a017"; c.lineWidth = 3; for (let k = -30; k <= 30; k += 10) { c.beginPath(); c.moveTo(k, 34); c.lineTo(k * 1.25, 80); c.stroke(); } c.fillStyle = "#7c2d12"; c.fillRect(-32, 26, 64, 10); c.restore();
+      c.fillStyle = "#fde68a"; for (const [x, y, r] of [[150, 70, 6], [168, 96, 4], [140, 104, 3]]) { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
+      c.fillStyle = "#fff"; c.textAlign = "left"; c.font = "800 52px Segoe UI, sans-serif"; c.fillText("Bin gleich", 190, 110); c.fillText("zurück!", 190, 170);
+      c.font = "600 26px Segoe UI, sans-serif"; c.fillStyle = "#fde68a"; c.fillText("Kurz die Toiletten putzen", 190, 214); c.font = "italic 600 26px Segoe UI, sans-serif"; c.fillStyle = "#f5d0fe"; c.fillText("– Maya 💜", 190, 256);
+    });
+    const away = new T.Group(); away.position.set(0, 1.09, .1); away.visible = false; g.add(away);
+    const acryl = new T.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: .25 });
+    const card = new T.Mesh(new T.PlaneGeometry(.4, .235), new T.MeshBasicMaterial({ map: awayT, transparent: true, side: T.DoubleSide })); card.position.set(0, .125, .006); card.rotation.x = -.2; away.add(card);
+    const acrylP = new T.Mesh(new T.BoxGeometry(.42, .25, .006), acryl); acrylP.position.set(0, .125, 0); acrylP.rotation.x = -.2; away.add(acrylP);
+    const acrylF = new T.Mesh(new T.BoxGeometry(.42, .006, .1), acryl); acrylF.position.set(0, .003, -.02); away.add(acrylF);
     maya = { g, head, arms, tail, person, wave: 0, greeted: false, legs: mLegs, mop, away, state: "desk", timer: 35 + Math.random() * 25, step: 0, walker: null };
   }
   function mayaTick(dt, t) {
@@ -3357,28 +3374,64 @@ const Room = (() => {
       c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .5, 26, 10); c.fillStyle = "#1f8f5a"; c.fillRect(w * .2, h * .12, w * .6, 54); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .12 + 38); });
     const door = new T.Mesh(new T.PlaneGeometry(.9, 2.15), new T.MeshLambertMaterial({ map: doorT })); door.position.set(W / 2 - .02, 1.075, 0); door.rotation.y = -P / 2; g.add(door);
     door.userData = { wc: "exit" }; fixedPicks.push(door);
-    // Zwei Kabinen an der Westwand
-    const partM = pbr(new T.MeshLambertMaterial({ color: 0x3a4250 }), .35, .1);
-    for (const pz of [-D / 2 + .02, -1.0, .4]) { const pt = new T.Mesh(new T.BoxGeometry(1.5, 2.0, .04), partM); pt.position.set(-W / 2 + .75, 1.1, pz); g.add(pt); }
+    // Zwei Kabinen an der Westwand – auf Chromfüßen, mit Wand-WC, Spülplatte, Papierhalter und Klobürste
+    const partM = pbr(new T.MeshLambertMaterial({ color: 0x1f5f66 }), .3, .15);
+    for (const pz of [-D / 2 + .02, -1.0, .4]) {
+      const pt = new T.Mesh(new T.BoxGeometry(1.5, 1.95, .035), partM); pt.position.set(-W / 2 + .75, 1.125, pz); g.add(pt);
+      for (const fx of [-W / 2 + .2, -W / 2 + 1.3]) { const ft2 = new T.Mesh(new T.CylinderGeometry(.018, .022, .15, 10), chromeM); ft2.position.set(fx, .075, pz); g.add(ft2); }
+    }
+    const rail = new T.Mesh(new T.CylinderGeometry(.015, .015, 2.9, 10), chromeM); rail.rotation.x = P / 2; rail.position.set(-W / 2 + 1.5, 2.12, -1.05); g.add(rail);
     for (const [z0, z1, open] of [[-2.5, -1.0, .6], [-1.0, .4, .15]]) {
       const zc = (z0 + z1) / 2, wdt = z1 - z0;
-      const fr = new T.Mesh(new T.BoxGeometry(.04, 2.0, .18), partM); fr.position.set(-W / 2 + 1.5, 1.1, z0 + .09); g.add(fr);
-      const hinge = new T.Group(); hinge.position.set(-W / 2 + 1.5, 0, z1 - .02); hinge.rotation.y = open; g.add(hinge);
+      const fr = new T.Mesh(new T.BoxGeometry(.035, 1.95, .16), partM); fr.position.set(-W / 2 + 1.5, 1.125, z0 + .09); g.add(fr);
+      const hinge = new T.Group(); hinge.position.set(-W / 2 + 1.5, 0, z1 - .02); g.add(hinge);
       const lockM = new T.MeshBasicMaterial({ color: 0x16a34a });
-      const dr = new T.Mesh(new T.BoxGeometry(.035, 1.8, wdt - .2), partM); dr.position.set(0, 1.05, -(wdt - .2) / 2); hinge.add(dr);
-      const lock = new T.Mesh(new T.CircleGeometry(.025, 16), lockM); lock.position.set(.02, 1.05, -(wdt - .2) + .1); lock.rotation.y = P / 2; hinge.add(lock);
-      // Toilette: Sockel, Schüssel, Sitz, Deckel, Spülkasten
+      const dr = new T.Mesh(new T.BoxGeometry(.03, 1.8, wdt - .2), partM); dr.position.set(0, 1.08, -(wdt - .2) / 2); hinge.add(dr);
+      // Türgriff außen + innen, Schloss-Anzeige beidseitig, Kleiderhaken innen
+      for (const sx of [1, -1]) {
+        const hd = new T.Mesh(new T.BoxGeometry(.03, .025, .12), chromeM); hd.position.set(sx * .035, 1.05, -(wdt - .2) + .14); hinge.add(hd);
+        const lk = new T.Mesh(new T.CircleGeometry(.022, 16), lockM); lk.position.set(sx * .017, 1.18, -(wdt - .2) + .12); lk.rotation.y = sx * P / 2; hinge.add(lk);
+        const ring = new T.Mesh(new T.TorusGeometry(.024, .004, 6, 16), chromeM); ring.position.set(sx * .017, 1.18, -(wdt - .2) + .12); ring.rotation.y = P / 2; hinge.add(ring);
+      }
+      const doodT = canvasTex(256, 512, (c, w, h) => {
+        c.clearRect(0, 0, w, h); c.lineCap = "round"; c.lineJoin = "round";
+        const pen = (col, wd) => { c.strokeStyle = col; c.fillStyle = col; c.lineWidth = wd; };
+        const txt = (t, x, y, sz, col, rot = 0, font = "Segoe Print, Comic Sans MS, cursive") => { c.save(); c.translate(x, y); c.rotate(rot); c.font = `bold ${sz}px ${font}`; c.fillStyle = col; c.fillText(t, 0, 0); c.restore(); };
+        const lines = z0 < -1.5 ? [["Kevin war hier 😄", 20, 120, 22, "#f8fafc", -.08], ["Pascal ♥ Klassiker", 30, 190, 20, "#fca5a5", .05], ["Dillo 🐾", 140, 250, 24, "#93c5fd", -.1], ["Popcorn > Chips", 24, 320, 19, "#86efac", .03]]
+          : [["Maya putzt hier 🧹", 18, 120, 20, "#d8b4fe", .06], ["Bester Film?", 30, 190, 22, "#f8fafc", -.05], ["→ Inception!!", 50, 225, 20, "#fde68a", -.05], ["Watchlist 4ever", 26, 320, 21, "#5eead4", .04]];
+        for (const [t, x, y, sz, col, r] of lines) txt(t, x, y, sz, col, r);
+        pen("#fca5a5", 3); c.beginPath(); const hx = 190, hy = 90; c.moveTo(hx, hy + 12); c.bezierCurveTo(hx - 22, hy - 6, hx - 6, hy - 22, hx, hy - 6); c.bezierCurveTo(hx + 6, hy - 22, hx + 22, hy - 6, hx, hy + 12); c.stroke();
+        pen("#e5e7eb", 2.5); for (let k = 0; k < 7; k++) { c.beginPath(); c.moveTo(40 + k * 10, 380); c.lineTo(40 + k * 10, 410); c.stroke(); } c.beginPath(); c.moveTo(34, 405); c.lineTo(108, 385); c.stroke();
+        txt("☺", 180, 400, 40, "#fde68a", 0, "Segoe UI Symbol, sans-serif");
+      });
+      const dood = new T.Mesh(new T.PlaneGeometry(wdt - .3, 1.3), new T.MeshBasicMaterial({ map: doodT, transparent: true, depthWrite: false })); dood.position.set(-.017, 1.12, -(wdt - .2) / 2); dood.rotation.y = -P / 2; hinge.add(dood);
+      const hook = new T.Mesh(new T.CapsuleGeometry(.008, .05, 4, 6), chromeM); hook.position.set(-.04, 1.65, -(wdt - .2) / 2); hook.rotation.z = .6; hinge.add(hook);
+      const num = new T.Mesh(new T.PlaneGeometry(.13, .13), new T.MeshBasicMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#fff"; c.beginPath(); c.arc(32, 32, 30, 0, 7); c.fill(); c.fillStyle = "#3a4250"; c.font = "bold 36px Segoe UI"; c.textAlign = "center"; c.fillText(z0 < -1.5 ? "1" : "2", 32, 45); }), transparent: true })); num.position.set(.017, 1.75, -(wdt - .2) / 2); num.rotation.y = P / 2; hinge.add(num);
+      // Vorwandelement mit Spülplatte
       const tz = zc, tx = -W / 2;
-      const base = new T.Mesh(new T.CylinderGeometry(.13, .16, .32, 24), white); base.position.set(tx + .42, .16, tz); base.scale.z = .8; g.add(base);
-      const bowl = new T.Mesh(new T.SphereGeometry(.22, 24, 14, 0, P * 2, 0, P * .5), white); bowl.position.set(tx + .44, .42, tz); bowl.scale.set(1.15, .35, .85); bowl.rotation.x = P; g.add(bowl);
-      const seat = new T.Mesh(new T.TorusGeometry(.19, .03, 10, 28), white); seat.userData = { toilet: stalls.length }; fixedPicks.push(seat); seat.rotation.x = P / 2; seat.scale.set(1.15, .85, 1); seat.position.set(tx + .44, .44, tz); g.add(seat);
-      const lid = new T.Mesh(new T.CylinderGeometry(.2, .2, .02, 28), white); lid.scale.set(1.12, 1, .85); lid.position.set(tx + .22, .62, tz); lid.rotation.z = -1.35; g.add(lid);
-      const tank = new T.Mesh(new T.BoxGeometry(.18, .42, .48), white); tank.position.set(tx + .1, .72, tz); g.add(tank);
-      const si = stalls.length; stalls.push({ hinge, open: Math.max(open, .9), target: Math.max(open, .9), lockM, sx: tx + .5, sz: tz }); hinge.rotation.y = Math.max(open, .9);
-      for (const m of [base, bowl, tank]) { m.userData = { toilet: si }; fixedPicks.push(m); }
-      const flush = new T.Mesh(new T.CylinderGeometry(.035, .035, .01, 16), chromeM); flush.position.set(tx + .1, .935, tz); g.add(flush);
-      const roll = new T.Mesh(new T.CylinderGeometry(.055, .055, .11, 18), new T.MeshLambertMaterial({ color: 0xffffff })); roll.rotation.x = P / 2; roll.position.set(tx + .75, .75, z0 + .1); g.add(roll);
-      const num = new T.Mesh(new T.PlaneGeometry(.14, .14), new T.MeshBasicMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#fff"; c.beginPath(); c.arc(32, 32, 30, 0, 7); c.fill(); c.fillStyle = "#3a4250"; c.font = "bold 36px Segoe UI"; c.textAlign = "center"; c.fillText(z0 < -1.5 ? "1" : "2", 32, 45); }), transparent: true })); num.position.set(.022, 1.75, -(wdt - .2) / 2); num.rotation.y = P / 2; hinge.add(num);
+      const box = new T.Mesh(new T.BoxGeometry(.2, 1.1, .7), pbr(new T.MeshLambertMaterial({ color: 0xf2f4f6 }), .35, 0)); box.position.set(tx + .1, .55, tz); g.add(box);
+      const plate = new T.Mesh(new T.BoxGeometry(.012, .16, .25), chromeM); plate.position.set(tx + .206, 1.0, tz); g.add(plate);
+      for (const bz of [-.055, .055]) { const bt = new T.Mesh(new T.BoxGeometry(.012, .12, bz < 0 ? .08 : .11), pbr(new T.MeshLambertMaterial({ color: 0xe8ecf0 }), .2, .8)); bt.position.set(tx + .214, 1.0, tz + bz); g.add(bt); }
+      // Wand-WC: Keramikschale (Drehkörper, länglich), Wasser, Sitz, Deckel mit Scharnieren
+      const shell = new T.Mesh(new T.LatheGeometry([[0, 0], [.1, 0], [.15, .04], [.19, .13], [.205, .23], [.2, .29], [.185, .31], [.165, .305]].map(([r, y]) => new T.Vector2(r, y)), 36), white);
+      shell.scale.set(1.35, 1, .95); shell.position.set(tx + .5, .22, tz); g.add(shell);
+      const inner = new T.Mesh(new T.LatheGeometry([[.16, .3], [.13, .2], [.07, .1], [0, .07]].map(([r, y]) => new T.Vector2(r, y)), 32), pbr(new T.MeshLambertMaterial({ color: 0xf6f7f9, side: T.BackSide }), .1, 0));
+      inner.scale.set(1.35, 1, .95); inner.position.set(tx + .5, .22, tz); g.add(inner);
+      const water = new T.Mesh(new T.CircleGeometry(.075, 24), new T.MeshBasicMaterial({ color: 0xa9d8ee, transparent: true, opacity: .8 })); water.rotation.x = -P / 2; water.scale.set(1.35, .95, 1); water.position.set(tx + .5, .31, tz); g.add(water);
+      const neck = new T.Mesh(new T.BoxGeometry(.12, .2, .32), white); neck.position.set(tx + .26, .38, tz); g.add(neck);
+      const seatM = pbr(new T.MeshLambertMaterial({ color: 0xffffff }), .2, 0);
+      const seat = new T.Mesh(new T.TorusGeometry(.16, .028, 10, 36), seatM); seat.rotation.x = P / 2; seat.scale.set(1.32, .98, .7); seat.position.set(tx + .5, .545, tz); g.add(seat);
+      const lid = new T.Mesh(new T.CylinderGeometry(.19, .19, .025, 36), seatM); lid.scale.set(1.3, 1, .95); lid.rotation.z = P / 2 - .12; lid.position.set(tx + .275, .76, tz); g.add(lid);
+      for (const hz of [-.09, .09]) { const hg = new T.Mesh(new T.CylinderGeometry(.012, .012, .03, 10), chromeM); hg.rotation.x = P / 2; hg.position.set(tx + .29, .56, tz + hz); g.add(hg); }
+      // Papierhalter (Chrom) mit Rolle, Ersatzrolle, Klobürste
+      const arm = new T.Mesh(new T.BoxGeometry(.14, .012, .03), chromeM); arm.position.set(tx + .78, .78, z0 + .05); g.add(arm);
+      const roll = new T.Mesh(new T.CylinderGeometry(.055, .055, .1, 20), new T.MeshLambertMaterial({ color: 0xffffff })); roll.rotation.z = P / 2; roll.position.set(tx + .78, .73, z0 + .085); g.add(roll);
+      const core = new T.Mesh(new T.CylinderGeometry(.02, .02, .102, 12), new T.MeshLambertMaterial({ color: 0xb98a52 })); core.rotation.z = P / 2; core.position.copy(roll.position); g.add(core);
+      const spare = new T.Mesh(new T.CylinderGeometry(.055, .055, .1, 20), new T.MeshLambertMaterial({ color: 0xffffff })); spare.position.set(tx + .2, 1.16, tz - .2); g.add(spare);
+      const bh = new T.Mesh(new T.CylinderGeometry(.05, .045, .2, 18), chromeM); bh.position.set(tx + .25, .1, z1 - .14); g.add(bh);
+      const bs = new T.Mesh(new T.CylinderGeometry(.008, .008, .3, 8), new T.MeshLambertMaterial({ color: 0x222831 })); bs.position.set(tx + .25, .33, z1 - .14); bs.rotation.z = .12; g.add(bs);
+      const si = stalls.length; stalls.push({ hinge, open: Math.max(open, .9), target: Math.max(open, .9), lockM, sx: tx + .55, sz: tz }); hinge.rotation.y = Math.max(open, .9);
+      for (const m of [shell, seat, lid, plate, box]) { m.userData = { toilet: si }; fixedPicks.push(m); }
     }
     // Waschbecken-Zeile an der Nordwand mit Spiegel
     const counter = new T.Mesh(new T.BoxGeometry(2.6, .06, .55), pbr(new T.MeshLambertMaterial({ color: 0x2b2f36 }), .18, .1)); counter.position.set(0, .86, D / 2 - .28); g.add(counter);
@@ -3407,17 +3460,52 @@ const Room = (() => {
     const dryer = new T.Mesh(new T.BoxGeometry(.3, .26, .2), chromeM); dryer.position.set(2.1, 1.25, D / 2 - .1); g.add(dryer); dryer.userData = { dryer: true }; fixedPicks.push(dryer);
     const towels = new T.Mesh(new T.BoxGeometry(.3, .4, .12), new T.MeshLambertMaterial({ color: 0xf5f5f5 })); towels.position.set(1.6, 1.35, D / 2 - .06); g.add(towels);
     const pbin = new T.Mesh(new T.CylinderGeometry(.14, .12, .4, 18), chromeM); pbin.position.set(1.6, .2, D / 2 - .25); g.add(pbin);
-    // Urinale an der Südwand
+    // Urinale an der Südwand: Keramik-Becken, Chrom-Spülventil, Ablauf, Trennwand aus Milchglas
     for (const ux of [.4, 1.2]) {
-      const ur = new T.Mesh(new T.SphereGeometry(.2, 20, 14, 0, P * 2, 0, P * .7), white); ur.scale.set(.9, 1.5, .7); ur.rotation.x = -P / 2; ur.position.set(ux, .95, -D / 2 + .12); g.add(ur);
-      const fl = new T.Mesh(new T.CylinderGeometry(.015, .015, .25, 8), chromeM); fl.position.set(ux, 1.4, -D / 2 + .05); g.add(fl);
+      const prof = [[0, 0], [.12, 0], [.16, .08], [.18, .3], [.17, .5], [.15, .62], [.0, .64]].map(([r, y]) => new T.Vector2(r, y));
+      const ur = new T.Mesh(new T.LatheGeometry(prof, 28, P * .5, P), pbr(new T.MeshLambertMaterial({ color: 0xf8f9fb, side: T.DoubleSide }), .08, 0)); ur.position.set(ux, .58, -D / 2 + .01); ur.scale.set(1, 1, 1.1); g.add(ur);
+      const lip = new T.Mesh(new T.TorusGeometry(.17, .02, 8, 24, P), white); lip.position.set(ux, .62, -D / 2 + .01); lip.rotation.x = -P / 2; lip.scale.set(1, 1.1, 1); g.add(lip);
+      const drain = new T.Mesh(new T.CircleGeometry(.03, 16), chromeM); drain.rotation.x = -P / 2; drain.position.set(ux, .6, -D / 2 + .08); g.add(drain);
+      const pipe = new T.Mesh(new T.CylinderGeometry(.014, .014, .38, 10), chromeM); pipe.position.set(ux, 1.42, -D / 2 + .04); g.add(pipe);
+      const valve = new T.Mesh(new T.CylinderGeometry(.03, .03, .08, 14), chromeM); valve.position.set(ux, 1.28, -D / 2 + .04); g.add(valve);
+      const btn = new T.Mesh(new T.CylinderGeometry(.012, .012, .03, 10), chromeM); btn.rotation.x = P / 2; btn.position.set(ux, 1.3, -D / 2 + .08); g.add(btn);
     }
-    const scr = new T.Mesh(new T.BoxGeometry(.03, .7, .45), partM); scr.position.set(.8, 1.15, -D / 2 + .25); g.add(scr);
+    const scr = new T.Mesh(new T.BoxGeometry(.02, .75, .42), new T.MeshLambertMaterial({ color: 0xdff2f2, transparent: true, opacity: .55 })); scr.position.set(.8, 1.15, -D / 2 + .23); g.add(scr);
+    for (const yy of [.775, 1.525]) { const sc2 = new T.Mesh(new T.BoxGeometry(.026, .02, .44), chromeM); sc2.position.set(.8, yy, -D / 2 + .23); g.add(sc2); }
+    // LED-Leiste unter dem Spiegel, Pflanze in der Ecke
+    const led = new T.Mesh(new T.BoxGeometry(2.3, .015, .02), new T.MeshBasicMaterial({ color: 0xe0f2fe, toneMapped: false })); led.position.set(0, 1.155, D / 2 - .04); g.add(led);
+    { const pot = new T.Mesh(new T.CylinderGeometry(.16, .12, .34, 20), pbr(new T.MeshLambertMaterial({ color: 0x2f3542 }), .3, .2)); pot.position.set(2.65, .17, -2.15); g.add(pot);
+      const leafM = new T.MeshLambertMaterial({ color: 0x2f8a4a, side: T.DoubleSide });
+      for (let k = 0; k < 9; k++) { const lf = new T.Mesh(new T.PlaneGeometry(.09, .55), leafM); const a2 = k / 9 * P * 2; lf.position.set(2.65 + Math.sin(a2) * .06, .55, -2.15 + Math.cos(a2) * .06); lf.rotation.set(Math.cos(a2) * .35, a2, Math.sin(a2) * .35); g.add(lf); } }
     // Schild
     const sign = new T.Mesh(new T.PlaneGeometry(.8, .3), new T.MeshBasicMaterial({ map: canvasTex(256, 96, (c, w, h) => { c.fillStyle = "#2f8f7a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 26px Segoe UI"; c.textAlign = "center"; c.fillText("Bitte sauber halten 🙂", w / 2, 40); c.font = "18px Segoe UI"; c.fillText("Euer Videothek-Team", w / 2, 72); }) })); sign.position.set(W / 2 - .02, 2.2, 1.4); sign.rotation.y = -P / 2; g.add(sign);
     // „Rutschgefahr“-Aufsteller (wird beim Putzen gezeigt) – einer im WC, einer vor der Tür im Laden
-    const wetT = canvasTex(128, 192, (c, w, h) => { c.fillStyle = "#facc15"; c.fillRect(0, 0, w, h); c.fillStyle = "#111"; c.beginPath(); c.moveTo(w / 2, 20); c.lineTo(w - 18, 100); c.lineTo(18, 100); c.closePath(); c.fill(); c.fillStyle = "#facc15"; c.font = "bold 54px Segoe UI"; c.textAlign = "center"; c.fillText("!", w / 2, 92); c.fillStyle = "#111"; c.font = "bold 20px Segoe UI"; c.fillText("VORSICHT", w / 2, 132); c.font = "bold 16px Segoe UI"; c.fillText("RUTSCHGEFAHR", w / 2, 156); });
-    const mkWet = () => { const s = new T.Group(); const m = new T.MeshLambertMaterial({ map: wetT, side: T.DoubleSide }); for (const sx of [-1, 1]) { const pl = new T.Mesh(new T.PlaneGeometry(.32, .6), m); pl.position.set(0, .29, sx * .08); pl.rotation.x = sx * .26; s.add(pl); } s.visible = false; return s; };
+    const wetT = canvasTex(256, 400, (c, w, h) => {
+      c.fillStyle = "#facc15"; c.fillRect(0, 0, w, h);
+      c.fillStyle = "rgba(0,0,0,.08)"; for (let y = 0; y < h; y += 6) c.fillRect(0, y, w, 2);
+      // Warndreieck mit rutschender Figur
+      c.fillStyle = "#111"; c.beginPath(); c.moveTo(w / 2, 26); c.lineTo(w - 26, 196); c.lineTo(26, 196); c.closePath(); c.fill();
+      c.fillStyle = "#facc15"; c.beginPath(); c.moveTo(w / 2, 52); c.lineTo(w - 44, 184); c.lineTo(44, 184); c.closePath(); c.fill();
+      c.strokeStyle = "#111"; c.fillStyle = "#111"; c.lineWidth = 9; c.lineCap = "round";
+      c.beginPath(); c.arc(w / 2 + 16, 100, 11, 0, 7); c.fill();
+      c.beginPath(); c.moveTo(w / 2 + 8, 114); c.lineTo(w / 2 - 6, 146); c.moveTo(w / 2 + 4, 122); c.lineTo(w / 2 + 34, 132); c.moveTo(w / 2 + 2, 124); c.lineTo(w / 2 - 22, 116);
+      c.moveTo(w / 2 - 6, 146); c.lineTo(w / 2 + 26, 160); c.moveTo(w / 2 - 6, 146); c.lineTo(w / 2 - 30, 158); c.stroke();
+      c.lineWidth = 4; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(70 + k * 34, 176); c.quadraticCurveTo(86 + k * 34, 168, 100 + k * 34, 176); c.stroke(); }
+      c.fillStyle = "#111"; c.textAlign = "center"; c.font = "900 40px Segoe UI, sans-serif"; c.fillText("VORSICHT!", w / 2, 252);
+      c.font = "800 30px Segoe UI, sans-serif"; c.fillText("RUTSCHGEFAHR", w / 2, 292);
+      c.font = "600 18px Segoe UI, sans-serif"; c.fillText("CAUTION · WET FLOOR", w / 2, 324);
+      c.fillRect(30, 346, w - 60, 4); c.font = "600 16px Segoe UI"; c.fillText("🧹 Maya putzt gerade", w / 2, 378);
+    });
+    const mkWet = () => {
+      const s = new T.Group(), plastic = new T.MeshLambertMaterial({ map: wetT }), frameM = pbr(new T.MeshLambertMaterial({ color: 0xeab308 }), .4, 0);
+      for (const sx of [-1, 1]) {
+        const leaf = new T.Group(); leaf.position.y = .62; leaf.rotation.x = sx * .24; s.add(leaf);
+        const pl = new T.Mesh(new T.BoxGeometry(.3, .6, .012), [frameM, frameM, frameM, frameM, sx > 0 ? frameM : plastic, sx > 0 ? plastic : frameM]); pl.position.set(0, -.31, 0); leaf.add(pl);
+        for (const ex of [-.155, .155]) { const ed = new T.Mesh(new T.BoxGeometry(.018, .62, .03), frameM); ed.position.set(ex, -.31, 0); leaf.add(ed); }
+      }
+      const handle = new T.Mesh(new T.TorusGeometry(.05, .012, 6, 16, Math.PI), frameM); handle.position.y = .64; s.add(handle);
+      s.visible = false; return s;
+    };
     const wetIn = mkWet(); wetIn.position.set(.8, 0, .8); wetIn.rotation.y = .6; g.add(wetIn);
     const wetOut = mkWet(); wetOut.position.set(-6.9, 0, WC_DOOR_Z + 1.0); wetOut.rotation.y = 1.2; const wetHold = new T.Group(); wetHold.add(wetOut); scene.add(wetHold);
     shared.wet = [wetIn, wetOut];
@@ -6107,7 +6195,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "86";
+const APP_VERSION = "87";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
