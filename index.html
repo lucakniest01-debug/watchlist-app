@@ -3119,8 +3119,8 @@ const Room = (() => {
       c.fillStyle = "#fbbf24"; c.fillRect(40, 70, w - 80, 120); c.fillStyle = "#111827"; c.font = "bold 50px Segoe UI"; c.textAlign = "center"; c.fillText("LAGER", w / 2, 132); c.font = "bold 22px Segoe UI"; c.fillText("Nur für Personal", w / 2, 172);
       for (let x = -40; x < w; x += 36) { c.fillStyle = "#111827"; c.beginPath(); c.moveTo(x, h - 50); c.lineTo(x + 18, h - 50); c.lineTo(x + 38, h - 20); c.lineTo(x + 20, h - 20); c.fill(); } c.fillStyle = "#fbbf24"; c.globalCompositeOperation = "destination-over"; c.fillRect(0, h - 50, w, 30); });
     const back = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#8b929b"; c.fillRect(0, 0, w, h); c.fillStyle = "#16a34a"; c.fillRect(40, 70, w - 80, 70); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("↩ Laden", w / 2, 118); });
-    const door = new T.Mesh(new T.PlaneGeometry(.86, 2.2), new T.MeshLambertMaterial({ map: front })); door.position.set(0, 1.1, .03); sd.add(door);
-    swingDoor(door, .86, 1, "store", 1.4, new T.MeshLambertMaterial({ map: back }));
+    const door = new T.Mesh(new T.PlaneGeometry(.93, 2.295), new T.MeshLambertMaterial({ map: front })); door.position.set(0, 1.1475, .03); sd.add(door);
+    swingDoor(door, .93, 1, "store", 1.4, new T.MeshLambertMaterial({ map: back }));
     const noteT = canvasTex(256, 180, (c, w, h) => { c.fillStyle = "#fef9c3"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.06)"; for (let y = 30; y < h; y += 26) c.fillRect(0, y, w, 2);
       c.fillStyle = "rgba(255,255,255,.7)"; c.fillRect(w / 2 - 40, -6, 80, 26); c.fillStyle = "#1e3a8a"; c.textAlign = "center"; c.font = "bold 34px Segoe Print, Comic Sans MS, cursive"; c.fillText("Bin kurz", w / 2, 66); c.fillText("auf Klo! 🚽", w / 2, 108); c.font = "24px Segoe Print, Comic Sans MS, cursive"; c.fillText("– Pascal", w / 2 + 40, 150); });
     const note = new T.Mesh(new T.PlaneGeometry(.36, .25), new T.MeshLambertMaterial({ map: noteT })); note.position.set(0, .2, .026); note.rotation.z = -.05; note.visible = false; door.add(note); shared.pascalNote = note;
@@ -3660,12 +3660,12 @@ const Room = (() => {
     const sdoorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#e6e9ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#b7bdc6"; c.lineWidth = 6; c.strokeRect(14, 14, w - 28, h - 28);
       c.fillStyle = "#2f8f7a"; c.beginPath(); c.arc(w / 2, h * .26, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 70px Segoe UI Emoji, Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🚻", w / 2, h * .26 + 4);
       c.fillStyle = "#2f8f7a"; c.font = "bold 48px Segoe UI"; c.fillText("WC", w / 2, h * .45); c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .52, 24, 10); });
-    const sdoor = new T.Mesh(new T.PlaneGeometry(.86, 2.2), new T.MeshLambertMaterial({ map: sdoorT })); sdoor.position.set(0, 1.1, .03); sd.add(sdoor);
+    const sdoor = new T.Mesh(new T.PlaneGeometry(.93, 2.295), new T.MeshLambertMaterial({ map: sdoorT })); sdoor.position.set(0, 1.1475, .03); sd.add(sdoor);
     sdoor.userData = { wc: "enter" }; fixedPicks.push(sdoor);
     const sBackT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#e6e9ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#b7bdc6"; c.lineWidth = 6; c.strokeRect(14, 14, w - 28, h - 28);
       c.fillStyle = "#1f8f5a"; c.fillRect(w * .16, h * .16, w * .68, 58); c.fillStyle = "#fff"; c.font = "bold 36px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .16 + 41);
       c.fillStyle = "#2f8f7a"; c.font = "600 24px Segoe UI"; c.fillText("→ Videothek", w / 2, h * .16 + 100); });
-    swingDoor(sdoor, .86, -1, "wc", 1.4, new T.MeshLambertMaterial({ map: sBackT }));
+    swingDoor(sdoor, .93, -1, "wc", 1.4, new T.MeshLambertMaterial({ map: sBackT }));
     const ssign = new T.Mesh(new T.PlaneGeometry(.9, .28), new T.MeshBasicMaterial({ map: canvasTex(256, 80, (c, w, h) => { c.fillStyle = "#0b2a24"; c.fillRect(0, 0, w, h); c.font = "bold 46px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#34d399"; c.shadowBlur = 16; c.fillStyle = "#d1fae5"; c.fillText("🚻 WC", w / 2, h / 2 + 2); }), toneMapped: false })); ssign.position.set(0, 2.5, .04); sd.add(ssign);
   }
   // ---------- Türen: schwingen beim Näherkommen auf, Raumwechsel mit kurzem Abblenden ----------
@@ -3709,7 +3709,7 @@ const Room = (() => {
       const ro = new T.Mesh(new T.CylinderGeometry(.028, .028, .012, 16), chrome); ro.rotation.x = Math.PI / 2; ro.position.set(-side * (w / 2 - .07) + 0, hy, sz * .029); mesh.add(ro);
       const nk = new T.Mesh(new T.CylinderGeometry(.009, .009, .05, 8), chrome); nk.rotation.x = Math.PI / 2; nk.position.set(-side * (w / 2 - .07), hy, sz * .05); mesh.add(nk);
       const lv = new T.Mesh(new T.CapsuleGeometry(.011, .1, 4, 8), chrome); lv.rotation.z = Math.PI / 2; lv.position.set(-side * (w / 2 - .07) + side * .055, hy, sz * .074); mesh.add(lv);
-      const kp = new T.Mesh(new T.BoxGeometry(w - .06, .18, .004), pbr(new T.MeshLambertMaterial({ color: 0xaab0b8 }), .3, .7)); kp.position.set(0, -h / 2 + .12, sz * .0245); mesh.add(kp);
+      const kp = new T.Mesh(new T.BoxGeometry(w - .04, .14, .004), pbr(new T.MeshLambertMaterial({ color: 0x5b626b }), .3, .7)); kp.position.set(0, -h / 2 + .09, sz * .0245); mesh.add(kp);
     }
     // Scharniere
     for (const hy2 of [.25, 1.0, 1.85]) { const hg = new T.Mesh(new T.CylinderGeometry(.012, .012, .1, 8), chrome); hg.position.set(side * w / 2, hy2 - y, 0); mesh.add(hg); }
@@ -5497,8 +5497,8 @@ const Room = (() => {
       c.fillStyle = "#e8b94a"; c.fillRect(w / 2 - 16, h * .5, 8, 60); c.fillRect(w / 2 + 8, h * .5, 8, 60);
       c.font = "bold 26px Segoe UI, sans-serif"; c.textAlign = "center"; c.fillStyle = "#ffb35c"; c.fillText("SAAL 1", w / 2, 140);
     });
-    const door = new T.Mesh(new T.PlaneGeometry(1.34, 2.36), new T.MeshLambertMaterial({ map: doorT })); door.position.set(0, 1.2, .04); g.add(door);
-    door.userData = { cinema: "enter" }; fixedPicks.push(door); doubleDoor(door, 1.34, 2.36, "kino");
+    const door = new T.Mesh(new T.PlaneGeometry(1.41, 2.415), new T.MeshLambertMaterial({ map: doorT })); door.position.set(0, 1.2075, .04); g.add(door);
+    door.userData = { cinema: "enter" }; fixedPicks.push(door); doubleDoor(door, 1.41, 2.415, "kino");
     const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#14080e"; c.fillRect(0, 0, w, h); c.font = "bold 100px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ff4d6d"; c.shadowBlur = 26; c.fillStyle = "#ffd0d8"; c.fillText("🎬 KINO", w / 2, h / 2 + 6); });
     const sign = new T.Mesh(new T.PlaneGeometry(1.4, .44), new T.MeshBasicMaterial({ map: signT, toneMapped: false })); sign.position.set(0, 2.76, .05); g.add(sign);
     const glow = new T.Mesh(new T.PlaneGeometry(2, 1.2), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.76, .03); g.add(glow);
@@ -6719,7 +6719,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "100";
+const APP_VERSION = "101";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
