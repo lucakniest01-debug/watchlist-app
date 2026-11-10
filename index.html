@@ -3666,7 +3666,7 @@ const Room = (() => {
       c.fillStyle = "#1f8f5a"; c.fillRect(w * .16, h * .16, w * .68, 58); c.fillStyle = "#fff"; c.font = "bold 36px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .16 + 41);
       c.fillStyle = "#2f8f7a"; c.font = "600 24px Segoe UI"; c.fillText("→ Videothek", w / 2, h * .16 + 100); });
     swingDoor(sdoor, .93, -1, "wc", 1.4, new T.MeshLambertMaterial({ map: sBackT }));
-    const ssign = new T.Mesh(new T.PlaneGeometry(.9, .28), new T.MeshBasicMaterial({ map: canvasTex(256, 80, (c, w, h) => { c.fillStyle = "#0b2a24"; c.fillRect(0, 0, w, h); c.font = "bold 46px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#34d399"; c.shadowBlur = 16; c.fillStyle = "#d1fae5"; c.fillText("🚻 WC", w / 2, h / 2 + 2); }), toneMapped: false })); ssign.position.set(0, 2.5, .04); sd.add(ssign);
+    const ssign = new T.Mesh(new T.PlaneGeometry(.9, .28), new T.MeshBasicMaterial({ map: canvasTex(256, 80, (c, w, h) => { c.fillStyle = "#0b2a24"; c.fillRect(0, 0, w, h); c.font = "bold 46px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#34d399"; c.shadowBlur = 16; c.fillStyle = "#d1fae5"; c.fillText("🚻 WC", w / 2, h / 2 + 2); }), toneMapped: false })); ssign.position.set(0, 2.71, .09); sd.add(ssign);
   }
   // ---------- Türen: schwingen beim Näherkommen auf, Raumwechsel mit kurzem Abblenden ----------
   const swingDoors = [];
@@ -3689,8 +3689,10 @@ const Room = (() => {
   // Türzarge: zwei Pfosten + Sturz, ragt in beide Räume
   function doorFrame(par, x, y0, z, ry, w, h, color = 0x2b2f36) {
     const m = pbr(new T.MeshLambertMaterial({ color }), .45, .1), dir = new T.Vector3(Math.cos(ry), 0, -Math.sin(ry));
-    for (const sx of [-1, 1]) { const p = new T.Mesh(new T.BoxGeometry(.09, h + .09, .2), m); p.position.set(x, y0 + (h + .09) / 2, z).addScaledVector(dir, sx * (w / 2 + .045)); p.rotation.y = ry; par.add(p); }
-    const top = new T.Mesh(new T.BoxGeometry(w + .18, .09, .2), m); top.position.set(x, y0 + h + .045, z); top.rotation.y = ry; par.add(top);
+    // Sturz reicht bis über die Oberkante des Wandlochs (2,46 m), damit oben kein Spalt bleibt
+    const topY = Math.max(h + .09, 2.53), th = topY - h;
+    for (const sx of [-1, 1]) { const p = new T.Mesh(new T.BoxGeometry(.09, topY, .2), m); p.position.set(x, y0 + topY / 2, z).addScaledVector(dir, sx * (w / 2 + .045)); p.rotation.y = ry; par.add(p); }
+    const top = new T.Mesh(new T.BoxGeometry(w + .18, th, .2), m); top.position.set(x, y0 + h + th / 2, z); top.rotation.y = ry; par.add(top);
     const sill = new T.Mesh(new T.BoxGeometry(w, .012, .2), new T.MeshLambertMaterial({ color: 0x8a8f98 })); sill.position.set(x, y0 + .006, z); sill.rotation.y = ry; par.add(sill);
   }
   // Türblatt als echtes Brett (mit Dicke, Kante, Klinken beidseitig, Trittblech) an einem Scharnier
@@ -6719,7 +6721,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "101";
+const APP_VERSION = "102";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
