@@ -2311,6 +2311,7 @@ const SFX = (() => {
     shuffle() { for (let i = 0; i < 8; i++) noise(.06, { gain: .05, type: "bandpass", freq: 2000 + i * 150, q: 2, at: i * .04 }); },
     trash() { tone(180, .25, { type: "triangle", gain: .09, to: 90 }); noise(.18, { gain: .12, type: "bandpass", freq: 900, q: 1.5, at: .05 }); tone(620, .4, { type: "sine", gain: .03, at: .08, to: 540 }); noise(.08, { gain: .06, type: "highpass", freq: 3000, at: .3 }); },
     flush() { noise(2.4, { gain: .16, freq: 600, attack: .25, type: "lowpass" }); noise(1.6, { gain: .08, type: "bandpass", freq: 1400, q: .8, at: .3, attack: .3 }); for (let i = 0; i < 6; i++) tone(180 + Math.random() * 120, .15, { type: "sine", gain: .03, at: 1.2 + i * .15, to: 90 }); },
+    trickle() { for (let k = 0; k < 3; k++) noise(1.1, { gain: .05, type: "bandpass", freq: 1600 + k * 500, q: 3, at: k * .8, attack: .15 }); },
     water() { noise(3, { gain: .07, type: "highpass", freq: 2500, attack: .1 }); noise(3, { gain: .05, type: "bandpass", freq: 900, q: 1, attack: .1 }); },
     dryer() { noise(2.6, { gain: .14, type: "bandpass", freq: 700, q: .5, attack: .15 }); tone(110, 2.6, { type: "sawtooth", gain: .02, filter: 400, attack: .15 }); },
     curtain() { noise(2.2, { gain: .07, freq: 900, attack: .5, type: "lowpass" }); },
@@ -2855,7 +2856,8 @@ const Room = (() => {
       c.fillStyle = "rgba(0,0,0,.25)"; c.fillRect(0, h - 10, w, 10);
     });
     const polo = pbr(new T.MeshLambertMaterial({ map: poloT }), .8, 0), red = pbr(new T.MeshLambertMaterial({ color: 0xc8202e }), .75, 0);
-    const legs = new T.Mesh(new T.CylinderGeometry(.15, .13, .9, 16), pants); legs.position.y = .45; person.add(legs);
+    const kLegs = []; for (const sx of [-1, 1]) { const hip = new T.Group(); hip.position.set(sx * .085, .9, 0); person.add(hip); const lg = new T.Mesh(new T.CylinderGeometry(.075, .062, .86, 14), pants); lg.position.y = -.43; hip.add(lg); const sh = new T.Mesh(new T.CapsuleGeometry(.045, .11, 4, 8), new T.MeshLambertMaterial({ color: 0x1a1a1a })); sh.rotation.x = P / 2; sh.position.set(0, -.87, .04); hip.add(sh); kLegs.push(hip); }
+    const legs = kLegs[0].children[0];
     const prof = [[0, 0], [.165, 0], [.17, .1], [.175, .3], [.19, .45], [.195, .52], [.165, .58], [.06, .62], [0, .62]].map(([r, y]) => new T.Vector2(r, y));
     const torso = new T.Mesh(new T.LatheGeometry(prof, 32), polo); torso.position.y = .9; torso.rotation.y = P; torso.scale.z = .85; person.add(torso);
     for (const sx of [-1, 1]) { const col = new T.Mesh(new T.BoxGeometry(.08, .05, .012), red); col.position.set(sx * .05, 1.5, .1); col.rotation.set(-.35, sx * -.5, sx * .45); person.add(col); }
@@ -2919,10 +2921,12 @@ const Room = (() => {
     const glow = new T.Mesh(new T.PlaneGeometry(2.2, 1.6), new T.MeshBasicMaterial({ map: poolTex, color: 0xffd7a8, transparent: true, opacity: .22, depthWrite: false, blending: T.AdditiveBlending })); glow.rotation.x = -Math.PI / 2; glow.position.set(0, .007, .3); g.add(glow);
     g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .95 });
     for (const m of [counter, top, torso, skull, legs, crown]) { m.userData.clerk = true; fixedPicks.push(m); }
-    clerk = { g, person, head, arms, wave: 0, greeted: false, busy: false };
+    const kAway = new T.Mesh(new T.PlaneGeometry(.36, .2), new T.MeshBasicMaterial({ side: T.DoubleSide, map: canvasTex(360, 200, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#b91c1c"); gr.addColorStop(1, "#ef4444"); c.fillStyle = gr; c.beginPath(); c.roundRect(0, 0, w, h, 20); c.fill(); c.strokeStyle = "#fde68a"; c.lineWidth = 5; c.beginPath(); c.roundRect(10, 10, w - 20, h - 20, 14); c.stroke(); c.fillStyle = "#fff"; c.font = "800 44px Segoe UI"; c.textAlign = "center"; c.fillText("Kurze Pause", w / 2, 86); c.font = "600 26px Segoe UI"; c.fillStyle = "#fde68a"; c.fillText("Bin gleich wieder da!", w / 2, 128); c.font = "italic 600 24px Segoe UI"; c.fillStyle = "#fee2e2"; c.fillText("– Kevin 🧢", w / 2, 166); }) }));
+    kAway.position.set(.15, 1.18, .05); kAway.rotation.x = -.2; kAway.visible = false; g.add(kAway);
+    clerk = { g, person, head, arms, legs: kLegs, away: kAway, wave: 0, greeted: false, busy: false };
   }
   function clerkTick(dt, t) {
-    if (!clerk || inCinema) return;
+    if (!clerk || inCinema || (wcVisitor && wcVisitor.name === "kevin")) return;
     const wp = new T.Vector3(); clerk.head.getWorldPosition(wp);
     const d = Math.hypot(pos.x - wp.x, pos.z - wp.z);
     // Kopf zum Spieler drehen (lokal), sanft
@@ -3052,7 +3056,7 @@ const Room = (() => {
     p.position.set(pascal.x, 0, pascal.z);
   }
   function pascalTick(dt, t) {
-    const P = pascal; if (!P || inCinema) return;
+    const P = pascal; if (!P || inCinema || P.trip) return;
     const d = Math.hypot(pos.x - P.x, pos.z - P.z), near = d < 2.1 || P.talking > 0;
     P.talking = Math.max(0, P.talking - dt);
     let want = P.yaw, moving = false;
@@ -3226,7 +3230,7 @@ const Room = (() => {
     maya = { g, head, arms, tail, person, wave: 0, greeted: false, legs: mLegs, mop, away, state: "desk", timer: 35 + Math.random() * 25, step: 0, walker: null };
   }
   function mayaTick(dt, t) {
-    const M = maya; if (!M || inCinema) return;
+    const M = maya; if (!M || inCinema || M.state === "visit") return;
     if (M.state !== "desk") { M.tail.rotation.x = Math.sin(t / 300) * .12; mayaTrip(dt, t); return; }
     M.timer -= dt;
     if (M.timer <= 0 && shared.wcGroup) { if (Math.hypot(pos.x - M.g.position.x, pos.z - M.g.position.z) > 2.5) { mayaStartTrip(); return; } M.timer = 8; }
@@ -3585,7 +3589,9 @@ const Room = (() => {
     A.step += moving ? dt * 8 : 0; const sw = moving ? Math.sin(A.step) : 0;
     const sit = wcSit != null;
     A.legs.forEach((l, i) => l.rotation.x = sit ? -1.45 : (i ? -sw : sw) * .45);
-    A.arms.forEach((ar, i) => ar.rotation.x = sit ? -.6 : (i ? sw : -sw) * .35);
+    const washing = hands && hands.t > 0, atU = (shared.atUrinal || 0) > 0;
+    if (atU) shared.atUrinal -= dt;
+    A.arms.forEach((ar, i) => { ar.rotation.x = sit ? -.6 : washing ? -1.1 + Math.sin(t / 85 + i * 3) * .12 : atU ? -.35 : (i ? sw : -sw) * .35; ar.rotation.z = (i ? 1 : -1) * (washing ? -.25 : .06); });
     A.a.position.y = sit ? -.42 : Math.abs(sw) * .02;
     A.head.rotation.x = -pitch * .6;
   }
@@ -3593,6 +3599,7 @@ const Room = (() => {
   const stalls = []; let wcSit = null, washT = 0, dryT = 0;
   function useToilet(i) {
     const S = stalls[i]; if (!S || wcSit != null) return;
+    if (S.occ) { toast(`🔴 Besetzt – ${S.occ === "maya" ? "Maya" : S.occ === "kevin" ? "Kevin" : "Pascal"} ist gerade drin!`); return; }
     if (document.pointerLockElement) { /* Maus bleibt gefangen, man kann sich umsehen */ }
     wcSit = i; keys = {}; setAim(null);
     pos.x = WC.x + S.sx; pos.z = WC.z + S.sz; yaw = -Math.PI / 2; pitch = -.05;
@@ -3605,18 +3612,167 @@ const Room = (() => {
     pos.x = WC.x - 1.0; pos.z = WC.z + S.sz; $("#roomLabel").style.opacity = 0;
     toast("🚽 Gespült! Hände waschen nicht vergessen 🧼");
   }
-  function washHands(k) { const W = shared.water && shared.water[k]; if (!W) return; washT = 3; W.visible = true; shared.waterOn = W; SFX.fx.water(); toast("🧼 Hände gewaschen – blitzsauber!"); }
+  function washHands(k) {
+    const W = shared.water && shared.water[k]; if (!W || (hands && hands.t > 0)) return;
+    pos.x = WC.x + (k === 0 ? -.65 : .65); pos.z = WC.z + 1.85; yaw = Math.PI; pitch = -.62; keys = {};
+    washT = 3.4; W.visible = true; shared.waterOn = W; SFX.fx.water();
+    buildHands(); hands.t = hands.dur = 3.4; hands.mode = "wash";
+    setTimeout(() => toast("🧼 Hände gewaschen – blitzsauber!"), 3000);
+  }
   function useUrinal(i) {
     const U = shared.urinals && shared.urinals[i]; if (!U || U.busy) return; U.busy = true;
     pos.x = WC.x + U.x; pos.z = WC.z + U.z; yaw = 0; pitch = -.25; keys = {};
-    U.ledM.color.setHex(0x22c55e); toast("🚹 …");
+    U.ledM.color.setHex(0x22c55e); SFX.fx.trickle(); shared.atUrinal = 2.8;
     setTimeout(() => { SFX.fx.flush(); toast("💧 Automatisch gespült – Hände waschen nicht vergessen 🧼"); U.ledM.color.setHex(0xef4444); U.busy = false; }, 2600);
   }
-  function useDryer() { if (dryT > 0) return; dryT = 2.6; SFX.fx.dryer(); toast("💨 Brrrrr … trocken!"); }
+  function useDryer() {
+    if (dryT > 0) return; dryT = 2.6; SFX.fx.dryer();
+    pos.x = WC.x + 2.05; pos.z = WC.z + 1.85; yaw = Math.PI; pitch = -.15; keys = {};
+    buildHands(); hands.t = hands.dur = 2.6; hands.mode = "dry"; setTimeout(() => toast("💨 Brrrrr … trocken!"), 2300);
+  }
   function wcTick(dt, t) {
     for (const S of stalls) { S.hinge.rotation.y += (S.target - S.hinge.rotation.y) * Math.min(1, dt * 6); }
     if (washT > 0) { washT -= dt; const W = shared.waterOn; if (W) { W.material.opacity = .35 + Math.sin(t / 40) * .1; if (washT <= 0) W.visible = false; } }
     if (dryT > 0) dryT -= dt;
+  }
+  // ---------- Alle Figuren gehen ab und zu aufs WC (Kabine oder Urinal), waschen danach die Hände ----------
+  const DOOR_IN = [-6.3, WC_DOOR_Z], DOOR_AT = [-7.75, WC_DOOR_Z];
+  let wcVisitor = null;
+  const NPC = {
+    kevin: {
+      male: true, next: 140 + Math.random() * 120,
+      ok: () => clerk && !clerk.busy,
+      body: () => clerk.person, legs: () => clerk.legs, arms: () => clerk.arms, head: () => clerk.head,
+      start() { const w = new T.Vector3(); clerk.person.getWorldPosition(w); this.home = [w.x, w.z]; this.homeYaw = clerk.g.rotation.y; clerk.away.visible = true;
+        return { x: w.x, z: w.z, yaw: clerk.g.rotation.y, route: [[5.7, -4.7], [3.0, -5.6], [-2.6, -5.6], [-5.3, -3.5], DOOR_IN, DOOR_AT] }; },
+      routeHome() { return [DOOR_IN, [-5.3, -3.5], [-2.6, -5.6], [3.0, -5.6], [5.7, -4.7], this.home]; },
+      finish() { clerk.g.add(clerk.person); clerk.person.position.set(0, 0, -.62); clerk.person.rotation.set(0, 0, 0); clerk.away.visible = false; clerk.legs.forEach(l => l.rotation.x = 0);
+        clerk.arms.forEach(a => { a.rotation.set(-.3, 0, a.position.x < 0 ? -.05 : .05); a.userData.elbow.rotation.x = -1.15; }); },
+    },
+    pascal: {
+      male: true, next: 90 + Math.random() * 120,
+      ok: () => pascal && pascal.talking <= 0,
+      body: () => pascal.p, legs: () => pascal.legs, arms: () => pascal.arms, head: () => pascal.head,
+      start() { pascal.trip = true; pascal.crate.visible = false; pascal.col.x = 999; pascal.col.z = 999;
+        const route = []; const order = [0, 1, 2]; // über die linke Seite zur WC-Tür
+        if (pascal.z < -4.5) route.push([-2.6, -5.6], [-5.3, -3.5]); else if (pascal.x > -4.5) route.push([-1.8, 2.6], [-5.3, 1.5]);
+        route.push([-5.3, -1.0], DOOR_IN, DOOR_AT); this.home = [pascal.x, pascal.z]; return { x: pascal.x, z: pascal.z, yaw: pascal.yaw, route, own: true }; },
+      routeHome() { return [DOOR_IN, [-5.3, -1.0], [-5.3, 1.5], PASCAL_PATH[1]]; },
+      finish() { const p = pascal.p; scene.add(p); pascal.x = PASCAL_PATH[1][0]; pascal.z = PASCAL_PATH[1][1]; pascal.i = 1; pascal.dir = 1; pascal.wait = 1; pascal.trip = false; pascal.crate.visible = true; },
+    },
+    maya: {
+      male: false, next: 200 + Math.random() * 120,
+      ok: () => maya && maya.state === "desk",
+      body: () => maya.person, legs: () => maya.legs, arms: () => maya.arms, head: () => maya.head,
+      start() { const w = mayaWorld(); this.home = [w.x, w.z]; maya.state = "visit"; maya.away.visible = true;
+        return { x: w.x, z: w.z, yaw: maya.g.rotation.y, route: [DOOR_IN, DOOR_AT] }; },
+      routeHome() { return [DOOR_IN, this.home]; },
+      finish() { const M = maya; M.g.add(M.person); M.person.position.set(0, 0, -.55); M.person.rotation.set(0, 0, 0); M.away.visible = false; M.state = "desk"; M.timer = 60 + Math.random() * 60;
+        M.arms.forEach(a => { a.rotation.set(-.25, 0, a.position.x < 0 ? -.12 : .12); a.userData.elbow.rotation.x = -1; }); M.legs.forEach(l => l.rotation.x = 0); },
+    },
+  };
+  function npcPose(N, dt, t, mode) {
+    const legs = N.legs(), arms = N.arms(), V = wcVisitor;
+    V.step += mode === "walk" ? dt * 7.5 : 0; const sw = mode === "walk" ? Math.sin(V.step) : 0;
+    legs.forEach((l, i) => l.rotation.x = (i ? -sw : sw) * .42);
+    arms.forEach((a, i) => {
+      const el = a.userData.elbow;
+      if (mode === "wash" || mode === "dry") { const r = mode === "wash" ? Math.sin(t / 90 + i * 3) * .12 : Math.sin(t / 60 + i) * .05; a.rotation.set(-.75 + r, 0, (i ? 1 : -1) * -.18); if (el) el.rotation.x = -.95; }
+      else if (mode === "urinal") { a.rotation.set(-.35, 0, (i ? 1 : -1) * -.12); if (el) el.rotation.x = -.6; }
+      else { a.rotation.set((i ? -sw : sw) * .3 - .05, 0, (i ? 1 : -1) * .1); if (el) el.rotation.x = -.3; }
+    });
+    V.walker.position.y = mode === "walk" ? Math.abs(sw) * .02 : 0;
+  }
+  function npcMove(dt, speed = .95) {
+    const V = wcVisitor, wk = V.walker, [tx, tz] = V.path[0], dx = tx - wk.position.x, dz = tz - wk.position.z, L = Math.hypot(dx, dz);
+    if (L < .05) { V.path.shift(); return V.path.length === 0; }
+    const sp = Math.min(L, speed * dt); wk.position.x += dx / L * sp; wk.position.z += dz / L * sp;
+    let a = Math.atan2(dx, dz) - wk.rotation.y; a = Math.atan2(Math.sin(a), Math.cos(a)); wk.rotation.y += a * Math.min(1, dt * 6);
+    return false;
+  }
+  function turnTo(dt, yawT) { const wk = wcVisitor.walker; let a = yawT - wk.rotation.y; a = Math.atan2(Math.sin(a), Math.cos(a)); wk.rotation.y += a * Math.min(1, dt * 6); }
+  function npcStartVisit(name) {
+    const N = NPC[name], s = N.start(); let walker;
+    if (s.own) walker = N.body(); else { walker = new T.Group(); scene.add(walker); const b = N.body(); b.position.set(0, 0, 0); b.rotation.set(0, 0, 0); walker.add(b); }
+    walker.position.set(s.x, 0, s.z); walker.rotation.y = s.yaw;
+    // Ziel im WC: Frauen Kabine, Männer meist Urinal
+    const free = stalls.map((S, i) => [S, i]).filter(([S]) => !S.occ && !(wcSit != null && stalls[wcSit] === S));
+    const useUrinal = N.male && Math.random() < .7 && shared.urinals && shared.urinals.some(u => !u.busy);
+    let spot;
+    if (useUrinal) { const ui = shared.urinals.findIndex(u => !u.busy); spot = { kind: "urinal", i: ui }; shared.urinals[ui].busy = true; }
+    else if (free.length) { const [S, i] = free[Math.floor(Math.random() * free.length)]; spot = { kind: "stall", i }; S.occ = name; }
+    else { spot = { kind: "sinkonly" }; }
+    wcVisitor = { name, N, walker, phase: "toDoor", path: s.route.slice(), step: 0, spot, t: 0 };
+  }
+  function npcVisitTick(dt, t) {
+    const V = wcVisitor; if (!V) return;
+    const N = V.N, hear = inWC;
+    if (V.phase === "toDoor") { npcPose(N, dt, t, "walk"); if (npcMove(dt)) { shared.wcGroup.add(V.walker); V.walker.position.set(2.6, 0, 0); V.walker.rotation.y = -Math.PI / 2;
+        if (hear) SFX.fx.door();
+        const sp = V.spot; V.path = sp.kind === "stall" ? [[.2, stalls[sp.i].sz], [-1.0, stalls[sp.i].sz]] : sp.kind === "urinal" ? [[shared.urinals[sp.i].x, -1.75]] : [[sinkX(V), 1.75]];
+        V.phase = "inWalk"; } }
+    else if (V.phase === "inWalk") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) {
+        const sp = V.spot;
+        if (sp.kind === "stall") { const S = stalls[sp.i]; V.walker.visible = false; S.target = 0; S.lockM.color.setHex(0xdc2626); V.phase = "stall"; V.t = 7 + Math.random() * 5; if (hear) SFX.fx.door(); }
+        else if (sp.kind === "urinal") { V.phase = "urinal"; V.t = 6; shared.urinals[sp.i].ledM.color.setHex(0x22c55e); }
+        else { V.phase = "wash"; V.t = 3; washOn(V); } } }
+    else if (V.phase === "stall") { V.t -= dt; if (V.t <= 0) { const S = stalls[V.spot.i]; if (hear) SFX.fx.flush(); S.target = S.open; setTimeout(() => S.lockM.color.setHex(0x16a34a), 600); S.occ = null; V.walker.visible = true; V.walker.position.set(-1.0, 0, S.sz); V.path = [[sinkX(V), 1.75]]; V.phase = "toSink"; } }
+    else if (V.phase === "urinal") { npcPose(N, dt, t, "urinal"); turnTo(dt, Math.PI); V.t -= dt; if (hear && V.t > 5.9 && !V.snd) { V.snd = true; SFX.fx.trickle(); }
+        if (V.t <= 0) { const U = shared.urinals[V.spot.i]; if (hear) SFX.fx.flush(); U.ledM.color.setHex(0xef4444); U.busy = false; V.path = [[sinkX(V), 1.75]]; V.phase = "toSink"; } }
+    else if (V.phase === "toSink") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { V.phase = "wash"; V.t = 3.2; washOn(V); } }
+    else if (V.phase === "wash") { npcPose(N, dt, t, "wash"); turnTo(dt, 0); V.t -= dt; if (V.t <= 0) { washOff(V); V.path = [[2.0, 1.95]]; V.phase = "toDryer"; } }
+    else if (V.phase === "toDryer") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { V.phase = "dry"; V.t = 2.4; if (hear) SFX.fx.dryer(); } }
+    else if (V.phase === "dry") { npcPose(N, dt, t, "dry"); turnTo(dt, 0); V.t -= dt; if (V.t <= 0) { V.path = [[2.4, 0], [2.9, 0]]; V.phase = "outWalk"; } }
+    else if (V.phase === "outWalk") { npcPose(N, dt, t, "walk"); if (npcMove(dt, .8)) { if (hear) SFX.fx.door(); scene.add(V.walker); V.walker.position.set(DOOR_AT[0], 0, DOOR_AT[1]); V.walker.rotation.y = Math.PI / 2; V.path = N.routeHome(); V.phase = "home"; } }
+    else if (V.phase === "home") { npcPose(N, dt, t, "walk"); if (npcMove(dt)) {
+        const own = V.walker === N.body(); if (!own) scene.remove(V.walker);
+        N.finish(); N.next = 150 + Math.random() * 150; wcVisitor = null; } }
+  }
+  const sinkX = V => (V.sinkX = V.sinkX ?? (Math.random() < .5 ? -.65 : .65));
+  function washOn(V) { const k = sinkX(V) < 0 ? 0 : 1, W = shared.water && shared.water[k]; if (W) { W.visible = true; W.material.opacity = .4; } if (inWC) SFX.fx.water(); }
+  function washOff(V) { const k = sinkX(V) < 0 ? 0 : 1, W = shared.water && shared.water[k]; if (W && washT <= 0) W.visible = false; }
+  function npcSchedule(dt) {
+    if (wcVisitor || !shared.wcGroup) return;
+    for (const [name, N] of Object.entries(NPC)) {
+      N.next -= dt;
+      if (N.next > 0) continue;
+      // nicht losgehen, während du direkt mit der Figur sprichst oder davor stehst
+      const b = N.body && N.ok() ? N.body() : null; if (!b) { N.next = 20; continue; }
+      const w = new T.Vector3(); b.getWorldPosition(w);
+      if (Math.hypot(pos.x - w.x, pos.z - w.z) < 2.5 || $("#clerkTalk").classList.contains("show")) { N.next = 15; continue; }
+      npcStartVisit(name); return;
+    }
+  }
+  // ---------- Deine Hände (Ich-Perspektive) beim Waschen und Trocknen ----------
+  let hands = null;
+  function buildHands() {
+    if (hands) return;
+    const g = new T.Group(), skin = new T.MeshLambertMaterial({ color: 0xeac2a0 }), sleeve = new T.MeshLambertMaterial({ color: 0x2f3542 });
+    const parts = [];
+    for (const sx of [-1, 1]) {
+      const h = new T.Group(); g.add(h);
+      const palm = new T.Mesh(new T.BoxGeometry(.075, .022, .09), skin); h.add(palm);
+      for (let k = 0; k < 4; k++) { const f = new T.Mesh(new T.CapsuleGeometry(.009, .04, 3, 6), skin); f.rotation.x = Math.PI / 2; f.position.set(-.027 + k * .018, 0, -.07); h.add(f); }
+      const th = new T.Mesh(new T.CapsuleGeometry(.01, .035, 3, 6), skin); th.rotation.set(Math.PI / 2, 0, sx * .7); th.position.set(sx * -.045, 0, -.02); h.add(th);
+      const wr = new T.Mesh(new T.CylinderGeometry(.024, .026, .07, 12), skin); wr.rotation.x = Math.PI / 2; wr.position.z = .075; h.add(wr); 
+      parts.push(h);
+    }
+    const foam = [];
+    for (let k = 0; k < 14; k++) { const b = new T.Mesh(new T.SphereGeometry(.008 + Math.random() * .008, 8, 6), new T.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: .9 })); g.add(b); foam.push({ b, a: Math.random() * 7, r: .02 + Math.random() * .04, y: Math.random() * .03 }); }
+    g.traverse(o => { o.frustumCulled = false; o.renderOrder = 12; o.layers.set(2); }); camera.layers.enable(2);
+    g.visible = false; camera.add(g); if (!camera.parent) scene.add(camera); hands = { g, parts, foam, t: 0, mode: "" };
+  }
+  function handsTick(dt, t) {
+    if (!hands) return;
+    const H = hands; H.t = Math.max(0, H.t - dt); H.g.visible = H.t > 0;
+    if (!H.g.visible) return;
+    const show = Math.min(1, H.t * 3, (H.dur - H.t) * 4);
+    H.parts.forEach((h, i) => {
+      const s = i ? 1 : -1, rub = H.mode === "wash" ? Math.sin(t / 85 + i * Math.PI) * .03 : Math.sin(t / 50 + i) * .006;
+      h.position.set(s * (H.mode === "wash" ? .05 : .09) + rub, -.17 - (1 - show) * .25, -.4 + (H.mode === "wash" ? Math.cos(t / 85 + i * Math.PI) * .02 : 0));
+      h.rotation.set(-.35, s * -.25, s * (H.mode === "wash" ? .9 : .15));
+    });
+    H.foam.forEach(f => { f.b.visible = H.mode === "wash"; f.a += dt * 3; f.b.position.set(Math.cos(f.a) * f.r, -.16 + f.y + Math.sin(t / 100 + f.a) * .006 - (1 - show) * .25, -.43 + Math.sin(f.a) * f.r * .6); });
   }
   // Maya: ab und zu mit dem Wischmopp ins WC und putzen
   function mayaWorld() { const v = new T.Vector3(); maya.person.getWorldPosition(v); return v; }
@@ -3699,6 +3855,7 @@ const Room = (() => {
       pBusy = false;
     }
     async function talk() {
+      if (wcVisitor && wcVisitor.name === "kevin") { who = "kevin"; say("<b>Kevin:</b> Bin kurz für kleine Videothekare … gleich wieder an der Theke! 🧢"); return; }
       if (clerk.busy) return; clerk.busy = true; clerk.wave = 1; who = "kevin";
       if (document.pointerLockElement) document.exitPointerLock();
       say("<b>Kevin:</b> Moment, ich schau mal ins Regal … 🤔");
@@ -3734,6 +3891,7 @@ const Room = (() => {
     let mLast = null;
     function talkMaya() {
       who = "maya";
+      if (maya && maya.state === "visit") { const b = box(); b.innerHTML = `<div style="font-size:40px">🚻</div><div><p><b>Maya:</b> Kleine Pause – bin gleich wieder an der Kasse! 💜</p><div class="row"><button class="btn" id="clkBye">Okay!</button></div></div>`; b.classList.add("show"); $("#clkBye").onclick = () => b.classList.remove("show"); return; }
       if (maya && maya.state !== "desk") {
         const b = box(); b.innerHTML = `<div style="font-size:40px">🧹</div><div><p><b>Maya:</b> ${maya.state === "clean" ? "Ich mach gerade die Toiletten sauber – Vorsicht, rutschig! Bin gleich wieder an der Kasse." : "Kurz die Toiletten putzen – bin gleich wieder da! 🧹"}</p><div class="row"><button class="btn" id="clkBye">Okay!</button></div></div>`;
         b.classList.add("show"); $("#clkBye").onclick = () => b.classList.remove("show"); return;
@@ -6088,7 +6246,7 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); dilloTick(dt, t); if (inWC) { wcTick(dt, t); avatarTick(dt, t, mv && wcSit == null); } if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); dilloTick(dt, t); if (!inCinema) { npcSchedule(dt); npcVisitTick(dt, t); } handsTick(dt, t); if (inWC) { wcTick(dt, t); avatarTick(dt, t, mv && wcSit == null); } if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -6196,7 +6354,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -6231,7 +6389,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "88";
+const APP_VERSION = "89";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
