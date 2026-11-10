@@ -3125,7 +3125,7 @@ const Room = (() => {
     });
     const blazer = pbr(new T.MeshLambertMaterial({ map: blazerT }), .55, 0), sleeveM = pbr(new T.MeshLambertMaterial({ color: 0x5b21b6 }), .55, 0);
     // Beine/Hose (hinter dem Pult) und Taille
-    for (const sx of [-1, 1]) { const leg = new T.Mesh(new T.CylinderGeometry(.065, .055, .86, 12), pants); leg.position.set(sx * .07, .45, 0); person.add(leg); }
+    const mLegs = []; for (const sx of [-1, 1]) { const hip = new T.Group(); hip.position.set(sx * .07, .88, 0); person.add(hip); const leg = new T.Mesh(new T.CylinderGeometry(.065, .055, .86, 12), pants); leg.position.y = -.43; hip.add(leg); const shoe = new T.Mesh(new T.CapsuleGeometry(.04, .09, 4, 8), new T.MeshLambertMaterial({ color: 0x1a1020 })); shoe.rotation.x = Math.PI / 2; shoe.position.set(0, -.86, .04); hip.add(shoe); mLegs.push(hip); }
     const hips = new T.Mesh(new T.SphereGeometry(.15, 20, 12), pants); hips.position.y = .88; hips.scale.set(1, .5, .8); person.add(hips);
     // Oberkörper als Drehkörper: Hüfte – Taille – Brust – Schultern
     const prof = [[0, 0], [.14, 0], [.145, .06], [.122, .2], [.135, .3], [.155, .42], [.16, .5], [.135, .56], [.05, .6], [0, .6]].map(([r, y]) => new T.Vector2(r, y));
@@ -3196,10 +3196,20 @@ const Room = (() => {
     const glow = new T.Mesh(new T.PlaneGeometry(1.8, 1.4), new T.MeshBasicMaterial({ map: poolTex, color: 0xc4b5fd, transparent: true, opacity: .22, depthWrite: false, blending: T.AdditiveBlending })); glow.rotation.x = -Math.PI / 2; glow.position.set(0, .007, .3); g.add(glow);
     g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); colliders.push({ x, z, r: .7 });
     for (const m of [stand, torso, skull, hips, back]) { m.userData.maya = true; fixedPicks.push(m); }
-    maya = { g, head, arms, tail, person, wave: 0, greeted: false };
+    // Wischmopp (in der rechten Hand) und „Bin gleich zurück“-Schild am Pult
+    const mop = new T.Group(); mop.position.set(.24, .02, .22); person.add(mop); mop.visible = false;
+    const stick = new T.Mesh(new T.CylinderGeometry(.012, .012, 1.35, 8), new T.MeshLambertMaterial({ color: 0x3b82f6 })); stick.position.y = .7; mop.add(stick);
+    const mh = new T.Mesh(new T.BoxGeometry(.32, .04, .1), new T.MeshLambertMaterial({ color: 0x1e3a8a })); mh.position.y = .03; mop.add(mh);
+    for (let k = 0; k < 9; k++) { const f = new T.Mesh(new T.CylinderGeometry(.012, .016, .08, 6), new T.MeshLambertMaterial({ color: 0xe5e7eb })); f.position.set(-.14 + k * .035, .0, .03 * ((k % 2) * 2 - 1)); f.rotation.z = (k - 4) * .08; mop.add(f); }
+    const away = new T.Mesh(new T.PlaneGeometry(.42, .2), new T.MeshBasicMaterial({ map: canvasTex(256, 120, (c, w, h) => { c.fillStyle = "#fde68a"; c.fillRect(0, 0, w, h); c.strokeStyle = "#4c1d95"; c.lineWidth = 6; c.strokeRect(3, 3, w - 6, h - 6); c.fillStyle = "#4c1d95"; c.font = "bold 30px Segoe UI"; c.textAlign = "center"; c.fillText("Bin gleich", w / 2, 50); c.fillText("zurück 🧹", w / 2, 90); }), side: T.DoubleSide }));
+    away.position.set(0, 1.22, .12); away.rotation.x = -.25; away.visible = false; g.add(away);
+    maya = { g, head, arms, tail, person, wave: 0, greeted: false, legs: mLegs, mop, away, state: "desk", timer: 35 + Math.random() * 25, step: 0, walker: null };
   }
   function mayaTick(dt, t) {
     const M = maya; if (!M || inCinema) return;
+    if (M.state !== "desk") { M.tail.rotation.x = Math.sin(t / 300) * .12; mayaTrip(dt, t); return; }
+    M.timer -= dt;
+    if (M.timer <= 0 && shared.wcGroup) { if (Math.hypot(pos.x - M.g.position.x, pos.z - M.g.position.z) > 2.5) { mayaStartTrip(); return; } M.timer = 8; }
     const wp = new T.Vector3(); M.head.getWorldPosition(wp);
     const d = Math.hypot(pos.x - wp.x, pos.z - wp.z);
     const ang = Math.atan2(pos.x - wp.x, pos.z - wp.z) - M.g.rotation.y, a = Math.atan2(Math.sin(ang), Math.cos(ang));
@@ -3311,6 +3321,154 @@ const Room = (() => {
     D.tail.rotation.y = moving ? Math.sin(D.step * .5) * .25 : Math.sin(t / 900) * .1;
     D.g.position.set(D.x, 0, D.z); D.g.rotation.y = D.yaw; D.col.x = D.x; D.col.z = D.z;
   }
+  // ---------- WC: eigener Raum hinter der Tür in der linken Wand ----------
+  const WC = { x: -40, z: 0 }, WC_DOOR_Z = -2.5;
+  let inWC = false;
+  function tileTex(c1, c2, n, grout = "#c8ccd2") {
+    return canvasTex(256, 256, (c, w, h) => { const s = w / n; c.fillStyle = grout; c.fillRect(0, 0, w, h);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const g = c.createLinearGradient(x * s, y * s, x * s + s, y * s + s); g.addColorStop(0, (x + y) % 2 ? c1 : c2); g.addColorStop(1, (x + y) % 2 ? c2 : c1); c.fillStyle = g; c.fillRect(x * s + 1.5, y * s + 1.5, s - 3, s - 3); c.fillStyle = "rgba(255,255,255,.18)"; c.fillRect(x * s + 3, y * s + 3, s * .4, 2); } });
+  }
+  function buildWC() {
+    const g = new T.Group(); g.position.set(WC.x, 0, WC.z); scene.add(g); shared.wcGroup = g;
+    const P = Math.PI, W = 6, D = 5, H = 2.8;
+    const white = pbr(new T.MeshLambertMaterial({ color: 0xf6f7f9 }), .12, 0), chromeM = pbr(new T.MeshLambertMaterial({ color: 0xd8dde4 }), .12, 1), dark = pbr(new T.MeshLambertMaterial({ color: 0x2d3340 }), .5, .2);
+    // Boden, Wände, Decke
+    const ft = tileTex("#5b6270", "#4b515d", 8, "#3a3f49"); ft.wrapS = ft.wrapT = T.RepeatWrapping; ft.repeat.set(W / 1.2, D / 1.2);
+    const floor = new T.Mesh(new T.PlaneGeometry(W, D), pbr(new T.MeshLambertMaterial({ map: ft }), .25, 0)); floor.rotation.x = -P / 2; g.add(floor);
+    const wt = canvasTex(512, 512, (c, w, h) => {
+      c.fillStyle = "#cfe9e1"; c.fillRect(0, 0, w, h * .44);
+      const tl = tileTex("#ffffff", "#eef3f6", 8).image; for (let x = 0; x < w; x += 256) c.drawImage(tl, x, h * .44, 256, 256 * 1.1);
+      c.fillStyle = "#2f8f7a"; c.fillRect(0, h * .43, w, 8);
+    });
+    wt.wrapS = T.RepeatWrapping;
+    for (const [px, pz, ry, len] of [[0, -D / 2, 0, W], [0, D / 2, P, W], [-W / 2, 0, P / 2, D], [W / 2, 0, -P / 2, D]]) {
+      const t = wt.clone(); t.needsUpdate = true; t.repeat.set(len / 2.5, 1);
+      const wall = new T.Mesh(new T.PlaneGeometry(len, H), pbr(new T.MeshLambertMaterial({ map: t }), .4, 0)); wall.position.set(px, H / 2, pz); wall.rotation.y = ry; g.add(wall);
+    }
+    const ceil = new T.Mesh(new T.PlaneGeometry(W, D), new T.MeshLambertMaterial({ color: 0xe9edf0 })); ceil.rotation.x = P / 2; ceil.position.y = H; g.add(ceil);
+    const panel = new T.Mesh(new T.PlaneGeometry(1.6, .5), new T.MeshBasicMaterial({ color: 0xf4f8ff, toneMapped: false })); panel.rotation.x = P / 2; panel.position.set(0, H - .01, 0); g.add(panel);
+    const lamp = new T.PointLight(0xeef4ff, 5, 9, 1.3); lamp.position.set(0, H - .3, 0); g.add(lamp);
+    const fill = new T.HemisphereLight(0xffffff, 0x8899aa, .5); g.add(fill);
+    // Tür zurück in die Videothek (Ostwand)
+    const doorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#6b4a32"; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 12) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 4, h); c.stroke(); }
+      c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .5, 26, 10); c.fillStyle = "#1f8f5a"; c.fillRect(w * .2, h * .12, w * .6, 54); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .12 + 38); });
+    const door = new T.Mesh(new T.PlaneGeometry(.9, 2.15), new T.MeshLambertMaterial({ map: doorT })); door.position.set(W / 2 - .02, 1.075, 0); door.rotation.y = -P / 2; g.add(door);
+    door.userData = { wc: "exit" }; fixedPicks.push(door);
+    // Zwei Kabinen an der Westwand
+    const partM = pbr(new T.MeshLambertMaterial({ color: 0x3a4250 }), .35, .1);
+    for (const pz of [-D / 2 + .02, -1.0, .4]) { const pt = new T.Mesh(new T.BoxGeometry(1.5, 2.0, .04), partM); pt.position.set(-W / 2 + .75, 1.1, pz); g.add(pt); }
+    for (const [z0, z1, open] of [[-2.5, -1.0, .6], [-1.0, .4, .15]]) {
+      const zc = (z0 + z1) / 2, wdt = z1 - z0;
+      const fr = new T.Mesh(new T.BoxGeometry(.04, 2.0, .18), partM); fr.position.set(-W / 2 + 1.5, 1.1, z0 + .09); g.add(fr);
+      const hinge = new T.Group(); hinge.position.set(-W / 2 + 1.5, 0, z1 - .02); hinge.rotation.y = open; g.add(hinge);
+      const dr = new T.Mesh(new T.BoxGeometry(.035, 1.8, wdt - .2), partM); dr.position.set(0, 1.05, -(wdt - .2) / 2); hinge.add(dr);
+      const lock = new T.Mesh(new T.CircleGeometry(.025, 16), new T.MeshBasicMaterial({ color: open < .3 ? 0xdc2626 : 0x16a34a })); lock.position.set(.02, 1.05, -(wdt - .2) + .1); lock.rotation.y = P / 2; hinge.add(lock);
+      // Toilette: Sockel, Schüssel, Sitz, Deckel, Spülkasten
+      const tz = zc, tx = -W / 2;
+      const base = new T.Mesh(new T.CylinderGeometry(.13, .16, .32, 24), white); base.position.set(tx + .42, .16, tz); base.scale.z = .8; g.add(base);
+      const bowl = new T.Mesh(new T.SphereGeometry(.22, 24, 14, 0, P * 2, 0, P * .5), white); bowl.position.set(tx + .44, .42, tz); bowl.scale.set(1.15, .35, .85); bowl.rotation.x = P; g.add(bowl);
+      const seat = new T.Mesh(new T.TorusGeometry(.19, .03, 10, 28), white); seat.rotation.x = P / 2; seat.scale.set(1.15, .85, 1); seat.position.set(tx + .44, .44, tz); g.add(seat);
+      const lid = new T.Mesh(new T.CylinderGeometry(.2, .2, .02, 28), white); lid.scale.set(1.12, 1, .85); lid.position.set(tx + .22, .62, tz); lid.rotation.z = -1.35; g.add(lid);
+      const tank = new T.Mesh(new T.BoxGeometry(.18, .42, .48), white); tank.position.set(tx + .1, .72, tz); g.add(tank);
+      const flush = new T.Mesh(new T.CylinderGeometry(.035, .035, .01, 16), chromeM); flush.position.set(tx + .1, .935, tz); g.add(flush);
+      const roll = new T.Mesh(new T.CylinderGeometry(.055, .055, .11, 18), new T.MeshLambertMaterial({ color: 0xffffff })); roll.rotation.x = P / 2; roll.position.set(tx + .75, .75, z0 + .1); g.add(roll);
+      const num = new T.Mesh(new T.PlaneGeometry(.14, .14), new T.MeshBasicMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#fff"; c.beginPath(); c.arc(32, 32, 30, 0, 7); c.fill(); c.fillStyle = "#3a4250"; c.font = "bold 36px Segoe UI"; c.textAlign = "center"; c.fillText(z0 < -1.5 ? "1" : "2", 32, 45); }), transparent: true })); num.position.set(.022, 1.75, -(wdt - .2) / 2); num.rotation.y = P / 2; hinge.add(num);
+    }
+    // Waschbecken-Zeile an der Nordwand mit Spiegel
+    const counter = new T.Mesh(new T.BoxGeometry(2.6, .06, .55), pbr(new T.MeshLambertMaterial({ color: 0x2b2f36 }), .18, .1)); counter.position.set(0, .86, D / 2 - .28); g.add(counter);
+    const cab = new T.Mesh(new T.BoxGeometry(2.6, .3, .5), pbr(new T.MeshLambertMaterial({ color: 0x8a6a4a }), .5, 0)); cab.position.set(0, .68, D / 2 - .28); g.add(cab);
+    for (const sx of [-.65, .65]) {
+      const basin = new T.Mesh(new T.SphereGeometry(.2, 24, 12, 0, P * 2, 0, P * .5), white); basin.scale.set(1.1, .35, .8); basin.position.set(sx, .9, D / 2 - .3); basin.rotation.x = P; g.add(basin);
+      const rim = new T.Mesh(new T.TorusGeometry(.2, .02, 8, 24), white); rim.rotation.x = P / 2; rim.scale.set(1.1, .8, 1); rim.position.set(sx, .9, D / 2 - .3); g.add(rim);
+      const tap = new T.Mesh(new T.CylinderGeometry(.015, .018, .2, 10), chromeM); tap.position.set(sx, 1.0, D / 2 - .1); g.add(tap);
+      const spout = new T.Mesh(new T.CylinderGeometry(.012, .012, .14, 10), chromeM); spout.rotation.x = P / 2; spout.position.set(sx, 1.09, D / 2 - .17); g.add(spout);
+      const soap = new T.Mesh(new T.CylinderGeometry(.03, .035, .12, 14), new T.MeshLambertMaterial({ color: 0x7dd3c0 })); soap.position.set(sx + .3, .95, D / 2 - .15); g.add(soap);
+    }
+    const mirT = canvasTex(256, 128, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#c9d6e2"); gr.addColorStop(.45, "#eef4fa"); gr.addColorStop(.5, "#ffffff"); gr.addColorStop(.55, "#e2eaf2"); gr.addColorStop(1, "#aebfcf"); c.fillStyle = gr; c.fillRect(0, 0, w, h); });
+    const mirror = new T.Mesh(new T.PlaneGeometry(2.4, .9), pbr(new T.MeshLambertMaterial({ map: mirT }), .05, .9)); mirror.position.set(0, 1.62, D / 2 - .015); mirror.rotation.y = P; g.add(mirror);
+    const mirF = new T.Mesh(new T.BoxGeometry(2.48, .98, .02), chromeM); mirF.position.set(0, 1.62, D / 2 - .005); g.add(mirF);
+    // Händetrockner, Papierspender, Mülleimer
+    const dryer = new T.Mesh(new T.BoxGeometry(.3, .26, .2), chromeM); dryer.position.set(2.1, 1.25, D / 2 - .1); g.add(dryer);
+    const towels = new T.Mesh(new T.BoxGeometry(.3, .4, .12), new T.MeshLambertMaterial({ color: 0xf5f5f5 })); towels.position.set(1.6, 1.35, D / 2 - .06); g.add(towels);
+    const pbin = new T.Mesh(new T.CylinderGeometry(.14, .12, .4, 18), chromeM); pbin.position.set(1.6, .2, D / 2 - .25); g.add(pbin);
+    // Urinale an der Südwand
+    for (const ux of [.4, 1.2]) {
+      const ur = new T.Mesh(new T.SphereGeometry(.2, 20, 14, 0, P * 2, 0, P * .7), white); ur.scale.set(.9, 1.5, .7); ur.rotation.x = -P / 2; ur.position.set(ux, .95, -D / 2 + .12); g.add(ur);
+      const fl = new T.Mesh(new T.CylinderGeometry(.015, .015, .25, 8), chromeM); fl.position.set(ux, 1.4, -D / 2 + .05); g.add(fl);
+    }
+    const scr = new T.Mesh(new T.BoxGeometry(.03, .7, .45), partM); scr.position.set(.8, 1.15, -D / 2 + .25); g.add(scr);
+    // Schild
+    const sign = new T.Mesh(new T.PlaneGeometry(.8, .3), new T.MeshBasicMaterial({ map: canvasTex(256, 96, (c, w, h) => { c.fillStyle = "#2f8f7a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 26px Segoe UI"; c.textAlign = "center"; c.fillText("Bitte sauber halten 🙂", w / 2, 40); c.font = "18px Segoe UI"; c.fillText("Euer Videothek-Team", w / 2, 72); }) })); sign.position.set(W / 2 - .02, 2.2, 1.4); sign.rotation.y = -P / 2; g.add(sign);
+    // „Rutschgefahr“-Aufsteller (wird beim Putzen gezeigt) – einer im WC, einer vor der Tür im Laden
+    const wetT = canvasTex(128, 192, (c, w, h) => { c.fillStyle = "#facc15"; c.fillRect(0, 0, w, h); c.fillStyle = "#111"; c.beginPath(); c.moveTo(w / 2, 20); c.lineTo(w - 18, 100); c.lineTo(18, 100); c.closePath(); c.fill(); c.fillStyle = "#facc15"; c.font = "bold 54px Segoe UI"; c.textAlign = "center"; c.fillText("!", w / 2, 92); c.fillStyle = "#111"; c.font = "bold 20px Segoe UI"; c.fillText("VORSICHT", w / 2, 132); c.font = "bold 16px Segoe UI"; c.fillText("RUTSCHGEFAHR", w / 2, 156); });
+    const mkWet = () => { const s = new T.Group(); const m = new T.MeshLambertMaterial({ map: wetT, side: T.DoubleSide }); for (const sx of [-1, 1]) { const pl = new T.Mesh(new T.PlaneGeometry(.32, .6), m); pl.position.set(0, .29, sx * .08); pl.rotation.x = sx * .26; s.add(pl); } s.visible = false; return s; };
+    const wetIn = mkWet(); wetIn.position.set(.8, 0, .8); wetIn.rotation.y = .6; g.add(wetIn);
+    const wetOut = mkWet(); wetOut.position.set(-6.9, 0, WC_DOOR_Z + 1.0); wetOut.rotation.y = 1.2; const wetHold = new T.Group(); wetHold.add(wetOut); scene.add(wetHold);
+    shared.wet = [wetIn, wetOut];
+    // WC-Tür im Laden (linke Wand)
+    const sd = new T.Group(); sd.position.set(-HALF + .02, 0, WC_DOOR_Z); sd.rotation.y = P / 2; scene.add(sd);
+    const sframe = new T.Mesh(new T.BoxGeometry(1.0, 2.3, .05), new T.MeshLambertMaterial({ color: 0x2b2f36 })); sframe.position.y = 1.15; sd.add(sframe);
+    const sdoorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#e6e9ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#b7bdc6"; c.lineWidth = 6; c.strokeRect(14, 14, w - 28, h - 28);
+      c.fillStyle = "#2f8f7a"; c.beginPath(); c.arc(w / 2, h * .26, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 70px Segoe UI Emoji, Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🚻", w / 2, h * .26 + 4);
+      c.fillStyle = "#2f8f7a"; c.font = "bold 48px Segoe UI"; c.fillText("WC", w / 2, h * .45); c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .52, 24, 10); });
+    const sdoor = new T.Mesh(new T.PlaneGeometry(.86, 2.2), new T.MeshLambertMaterial({ map: sdoorT })); sdoor.position.set(0, 1.1, .03); sd.add(sdoor);
+    sdoor.userData = { wc: "enter" }; fixedPicks.push(sdoor);
+    const ssign = new T.Mesh(new T.PlaneGeometry(.9, .28), new T.MeshBasicMaterial({ map: canvasTex(256, 80, (c, w, h) => { c.fillStyle = "#0b2a24"; c.fillRect(0, 0, w, h); c.font = "bold 46px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#34d399"; c.shadowBlur = 16; c.fillStyle = "#d1fae5"; c.fillText("🚻 WC", w / 2, h / 2 + 2); }), toneMapped: false })); ssign.position.set(0, 2.5, .04); sd.add(ssign);
+  }
+  function enterWC() {
+    SFX.fx.door(); inWC = true; inCinema = false;
+    pos.x = WC.x + 2.2; pos.z = WC.z; yaw = Math.PI / 2; pitch = -.05; keys = {};
+    toast(maya && maya.state === "clean" ? "🧹 Maya putzt gerade – Vorsicht, rutschig!" : "🚻 WC – zurück durch die Tür rechts");
+  }
+  function leaveWC() { SFX.fx.door(); inWC = false; pos.x = -HALF + MARGIN + .7; pos.z = WC_DOOR_Z; yaw = -Math.PI / 2; pitch = -.05; }
+  function wcClamp() {
+    pos.x = Math.max(WC.x - 1.3, Math.min(WC.x + 2.85, pos.x)); pos.z = Math.max(WC.z - 2.15, Math.min(WC.z + 1.95, pos.z));
+    if (pos.x > WC.x + 2.6 && Math.abs(pos.z - WC.z) > .42) pos.x = WC.x + 2.6;
+  }
+  // Maya: ab und zu mit dem Wischmopp ins WC und putzen
+  function mayaWorld() { const v = new T.Vector3(); maya.person.getWorldPosition(v); return v; }
+  function mayaStartTrip() {
+    const M = maya, w = mayaWorld();
+    const walker = new T.Group(); walker.position.set(w.x, 0, w.z); walker.rotation.y = M.g.rotation.y; scene.add(walker);
+    M.person.position.set(0, 0, 0); M.person.rotation.set(0, 0, 0); walker.add(M.person);
+    M.walker = walker; M.home = [w.x, w.z]; M.path = [[-6.3, WC_DOOR_Z], [-7.75, WC_DOOR_Z]]; M.state = "toWC"; M.mop.visible = true; M.away.visible = true;
+  }
+  function mayaWalk(dt, t) {
+    const M = maya, wk = M.walker, [tx, tz] = M.path[0], dx = tx - wk.position.x, dz = tz - wk.position.z, L = Math.hypot(dx, dz);
+    if (L < .05) { M.path.shift(); return M.path.length === 0; }
+    const sp = Math.min(L, .95 * dt); wk.position.x += dx / L * sp; wk.position.z += dz / L * sp;
+    let a = Math.atan2(dx, dz) - wk.rotation.y; a = Math.atan2(Math.sin(a), Math.cos(a)); wk.rotation.y += a * Math.min(1, dt * 6);
+    M.step += dt * 7.5; return false;
+  }
+  function mayaPose(dt, t, walking, mopping) {
+    const M = maya, sw = walking ? Math.sin(M.step) : 0;
+    M.legs[0].rotation.x = sw * .42; M.legs[1].rotation.x = -sw * .42;
+    M.person.position.y = walking ? Math.abs(sw) * .02 : Math.sin(t / 1000 + 1) * .005;
+    // linker Arm schwingt, rechter hält den Mopp
+    const L = M.arms[0], R = M.arms[1];
+    L.rotation.set(-.1 - sw * .3, 0, -.12); L.userData.elbow.rotation.x = -.35;
+    const mp = mopping ? Math.sin(t / 380) : 0;
+    R.rotation.set(-.55 + mp * .15, mp * .2, .12); R.userData.elbow.rotation.x = -.75;
+    M.mop.rotation.set(.15 + mp * .1, 0, mp * .35);
+    M.head.rotation.y += ((mopping ? mp * .2 : 0) - M.head.rotation.y) * Math.min(1, dt * 4); M.head.rotation.x = mopping ? .25 : 0;
+  }
+  function mayaTrip(dt, t) {
+    const M = maya;
+    if (M.state === "toWC") { mayaPose(dt, t, true, false); if (mayaWalk(dt, t)) { shared.wcGroup.add(M.walker); M.walker.position.set(-.3, 0, .4); M.walker.rotation.y = Math.PI / 2; M.state = "clean"; M.timer = 22; shared.wet.forEach(s => s.visible = true); } }
+    else if (M.state === "clean") {
+      M.timer -= dt; const k = Math.sin(t / 2600);
+      M.walker.position.x = -.3 + k * .9; M.walker.position.z = .4 + Math.sin(t / 1900) * .6; M.walker.rotation.y = Math.PI / 2 + Math.cos(t / 2600) * .6;
+      mayaPose(dt, t, false, true);
+      if (M.timer <= 0) { scene.add(M.walker); M.walker.position.set(-7.75, 0, WC_DOOR_Z); M.walker.rotation.y = Math.PI / 2; M.path = [[-6.3, WC_DOOR_Z], M.home]; M.state = "back"; shared.wet.forEach(s => s.visible = false); }
+    } else if (M.state === "back") {
+      mayaPose(dt, t, true, false);
+      if (mayaWalk(dt, t)) {
+        M.g.add(M.person); M.person.position.set(0, 0, -.55); M.person.rotation.set(0, 0, 0); scene.remove(M.walker); M.walker = null;
+        M.mop.visible = false; M.away.visible = false; M.state = "desk"; M.timer = 70 + Math.random() * 50;
+        M.arms.forEach(a => { a.rotation.set(-.25, 0, a.position.x < 0 ? -.12 : .12); a.userData.elbow.rotation.x = -1; }); M.legs.forEach(l => l.rotation.x = 0); M.head.rotation.x = 0;
+      }
+    }
+  }
   const Clerk = (() => {
     const LINES = ["Weil du <b>{a}</b> mochtest, gefällt dir bestimmt <b>{b}</b>.", "Kenn ich! Wer <b>{a}</b> schaut, landet oft bei <b>{b}</b> – probier's mal.", "Mein Tipp nach <b>{a}</b>: <b>{b}</b>. Ganz ehrlich, lohnt sich!", "Hmm … <b>{a}</b>? Dann nimm <b>{b}</b> mit, das passt perfekt."];
     let last = null;
@@ -3351,33 +3509,43 @@ const Room = (() => {
       if (clerk.busy) return; clerk.busy = true; clerk.wave = 1; who = "kevin";
       if (document.pointerLockElement) document.exitPointerLock();
       say("<b>Kevin:</b> Moment, ich schau mal ins Regal … 🤔");
+      // Kevin empfiehlt nur Filme ab 2010 und Anime (egal aus welcher Zeit)
+      const ok = x => x.poster && !Shop.onList(x) && (!last || x.tmdbId !== last.tmdbId) && (x.kind === "anime" || (x.mediaType === "movie" && +x.year >= 2010));
       try {
         const liked = items.filter(i => i.tmdbId && i.mediaType && (i.status === "gesehen" || i.status === "schaue")).sort(() => Math.random() - .5);
         let rec = null, from = null;
-        for (const i of liked.slice(0, 4)) {
+        for (const i of liked.slice(0, 5)) {
           const r = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}/recommendations`, language: "de-DE" }));
-          const list = (r.results || []).map(x => Shop.toR(x, i.mediaType)).filter(x => x.poster && !Shop.onList(x) && (!last || x.tmdbId !== last.tmdbId));
+          const list = (r.results || []).map(x => Shop.toR(x, i.mediaType)).filter(ok);
           if (list.length) { rec = list[Math.floor(Math.random() * Math.min(8, list.length))]; from = i; break; }
         }
         if (!rec) {
-          const sh = Shop.shelves().find(x => x.id === "top") || Shop.shelves()[0];
-          const list = (await Shop.fetchShelf(sh, 1 + Math.floor(Math.random() * 3))).filter(x => !Shop.onList(x));
-          rec = list[Math.floor(Math.random() * list.length)];
+          const anime = Math.random() < .45;
+          const r = await api("GET", "/api/tmdb?" + new URLSearchParams(anime
+            ? { path: "/discover/tv", language: "de-DE", with_genres: "16", with_original_language: "ja", sort_by: "vote_average.desc", "vote_count.gte": 300, page: 1 + Math.floor(Math.random() * 4) }
+            : { path: "/discover/movie", language: "de-DE", sort_by: "popularity.desc", "vote_count.gte": 800, "vote_average.gte": 6.8, "primary_release_date.gte": "2010-01-01", page: 1 + Math.floor(Math.random() * 5) }));
+          const list = (r.results || []).map(x => Shop.toR(x, anime ? "tv" : "movie")).filter(x => anime ? x.poster && !Shop.onList(x) : ok(x));
+          rec = list[Math.floor(Math.random() * Math.min(12, list.length))];
           if (!rec) throw new Error("leer");
-          last = rec; say(`<b>Kevin:</b> Du hast noch nicht viel geschaut – fang doch mit <b>${esc(rec.title)}</b>${rec.year ? ` (${esc(rec.year)})` : ""} an! ⭐ ${(rec.vote || 0).toFixed(1)}`, rec);
+          last = rec; say(`<b>Kevin:</b> ${rec.kind === "anime" ? "Anime-Tipp von mir:" : "Ganz frisch und richtig gut:"} <b>${esc(rec.title)}</b>${rec.year ? ` (${esc(rec.year)})` : ""}! ⭐ ${(rec.vote || 0).toFixed(1)}`, rec);
         } else {
           last = rec; const l = LINES[Math.floor(Math.random() * LINES.length)];
           say("<b>Kevin:</b> " + l.replace("{a}", esc(from.title)).replace("{b}", esc(rec.title) + (rec.year ? ` (${esc(rec.year)})` : "")) + (rec.vote ? ` <span style="opacity:.7">⭐ ${rec.vote.toFixed(1)}</span>` : ""), rec);
         }
         SFX.fx.notify();
-      } catch { say(settings.apiKey ? "Hm, gerade finde ich nichts – frag mich gleich nochmal!" : "Ohne TMDB-Schlüssel (⚙ Einstellungen) kann ich leider nicht ins Regal schauen."); }
+      } catch { say(settings.apiKey ? "<b>Kevin:</b> Hm, gerade finde ich nichts – frag mich gleich nochmal!" : "<b>Kevin:</b> Ohne TMDB-Schlüssel (⚙ Einstellungen) kann ich leider nicht ins Regal schauen."); }
       clerk.busy = false;
     }
     // Maya: Film für den Kinoabend von deiner Liste
     const ML = ["Heute Abend in Saal 1: <b>{b}</b> – steht eh auf deiner Liste! Soll ich dir den besten Platz geben?", "Ich hätte da noch ein Ticket für <b>{b}</b>. Popcorn holen und ab in den Saal? 🍿", "Wie wär's mit Kino? <b>{b}</b> wartet schon auf deiner Watchlist.", "Mein Tipp für heute: <b>{b}</b> auf der großen Leinwand. Reihe 4 ist noch frei!"];
     let mLast = null;
     function talkMaya() {
-      who = "maya"; if (maya) maya.wave = 1.2;
+      who = "maya";
+      if (maya && maya.state !== "desk") {
+        const b = box(); b.innerHTML = `<div style="font-size:40px">🧹</div><div><p><b>Maya:</b> ${maya.state === "clean" ? "Ich mach gerade die Toiletten sauber – Vorsicht, rutschig! Bin gleich wieder an der Kasse." : "Kurz die Toiletten putzen – bin gleich wieder da! 🧹"}</p><div class="row"><button class="btn" id="clkBye">Okay!</button></div></div>`;
+        b.classList.add("show"); $("#clkBye").onclick = () => b.classList.remove("show"); return;
+      }
+      if (maya) maya.wave = 1.2;
       if (document.pointerLockElement) document.exitPointerLock();
       const pool = items.filter(i => i.status !== "gesehen" && i.poster && i.id !== (mLast && mLast.id));
       const films = pool.filter(i => i.mediaType === "movie"), pick = (films.length ? films : pool)[Math.floor(Math.random() * (films.length || pool.length))];
@@ -3952,7 +4120,7 @@ const Room = (() => {
     plant(-1.55, -3.4, 1); plant(1.55, -3.4, 1);
     // Popcorn-Maschine und Arcade-Automat seitlich vom Eingang
     popcornMachine(-3.4, 4.6, Math.atan2(3.4, -4.6));
-    randomPodium(0, 0);
+    buildWC();
     arcadeCabinet(3.4, 4.6, Math.atan2(-3.4, -4.6));
     drinkMachine(-4.75, 3.2, Math.atan2(4.75, -3.2));
     buildClerk(4.6, -3.2, Math.atan2(-4.6, 3.2));
@@ -4255,7 +4423,8 @@ const Room = (() => {
     return pool[Math.floor(Math.random() * pool.length)] || null;
   }
   async function pressDice() {
-    if (!dice || dice.spinning) return;
+    if (!dice) dice = { virtual: true, spinning: false, press: 0 };
+    if (dice.spinning) return;
     dice.spinning = true; dice.press = 1; SFX.fx.dice();
     const lab = $("#roomLabel"), names = []; for (const u of units) for (const m of u.cases) if (m.userData.r) names.push(m.userData.r.title);
     const got = randomTitle(); let shown = 0;
@@ -4704,7 +4873,7 @@ const Room = (() => {
   }
 
   function enterCinema() {
-    SFX.fx.door(); SFX.music(false);
+    SFX.fx.door(); SFX.music(false); inWC = false;
     inCinema = true; pos.x = CIN.x + CIN_DOOR.x; pos.z = CIN.z + CD - 1.3; yaw = 0; pitch = .05;
     drawScreenIdle(); toast("🎬 Willkommen im Kino – such dir einen Platz");
   }
@@ -5448,7 +5617,7 @@ const Room = (() => {
     cv.addEventListener("click", e => {
       if (!lockable || seated) return;
       if (!locked()) { lockReq(); return; }
-      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !m.userData.maya && !m.userData.dillo && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
+      if (aimed) { const m = aimed; if (m.userData.shuffle == null && !m.userData.dice && !m.userData.bench && !m.userData.popcorn && !m.userData.drinks && !m.userData.clerk && !m.userData.trash && !m.userData.pascal && !m.userData.maya && !m.userData.dillo && !m.userData.wc && !(m.userData.cinema === "enter" || m.userData.cinema === "exit")) document.exitPointerLock(); select(m); }
     });
     document.addEventListener("pointerlockchange", () => {
       const on = locked(); $("#room").classList.toggle("locked", on);
@@ -5560,6 +5729,7 @@ const Room = (() => {
   }
   function clampPos() {
     if (inCinema) { cinemaClamp(); return; }
+    if (inWC) { wcClamp(); return; }
     const m = HALF - MARGIN; pos.x = Math.max(-m, Math.min(m, pos.x)); pos.z = Math.max(-m, Math.min(m, pos.z));
     for (const c of colliders) { const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + .35; if (d < min && d > 0) { pos.x = c.x + dx / d * min; pos.z = c.z + dz / d * min; } }
   }
@@ -5583,8 +5753,9 @@ const Room = (() => {
     if (m && m.userData.dillo) { lab.innerHTML = `🐾 <b>Dillo</b> · das Gürteltier der Videothek<span class="hint"> – ${tap} zum Streicheln</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.maya) { lab.innerHTML = `🎟 <b>Maya</b> · Kino-Kasse<span class="hint"> – ${tap}: Film für den Kinoabend</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.pascal) { lab.innerHTML = `📼 <b>Pascal</b> · Klassiker-Experte<span class="hint"> – ${tap}: alter Film, den man gesehen haben muss</span>`; lab.style.opacity = 1; return; }
+    if (m && m.userData.wc) { lab.innerHTML = m.userData.wc === "enter" ? `🚻 <b>WC</b><span class="hint"> – ${tap} oder hindurchgehen</span>` : `🚪 <b>Zurück in die Videothek</b><span class="hint"> – ${tap} oder hindurchgehen</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.trash) { const h = Popcorn.holding() || Drink.holding(); lab.innerHTML = `🗑 <b>Mülleimer</b><span class="hint"> – ${h ? tap + " zum Wegwerfen von Tüte/Becher" : "gerade nichts zum Wegwerfen"}</span>`; lab.style.opacity = 1; return; }
-    if (m && m.userData.clerk) { lab.innerHTML = `🧑‍💼 <b>Kevin</b> · Verkäufer<span class="hint"> – ${tap} für einen Tipp nach deinem Geschmack</span>`; lab.style.opacity = 1; return; }
+    if (m && m.userData.clerk) { lab.innerHTML = `🧑‍💼 <b>Kevin</b> · Filme ab 2010 &amp; Anime<span class="hint"> – ${tap} für einen Tipp nach deinem Geschmack</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.drinks) { lab.innerHTML = `🥤 <b>Getränkeautomat</b><span class="hint"> – ${tap} für einen Becher</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.popcorn) { lab.innerHTML = `🍿 <b>Popcorn-Automat</b><span class="hint"> – ${tap} für eine Tüte Popcorn</span>`; lab.style.opacity = 1; return; }
     if (m && m.userData.bench) { if (benchSit) { lab.style.opacity = 0; return; } lab.innerHTML = `🛋 <b>Sitzbank</b><span class="hint"> – ${tap} zum Hinsetzen</span>`; lab.style.opacity = 1; return; }
@@ -5608,6 +5779,7 @@ const Room = (() => {
     if (m.userData.drinks) { Drink.get(); return; }
     if (m.userData.clerk) { Clerk.talk(); return; }
     if (m.userData.trash) { useTrash(); return; }
+    if (m.userData.wc) { if (m.userData.wc === "enter") enterWC(); else leaveWC(); return; }
     if (m.userData.pascal) { Clerk.talkPascal(); return; }
     if (m.userData.maya) { Clerk.talkMaya(); return; }
     if (m.userData.dillo) { dilloRoll(2.5); dillo.flee = 0; SFX.fx.notify(); toast(["🐾 Dillo rollt sich vor Freude ein!", "🐾 Dillo mag dich – aber er ist schüchtern.", "🐾 *schnüff schnüff* – Dillo sucht Popcorn-Krümel."][Math.floor(Math.random() * 3)]); return; }
@@ -5695,9 +5867,10 @@ const Room = (() => {
     // Cover-Atlas höchstens alle 250 ms neu hochladen
     for (const u of units) { const A = u.atlas; if (A && A.dirty && t - A.last > 250) { A.tex.needsUpdate = true; A.dirty = false; A.last = t; } }
     // Nur den Bereich zeichnen, in dem man gerade ist (Laden oder Kino)
-    if (shared.lastIn !== inCinema) {
-      shared.lastIn = inCinema;
-      for (const c of scene.children) { if (c.isLight || c.isCamera) continue; c.visible = c === shared.cinGroup ? inCinema : !inCinema; }
+    const where = inCinema ? "c" : inWC ? "w" : "s";
+    if (shared.lastIn !== where) {
+      shared.lastIn = where;
+      for (const c of scene.children) { if (c.isLight || c.isCamera) continue; c.visible = c === shared.cinGroup ? inCinema : c === shared.wcGroup ? inWC : !inCinema && !inWC; }
     }
     // Auflösung automatisch anpassen, wenn es ruckelt
     perf.acc += (t - (perf.prev || t)) / 1000; perf.prev = t; perf.n++;
@@ -5724,7 +5897,7 @@ const Room = (() => {
       }
       popcorn.corn.instanceMatrix.needsUpdate = true;
     }
-    if (dice) {
+    if (dice && !dice.virtual) {
       dice.press = Math.max(0, dice.press - dt * 3.5);
       dice.btn.position.y = 1.04 - Math.sin(Math.min(1, dice.press) * Math.PI) * .045;
       dice.glow.material.opacity = dice.spinning ? .55 + .45 * Math.abs(Math.sin(t / 70)) : .35 + .15 * Math.sin(t / 500);
@@ -5732,9 +5905,11 @@ const Room = (() => {
     }
     for (const u of units) { const b = u.btn; if (u.busy) b.rotation.z -= dt * 8; else if (b.rotation.z) b.rotation.z = 0; }
     // Türen: einfach hindurchgehen
-    if (!inCinema && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) enterCinema();
+    if (!inCinema && !inWC && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) enterCinema();
+    if (!inCinema && !inWC && Math.abs(pos.z - WC_DOOR_Z) < .42 && pos.x < -HALF + MARGIN + .12) enterWC();
+    if (inWC && pos.x > WC.x + 2.75) leaveWC();
     if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
-    if (!inCinema && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
+    if (!inCinema && !inWC && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
     if (hemi) hemi.intensity = inCinema ? .35 - .31 * lk : (quality.real ? .42 : .95) * (gfx.daylight ? DAY[curPhase || "abend"].k : 1);
     if (t - lastDayCheck > 30000) { lastDayCheck = t; dayNight(); }
     renderer.toneMappingExposure = quality.real && !inCinema ? 1.12 : 1.5;
@@ -5800,7 +5975,7 @@ const Room = (() => {
     await fill(); Shop.rebuild();
   }
   function close() {
-    SFX.music(false); standUp(); benchSit = false; Phone.hide(); Popcorn.hide(); Drink.hide(); Clerk.hide();
+    SFX.music(false); standUp(); if (inWC) { inWC = false; pos.x = -HALF + MARGIN + .7; pos.z = WC_DOOR_Z; } benchSit = false; Phone.hide(); Popcorn.hide(); Drink.hide(); Clerk.hide();
     if (fullByUs || document.fullscreenElement) goFull(false);
     running = false; cancelAnimationFrame(raf); keys = {}; joy = { x: 0, y: 0 };
     if (document.pointerLockElement) document.exitPointerLock();
@@ -5819,7 +5994,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -5854,7 +6029,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "84";
+const APP_VERSION = "85";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
