@@ -2987,14 +2987,32 @@ const Room = (() => {
       // Lachfalten
       c.strokeStyle = "rgba(140,80,50,.35)"; c.lineWidth = 1.5; for (const s of [-1, 1]) { c.beginPath(); c.arc(cx + s * 40, cy - 4, 8, s > 0 ? -.6 : P - .6 + 1.2, s > 0 ? .6 : P + .6 + 1.2 - 1.2); c.stroke(); }
       c.fillStyle = "#9a3a2a"; c.beginPath(); c.ellipse(cx, cy + 30, 12, 4.5, 0, 0, P); c.fill(); c.fillStyle = "#fff"; c.fillRect(cx - 7, cy + 30, 14, 2);
-      // Drei-Tage-Bart: dunkler Schatten + viele feine Stoppeln an Kinn, Kiefer, Wangen und Oberlippe
-      const inBeard = (x, y) => { const dx = (x - cx) / 66, dy = (y - (cy + 34)) / 48; const jaw = dx * dx + dy * dy < 1 && y > cy + 8; const lip = Math.abs(x - cx) < 18 && y > cy + 18 && y < cy + 26; const mouth = Math.abs(x - cx) < 13 && y > cy + 25 && y < cy + 36; return (jaw || lip) && !mouth; };
-      const shade = c.createRadialGradient(cx, cy + 52, 6, cx, cy + 52, 62); shade.addColorStop(0, "rgba(66,44,30,.27)"); shade.addColorStop(.6, "rgba(66,44,30,.19)"); shade.addColorStop(1, "rgba(70,48,32,0)");
-      c.save(); c.beginPath(); c.ellipse(cx, cy + 34, 66, 48, 0, 0, 7); c.clip(); c.fillStyle = shade; c.fillRect(0, cy + 8, w, h); c.restore();
+      // Gepflegter kurzer Bart: klare Form (Koteletten → Kieferlinie → Kinn, verbunden mit dem Schnurrbart), weiche Ränder, kurze Härchen in Wuchsrichtung
+      const mk = document.createElement("canvas"); mk.width = w; mk.height = h; const m = mk.getContext("2d");
+      m.fillStyle = "#000"; m.beginPath();
+      m.moveTo(cx - 64, cy - 14); m.bezierCurveTo(cx - 66, cy + 30, cx - 50, cy + 70, cx, cy + 84);
+      m.bezierCurveTo(cx + 50, cy + 70, cx + 66, cy + 30, cx + 64, cy - 14);
+      m.lineTo(cx + 56, cy - 12); m.bezierCurveTo(cx + 52, cy + 6, cx + 40, cy + 14, cx + 22, cy + 17);
+      m.quadraticCurveTo(cx, cy + 15, cx - 22, cy + 17);
+      m.bezierCurveTo(cx - 40, cy + 14, cx - 52, cy + 6, cx - 56, cy - 12); m.closePath(); m.fill();
+      m.globalCompositeOperation = "destination-out"; m.beginPath(); m.ellipse(cx, cy + 30.5, 13.5, 6.5, 0, 0, 7); m.fill();
+      const soft = document.createElement("canvas"); soft.width = w; soft.height = h; const sc = soft.getContext("2d"); sc.filter = "blur(2.5px)"; sc.drawImage(mk, 0, 0);
+      // Grundton durch die weiche Maske
+      const tint = document.createElement("canvas"); tint.width = w; tint.height = h; const tc = tint.getContext("2d");
+      tc.fillStyle = "rgba(52,34,22,.46)"; tc.fillRect(0, 0, w, h); tc.globalCompositeOperation = "destination-in"; tc.drawImage(soft, 0, 0);
+      c.drawImage(tint, 0, 0);
+      // Härchen: dicht, kurz, leicht nach außen und unten gekämmt; Dichte folgt der Maske
+      const md = sc.getImageData(0, 0, w, h).data;
+      for (let k = 0; k < 7000; k++) {
+        const x = cx - 70 + Math.random() * 140, y = cy - 18 + Math.random() * 106, a = md[((y | 0) * w + (x | 0)) * 4 + 3] / 255;
+        if (a < .08 || Math.random() > a) continue;
+        const dir = (x - cx) / 70, len = 1.6 + Math.random() * 2;
+        c.strokeStyle = Math.random() < .65 ? `rgba(30,20,12,${.25 + a * .35})` : `rgba(105,74,48,${.25 + a * .3})`; c.lineWidth = .85;
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x + dir * len * .6, y + len); c.stroke();
+      }
+      // Lippen nochmal obendrauf, damit sie sauber bleiben
       c.fillStyle = "#9a3a2a"; c.beginPath(); c.ellipse(cx, cy + 30, 12, 4.5, 0, 0, P); c.fill(); c.fillStyle = "#fff"; c.fillRect(cx - 7, cy + 30, 14, 2);
-      for (let k = 0; k < 2500; k++) { const x = cx - 70 + Math.random() * 140, y = cy + 6 + Math.random() * 90; if (!inBeard(x, y)) continue;
-        const dx = (x - cx) / 66, dy = (y - (cy + 34)) / 48, edge = Math.min(1, Math.sqrt(dx * dx + dy * dy)); if (Math.random() < Math.pow(edge, 3) || (y < cy + 22 && Math.random() < (cy + 22 - y) / 14)) continue; // zu den Rändern hin auslaufen
-        c.fillStyle = `rgba(${35 + Math.random() * 25},${24 + Math.random() * 12},14,${(.24 + Math.random() * .32) * (1 - edge * .55)})`; c.fillRect(x, y, 1.1, 1.5); }
+      c.strokeStyle = "rgba(120,50,35,.6)"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(cx - 12, cy + 30); c.quadraticCurveTo(cx, cy + 28, cx + 12, cy + 30); c.stroke();
     });
     const skull = new T.Mesh(new T.SphereGeometry(.14, 40, 28), pbr(new T.MeshLambertMaterial({ map: faceT }), .32, 0)); skull.scale.set(.98, 1.1, 1); head.add(skull);
     const nose = new T.Mesh(new T.SphereGeometry(.022, 12, 10), skin); nose.position.set(0, -.005, .138); nose.scale.set(.9, 1.15, 1.2); head.add(nose);
@@ -5836,7 +5854,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "83";
+const APP_VERSION = "84";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
