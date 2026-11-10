@@ -3379,7 +3379,7 @@ const Room = (() => {
     const doorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#6b4a32"; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 12) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 4, h); c.stroke(); }
       c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .5, 26, 10); c.fillStyle = "#1f8f5a"; c.fillRect(w * .2, h * .12, w * .6, 54); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .12 + 38); });
     const door = new T.Mesh(new T.PlaneGeometry(.9, 2.15), new T.MeshLambertMaterial({ map: doorT })); door.position.set(W / 2 - .02, 1.075, 0); door.rotation.y = -P / 2; g.add(door);
-    door.userData = { wc: "exit" }; fixedPicks.push(door); swingDoor(door, .9, -1, "store");
+    door.userData = { wc: "exit" }; fixedPicks.push(door); g.remove(door); fixedPicks.splice(fixedPicks.indexOf(door), 1); // nur eine Tür pro Durchgang (die auf der Ladenseite)
     // Zwei Kabinen an der Westwand – auf Chromfüßen, mit Wand-WC, Spülplatte, Papierhalter und Klobürste
     const partM = pbr(new T.MeshLambertMaterial({ color: 0x1f5f66 }), .3, .15);
     for (const pz of [-D / 2 + .02, -1.0, .4]) {
@@ -3550,7 +3550,11 @@ const Room = (() => {
       c.fillStyle = "#2f8f7a"; c.beginPath(); c.arc(w / 2, h * .26, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 70px Segoe UI Emoji, Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🚻", w / 2, h * .26 + 4);
       c.fillStyle = "#2f8f7a"; c.font = "bold 48px Segoe UI"; c.fillText("WC", w / 2, h * .45); c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .52, 24, 10); });
     const sdoor = new T.Mesh(new T.PlaneGeometry(.86, 2.2), new T.MeshLambertMaterial({ map: sdoorT })); sdoor.position.set(0, 1.1, .03); sd.add(sdoor);
-    sdoor.userData = { wc: "enter" }; fixedPicks.push(sdoor); swingDoor(sdoor, .86, -1, "wc");
+    sdoor.userData = { wc: "enter" }; fixedPicks.push(sdoor);
+    const sBackT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#e6e9ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#b7bdc6"; c.lineWidth = 6; c.strokeRect(14, 14, w - 28, h - 28);
+      c.fillStyle = "#1f8f5a"; c.fillRect(w * .16, h * .16, w * .68, 58); c.fillStyle = "#fff"; c.font = "bold 36px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .16 + 41);
+      c.fillStyle = "#2f8f7a"; c.font = "600 24px Segoe UI"; c.fillText("→ Videothek", w / 2, h * .16 + 100); });
+    swingDoor(sdoor, .86, -1, "wc", 1.4, new T.MeshLambertMaterial({ map: sBackT }));
     const ssign = new T.Mesh(new T.PlaneGeometry(.9, .28), new T.MeshBasicMaterial({ map: canvasTex(256, 80, (c, w, h) => { c.fillStyle = "#0b2a24"; c.fillRect(0, 0, w, h); c.font = "bold 46px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#34d399"; c.shadowBlur = 16; c.fillStyle = "#d1fae5"; c.fillText("🚻 WC", w / 2, h / 2 + 2); }), toneMapped: false })); ssign.position.set(0, 2.5, .04); sd.add(ssign);
   }
   // ---------- Türen: schwingen beim Näherkommen auf, Raumwechsel mit kurzem Abblenden ----------
@@ -3579,11 +3583,11 @@ const Room = (() => {
     const sill = new T.Mesh(new T.BoxGeometry(w, .012, .2), new T.MeshLambertMaterial({ color: 0x8a8f98 })); sill.position.set(x, y0 + .006, z); sill.rotation.y = ry; par.add(sill);
   }
   // Türblatt als echtes Brett (mit Dicke, Kante, Klinken beidseitig, Trittblech) an einem Scharnier
-  function swingDoor(mesh, w, side, style, maxA = 1.4) {
+  function swingDoor(mesh, w, side, style, maxA = 1.4, backMat = null) {
     const par = mesh.parent, y = mesh.position.y, ry = mesh.rotation.y, h = mesh.geometry.parameters.height, map = mesh.material.map;
     const face = mesh.material; face.side = T.FrontSide;
     const edge = pbr(new T.MeshLambertMaterial({ color: style === "kino" ? 0x2a0a15 : style === "wc" ? 0xc9ced6 : 0x3b2a1f }), .5, .1);
-    const back = face;
+    const back = backMat || face;
     mesh.geometry.dispose(); mesh.geometry = new T.BoxGeometry(w, h, .045); mesh.material = [edge, edge, edge, edge, face, back];
     const pv = new T.Group(); pv.position.copy(mesh.position).add(new T.Vector3(side * w / 2, 0, .0).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); pv.position.y = 0; pv.rotation.y = ry; par.add(pv);
     par.remove(mesh); mesh.rotation.y = 0; mesh.position.set(-side * w / 2, y, 0); pv.add(mesh);
@@ -5349,7 +5353,7 @@ const Room = (() => {
     beam.scale.set(2, .85, 1); beam.position.set(0, 3.95, .1); beam.rotation.x = -.1; g.add(beam); shared.beam = beam;
     // Ausgang mit grünem Schild
     const door = new T.Mesh(new T.PlaneGeometry(1.1, 2.2), new T.MeshLambertMaterial({ color: 0x2a2a30 })); door.position.set(CIN_DOOR.x, 5 * RISE + 1.1, CIN_DOOR.z - .01); door.rotation.y = Math.PI; g.add(door);
-    door.userData = { cinema: "exit" }; fixedPicks.push(door); swingDoor(door, 1.1, 1, "store");
+    door.userData = { cinema: "exit" }; fixedPicks.push(door); g.remove(door); fixedPicks.splice(fixedPicks.indexOf(door), 1); // nur eine Tür pro Durchgang (die auf der Ladenseite)
     const exitT = canvasTex(256, 96, (c, w, h) => { c.fillStyle = "#0a7a3b"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 46px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🏃 AUSGANG", w / 2, h / 2 + 2); });
     const ex = new T.Mesh(new T.PlaneGeometry(.8, .3), new T.MeshBasicMaterial({ map: exitT })); ex.position.set(CIN_DOOR.x, 5 * RISE + 2.45, CIN_DOOR.z - .02); ex.rotation.y = Math.PI; g.add(ex);
     // Neon „KINO“ über der Leinwand
@@ -6594,7 +6598,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "92";
+const APP_VERSION = "93";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
