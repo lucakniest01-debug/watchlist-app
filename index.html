@@ -3445,7 +3445,7 @@ const Room = (() => {
       const spare = new T.Mesh(new T.CylinderGeometry(.055, .055, .1, 20), new T.MeshLambertMaterial({ color: 0xffffff })); spare.position.set(tx + .2, 1.16, tz - .2); g.add(spare);
       const bh = new T.Mesh(new T.CylinderGeometry(.05, .045, .2, 18), chromeM); bh.position.set(tx + .25, .1, z1 - .14); g.add(bh);
       const bs = new T.Mesh(new T.CylinderGeometry(.008, .008, .3, 8), new T.MeshLambertMaterial({ color: 0x222831 })); bs.position.set(tx + .25, .33, z1 - .14); bs.rotation.z = .12; g.add(bs);
-      const si = stalls.length; stalls.push({ hinge, open: Math.max(open, .9), target: Math.max(open, .9), lockM, sx: tx + .55, sz: tz }); hinge.rotation.y = Math.max(open, .9);
+      const si = stalls.length; stalls.push({ hinge, open: Math.max(open, .9), target: Math.max(open, .9), lockM, sx: tx + .55, sz: tz }); hinge.rotation.y = -Math.max(open, .9); // Kabinentür schwingt nach außen (nicht durchs WC)
       for (const m of [shell, seat, lid, plate, box]) { m.userData = { toilet: si }; fixedPicks.push(m); }
     }
     // Waschbecken-Zeile an der Nordwand mit Spiegel
@@ -3752,7 +3752,7 @@ const Room = (() => {
     buildHands(); hands.t = hands.dur = 2.6; hands.mode = "dry"; setTimeout(() => toast("💨 Brrrrr … trocken!"), 2300);
   }
   function wcTick(dt, t) {
-    for (const S of stalls) { S.hinge.rotation.y += (S.target - S.hinge.rotation.y) * Math.min(1, dt * 6); }
+    for (const S of stalls) { S.hinge.rotation.y += (-S.target - S.hinge.rotation.y) * Math.min(1, dt * 6); }
     if (washT > 0) { washT -= dt; const W = shared.waterOn; if (W) { W.material.opacity = .35 + Math.sin(t / 40) * .1; if (washT <= 0) W.visible = false; } }
     if (dryT > 0) dryT -= dt;
   }
@@ -6610,7 +6610,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "95";
+const APP_VERSION = "96";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
