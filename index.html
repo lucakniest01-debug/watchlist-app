@@ -635,6 +635,7 @@
     padding: 8px 14px; font-size: 13px; color: var(--muted); opacity: 0; transition: opacity .6s; pointer-events: none; max-width: calc(100vw - 150px); text-align: center; }
   #roomHelp.show { opacity: 1; }
   #roomMsg { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+  #roomFade { position: absolute; inset: 0; background: #05060a; opacity: 0; pointer-events: none; z-index: 30; }
   #roomLabel { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); background: rgba(15,17,21,.88); border: 1px solid #3c4352; border-radius: 12px;
     padding: 9px 16px; font-size: 14px; opacity: 0; transition: opacity .15s; pointer-events: none; white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
   #cross { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); pointer-events: none; display: none; }
@@ -809,7 +810,7 @@
   <button class="btn" id="roomSnd" title="Ton an/aus">🔊</button>
   <div id="roomHelp"></div>
   <div id="roomMsg"></div>
-  <div id="roomLabel"></div>
+  <div id="roomLabel"></div><div id="roomFade"></div>
   <div id="cross"></div>
   <button id="roomStart"><b>🖱 Klicken zum Umsehen</b><span>Danach bewegst du die Ansicht einfach mit der Maus · W A S D zum Gehen · Esc gibt die Maus frei</span></button>
   <div id="joy"><div id="joyKnob"></div></div>
@@ -2313,6 +2314,7 @@ const SFX = (() => {
     flush() { noise(2.4, { gain: .16, freq: 600, attack: .25, type: "lowpass" }); noise(1.6, { gain: .08, type: "bandpass", freq: 1400, q: .8, at: .3, attack: .3 }); for (let i = 0; i < 6; i++) tone(180 + Math.random() * 120, .15, { type: "sine", gain: .03, at: 1.2 + i * .15, to: 90 }); },
     trickle() { for (let k = 0; k < 3; k++) noise(1.1, { gain: .05, type: "bandpass", freq: 1600 + k * 500, q: 3, at: k * .8, attack: .15 }); },
     water() { noise(3, { gain: .07, type: "highpass", freq: 2500, attack: .1 }); noise(3, { gain: .05, type: "bandpass", freq: 900, q: 1, attack: .1 }); },
+    swish() { noise(.45, { gain: .045, type: "bandpass", freq: 1800, q: .8, attack: .08 }); },
     dryer() { noise(2.6, { gain: .14, type: "bandpass", freq: 700, q: .5, attack: .15 }); tone(110, 2.6, { type: "sawtooth", gain: .02, filter: 400, attack: .15 }); },
     curtain() { noise(2.2, { gain: .07, freq: 900, attack: .5, type: "lowpass" }); },
     bleep(pan = 0, g = .05) { const base = [262, 330, 392, 523, 659, 784][Math.floor(Math.random() * 6)], k = Math.random();
@@ -2360,7 +2362,7 @@ const KM = (() => {
     ["forward", "Vorwärts gehen", "KeyW"], ["back", "Rückwärts gehen", "KeyS"],
     ["left", "Nach links gehen", "KeyA"], ["right", "Nach rechts gehen", "KeyD"],
     ["turnL", "Nach links drehen", "KeyQ"], ["turnR", "Nach rechts drehen", "KeyE"],
-    ["run", "Rennen (halten)", "ShiftLeft"], ["stand", "Von der Bank aufstehen", "Space"],
+    ["run", "Rennen (halten)", "ShiftLeft"], ["stand", "Springen / Aufstehen", "Space"],
     ["use", "Anvisierte Hülle ansehen", "Enter"], ["shuffle", "Regal mischen", "KeyR"],
     ["phone", "Handy: Maus frei / fangen", "KeyH"], ["popcorn", "Popcorn essen", "KeyF"], ["drink", "Trinken", "KeyG"],
     ["fps", "FPS-Anzeige", "F3"], ["gfx", "Grafik: Schnell / Realistisch", "KeyM"], ["keys", "Tastenbelegung öffnen", "KeyK"],
@@ -3377,7 +3379,7 @@ const Room = (() => {
     const doorT = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#6b4a32"; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(0,0,0,.25)"; for (let x = 0; x < w; x += 12) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 4, h); c.stroke(); }
       c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .5, 26, 10); c.fillStyle = "#1f8f5a"; c.fillRect(w * .2, h * .12, w * .6, 54); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2, h * .12 + 38); });
     const door = new T.Mesh(new T.PlaneGeometry(.9, 2.15), new T.MeshLambertMaterial({ map: doorT })); door.position.set(W / 2 - .02, 1.075, 0); door.rotation.y = -P / 2; g.add(door);
-    door.userData = { wc: "exit" }; fixedPicks.push(door);
+    door.userData = { wc: "exit" }; fixedPicks.push(door); swingDoor(door, .9, -1, "store");
     // Zwei Kabinen an der Westwand – auf Chromfüßen, mit Wand-WC, Spülplatte, Papierhalter und Klobürste
     const partM = pbr(new T.MeshLambertMaterial({ color: 0x1f5f66 }), .3, .15);
     for (const pz of [-D / 2 + .02, -1.0, .4]) {
@@ -3548,8 +3550,70 @@ const Room = (() => {
       c.fillStyle = "#2f8f7a"; c.beginPath(); c.arc(w / 2, h * .26, 64, 0, 7); c.fill(); c.fillStyle = "#fff"; c.font = "bold 70px Segoe UI Emoji, Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🚻", w / 2, h * .26 + 4);
       c.fillStyle = "#2f8f7a"; c.font = "bold 48px Segoe UI"; c.fillText("WC", w / 2, h * .45); c.fillStyle = "#c9ced6"; c.fillRect(w * .78, h * .52, 24, 10); });
     const sdoor = new T.Mesh(new T.PlaneGeometry(.86, 2.2), new T.MeshLambertMaterial({ map: sdoorT })); sdoor.position.set(0, 1.1, .03); sd.add(sdoor);
-    sdoor.userData = { wc: "enter" }; fixedPicks.push(sdoor);
+    sdoor.userData = { wc: "enter" }; fixedPicks.push(sdoor); swingDoor(sdoor, .86, -1, "wc");
     const ssign = new T.Mesh(new T.PlaneGeometry(.9, .28), new T.MeshBasicMaterial({ map: canvasTex(256, 80, (c, w, h) => { c.fillStyle = "#0b2a24"; c.fillRect(0, 0, w, h); c.font = "bold 46px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#34d399"; c.shadowBlur = 16; c.fillStyle = "#d1fae5"; c.fillText("🚻 WC", w / 2, h / 2 + 2); }), toneMapped: false })); ssign.position.set(0, 2.5, .04); sd.add(ssign);
+  }
+  // ---------- Türen: schwingen beim Näherkommen auf, Raumwechsel mit kurzem Abblenden ----------
+  const swingDoors = [];
+  function corridorTex(style) {
+    const pal = { wc: ["#cfd8dc", "#eef3f5", "#9fb3bb"], kino: ["#2a0d16", "#5a1a2a", "#14060b"], store: ["#3b3f48", "#c8b89a", "#24272d"] }[style] || ["#333", "#999", "#222"];
+    return canvasTex(256, 512, (c, w, h) => {
+      c.fillStyle = pal[2]; c.fillRect(0, 0, w, h);
+      // Flur in die Tiefe: Wände, Boden, Licht am Ende
+      const vx = w / 2, vy = h * .45;
+      for (let k = 0; k < 7; k++) { const f = 1 - k * .13, x0 = vx - w / 2 * f, y0 = vy - vy * f, x1 = vx + w / 2 * f, y1 = vy + (h - vy) * f;
+        c.strokeStyle = `rgba(255,255,255,${.05 + k * .02})`; c.lineWidth = 2; c.strokeRect(x0, y0, x1 - x0, y1 - y0); }
+      const fl = c.createLinearGradient(0, vy, 0, h); fl.addColorStop(0, pal[0]); fl.addColorStop(1, pal[2]);
+      c.fillStyle = fl; c.beginPath(); c.moveTo(0, h); c.lineTo(vx - 30, vy + 40); c.lineTo(vx + 30, vy + 40); c.lineTo(w, h); c.fill();
+      const lg = c.createRadialGradient(vx, vy, 4, vx, vy, 110); lg.addColorStop(0, pal[1]); lg.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = lg; c.fillRect(0, 0, w, h);
+    });
+  }
+  function swingDoor(mesh, w, side, style, maxA = 1.35) {
+    const par = mesh.parent, y = mesh.position.y, ry = mesh.rotation.y;
+    // dunkler Durchgang hinter der Tür (statt Wand), nur sichtbar wenn offen
+    const way = new T.Mesh(new T.PlaneGeometry(w - .02, mesh.geometry.parameters.height - .01), new T.MeshBasicMaterial({ map: corridorTex(style), toneMapped: false }));
+    way.position.copy(mesh.position).add(new T.Vector3(0, 0, -.006).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); way.rotation.y = ry; way.visible = false; par.add(way);
+    const pv = new T.Group(); pv.position.copy(mesh.position).add(new T.Vector3(side * w / 2, 0, .004).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); pv.position.y = 0; pv.rotation.y = ry; par.add(pv);
+    par.remove(mesh); mesh.rotation.y = 0; mesh.position.set(-side * w / 2, y, 0); pv.add(mesh);
+    mesh.material.side = T.DoubleSide;
+    const D = { pv, way, side, maxA, k: 0, target: 0, wp: null }; swingDoors.push(D); return D;
+  }
+  function doubleDoor(mesh, w, h, style) {
+    const par = mesh.parent, ry = mesh.rotation.y, mapL = mesh.material.map, ud = mesh.userData;
+    for (const side of [-1, 1]) {
+      const map = mapL.clone(); map.repeat.set(.5, 1); map.offset.set(side < 0 ? 0 : .5, 0); map.needsUpdate = true;
+      const leaf = new T.Mesh(new T.PlaneGeometry(w / 2, h), new T.MeshLambertMaterial({ map }));
+      leaf.position.copy(mesh.position).add(new T.Vector3(side * w / 4, 0, 0).applyAxisAngle(new T.Vector3(0, 1, 0), ry)); leaf.rotation.y = ry; leaf.userData = ud; par.add(leaf); fixedPicks.push(leaf);
+      const D = swingDoor(leaf, w / 2, side, style, 1.25); if (side > 0) D.way.visible = false, D.noWay = true;
+    }
+    // ein gemeinsamer Durchgang für beide Flügel
+    swingDoors[swingDoors.length - 2].way.scale.x = 2; swingDoors[swingDoors.length - 2].way.position.copy(mesh.position).add(new T.Vector3(0, 0, -.006).applyAxisAngle(new T.Vector3(0, 1, 0), ry));
+    par.remove(mesh); const fi = fixedPicks.indexOf(mesh); if (fi >= 0) fixedPicks.splice(fi, 1);
+  }
+  function doorsTick(dt) {
+    const near = [[pos.x, pos.z]];
+    for (const W of [maya && maya.walker, wcVisitor && wcVisitor.walker]) if (W && W.parent) { const v = new T.Vector3(); W.getWorldPosition(v); near.push([v.x, v.z]); }
+    for (const D of swingDoors) {
+      if (!D.wp) { D.wp = new T.Vector3(); D.pv.children[0].getWorldPosition(D.wp); }
+      const d = Math.min(...near.map(([x, z]) => Math.hypot(x - D.wp.x, z - D.wp.z)));
+      const tg = d < 2.0 ? 1 : 0;
+      if (tg && !D.target && Math.hypot(pos.x - D.wp.x, pos.z - D.wp.z) < 6) SFX.fx.open();
+      D.target = tg;
+      D.k += (D.target - D.k) * Math.min(1, dt * (D.target ? 4.5 : 3));
+      const e = D.k * D.k * (3 - 2 * D.k);
+      D.pv.rotation.y = D.pv.userData.ry0 ?? (D.pv.userData.ry0 = D.pv.rotation.y); D.pv.rotation.y = D.pv.userData.ry0 + D.side * D.maxA * e;
+      if (!D.noWay) D.way.visible = D.k > .02;
+    }
+  }
+  function transit(fn) {
+    if (transitT) return; transitT = 1; keys = {};
+    const f = $("#roomFade"); f.style.transition = "opacity .17s ease-in"; f.style.opacity = 1;
+    setTimeout(() => {
+      fn(); jumpY = 0; jumpV = 0;
+      // Türen am Ziel stehen offen und schwingen hinter dir zu
+      for (const D of swingDoors) if (D.wp && Math.hypot(pos.x - D.wp.x, pos.z - D.wp.z) < 2.6) D.k = 1;
+      requestAnimationFrame(() => { f.style.transition = "opacity .4s ease-out"; f.style.opacity = 0; setTimeout(() => transitT = 0, 300); });
+    }, 180);
   }
   function enterWC() {
     SFX.fx.door(); inWC = true; inCinema = false;
@@ -3585,7 +3649,7 @@ const Room = (() => {
   }
   function avatarTick(dt, t, moving) {
     if (!avatar || !inWC) return;
-    const A = avatar; A.a.position.set(pos.x - WC.x, 0, pos.z - WC.z); A.a.rotation.y = yaw + Math.PI;
+    const A = avatar; A.a.position.set(pos.x - WC.x, jumpY, pos.z - WC.z); A.a.rotation.y = yaw + Math.PI;
     A.step += moving ? dt * 8 : 0; const sw = moving ? Math.sin(A.step) : 0;
     const sit = wcSit != null;
     A.legs.forEach((l, i) => l.rotation.x = sit ? -1.45 : (i ? -sw : sw) * .45);
@@ -3623,17 +3687,17 @@ const Room = (() => {
   function urinalStream(i, on, fromZ = -1.95) {
     const U = shared.urinals && shared.urinals[i]; if (!U) return;
     if (!U.stream) {
-      const grp = new T.Group(), m = new T.MeshBasicMaterial({ color: 0xf2d44a, transparent: true, opacity: .62, depthWrite: false });
+      const grp = new T.Group(), m = new T.MeshBasicMaterial({ color: 0xf5c518, transparent: true, opacity: .88, depthWrite: false, toneMapped: false });
       const curve = new T.QuadraticBezierCurve3(new T.Vector3(0, .94, 0), new T.Vector3(0, 1.0, -.2), new T.Vector3(0, .8, -.4));
-      const tube = new T.Mesh(new T.TubeGeometry(curve, 24, .0055, 6), m); grp.add(tube);
-      const drops = []; for (let k = 0; k < 6; k++) { const d = new T.Mesh(new T.SphereGeometry(.007, 6, 4), m); grp.add(d); drops.push({ d, a: Math.random() * 6, v: Math.random() }); }
+      const tube = new T.Mesh(new T.TubeGeometry(curve, 28, .009, 8), m); grp.add(tube);
+      const drops = []; for (let k = 0; k < 6; k++) { const d = new T.Mesh(new T.SphereGeometry(.011, 6, 4), m); grp.add(d); drops.push({ d, a: Math.random() * 6, v: Math.random() }); }
       grp.visible = false; shared.wcGroup.add(grp); U.stream = { grp, tube, drops, z0: 0 };
     }
     const S = U.stream; S.grp.position.set(U.x, 0, fromZ); S.grp.scale.z = Math.max(.5, (fromZ + 2.38) / .4); S.grp.visible = on;
   }
   function streamTick(dt, t) {
     const M = shared.myU;
-    if (M) { const U = shared.urinals[M.i]; M.t -= dt; urinalStream(M.i, M.t < 2.55 && M.t > .45, U.z + .05);
+    if (M) { const U = shared.urinals[M.i]; M.t -= dt; urinalStream(M.i, M.t < 3.75 && M.t > .5, U.z + .05);
       if (M.t <= 0) { shared.myU = null; urinalStream(M.i, false); SFX.fx.flush(); toast("💧 Automatisch gespült – Hände waschen nicht vergessen 🧼"); U.ledM.color.setHex(0xef4444); U.busy = false; } }
     for (const U of shared.urinals || []) { const S = U.stream; if (!S || !S.grp.visible) continue;
       S.tube.scale.set(1 + Math.sin(t / 40) * .15, 1 + Math.sin(t / 70) * .015, 1 + Math.sin(t / 55) * .03);
@@ -3643,7 +3707,7 @@ const Room = (() => {
     const U = shared.urinals && shared.urinals[i]; if (!U || U.busy) return; U.busy = true;
     pos.x = WC.x + U.x; pos.z = WC.z + U.z + .35; yaw = 0; pitch = -.72; keys = {};
     U.ledM.color.setHex(0x22c55e); SFX.fx.trickle(); shared.atUrinal = 2.8;
-    shared.myU = { i, t: 2.8 };
+    shared.myU = { i, t: 4 }; shared.atUrinal = 4;
   }
   function useDryer() {
     if (dryT > 0) return; dryT = 2.6; SFX.fx.dryer();
@@ -3821,14 +3885,92 @@ const Room = (() => {
     M.mop.rotation.set(.15 + mp * .1, 0, mp * .35);
     M.head.rotation.y += ((mopping ? mp * .2 : 0) - M.head.rotation.y) * Math.min(1, dt * 4); M.head.rotation.x = mopping ? .25 : 0;
   }
+  // Maya putzt jetzt richtig: Putzwagen, mehrere Stellen wischen, Waschbecken & Spiegel polieren, nasser Glanz auf dem Boden
+  const MAYA_JOBS = [["mop", 1.4, .2, -Math.PI / 2], ["mop", .8, -1.45, Math.PI], ["mop", -.5, -.25, -Math.PI / 2], ["wipe", -.65, 1.72, 0], ["wipe", .65, 1.72, 0], ["mop", -.6, .95, Math.PI / 2], ["mop", .5, 1.0, 0]];
+  function mayaCart() {
+    if (shared.cart) return shared.cart;
+    const g = new T.Group(), yel = new T.MeshLambertMaterial({ color: 0xfacc15 }), blu = new T.MeshLambertMaterial({ color: 0x2563eb }), grey = new T.MeshLambertMaterial({ color: 0x4b5563 });
+    const base = new T.Mesh(new T.BoxGeometry(.62, .05, .4), yel); base.position.y = .1; g.add(base);
+    for (const [x, z] of [[-.27, -.16], [.27, -.16], [-.27, .16], [.27, .16]]) { const w = new T.Mesh(new T.CylinderGeometry(.04, .04, .03, 12), grey); w.rotation.z = Math.PI / 2; w.position.set(x, .04, z); g.add(w); }
+    const bucket = new T.Mesh(new T.CylinderGeometry(.16, .13, .28, 20, 1, true), blu); bucket.material.side = T.DoubleSide; bucket.position.set(-.12, .27, 0); g.add(bucket);
+    const water = new T.Mesh(new T.CircleGeometry(.15, 20), new T.MeshLambertMaterial({ color: 0x7dd3fc, transparent: true, opacity: .85 })); water.rotation.x = -Math.PI / 2; water.position.set(-.12, .36, 0); g.add(water);
+    const wr = new T.Mesh(new T.BoxGeometry(.2, .14, .2), grey); wr.position.set(-.12, .45, 0); g.add(wr);
+    const lever = new T.Mesh(new T.CylinderGeometry(.012, .012, .5, 8), grey); lever.position.set(-.12, .62, -.1); lever.rotation.x = -.5; g.add(lever);
+    const bottle = new T.Mesh(new T.CylinderGeometry(.04, .045, .2, 12), new T.MeshLambertMaterial({ color: 0x22c55e })); bottle.position.set(.18, .23, .07); g.add(bottle);
+    const cap = new T.Mesh(new T.CylinderGeometry(.015, .02, .05, 8), new T.MeshLambertMaterial({ color: 0xffffff })); cap.position.set(.18, .355, .07); g.add(cap);
+    const spray = new T.Mesh(new T.CylinderGeometry(.035, .04, .18, 12), new T.MeshLambertMaterial({ color: 0xec4899 })); spray.position.set(.2, .22, -.09); g.add(spray);
+    const rag = new T.Mesh(new T.BoxGeometry(.14, .03, .12), new T.MeshLambertMaterial({ color: 0xfde047 })); rag.position.set(.15, .14, -.05); g.add(rag);
+    const handle = new T.Mesh(new T.TorusGeometry(.14, .012, 6, 20, Math.PI), grey); handle.position.set(.31, .5, 0); handle.rotation.set(0, Math.PI / 2, -Math.PI / 2); g.add(handle);
+    g.visible = false; shared.wcGroup.add(g); shared.cart = g; return g;
+  }
+  const wetSpots = [];
+  function wetSpot(x, z) {
+    const m = new T.Mesh(new T.CircleGeometry(.55, 28), new T.MeshStandardMaterial({ color: 0xbfe3ff, roughness: .04, metalness: .2, transparent: true, opacity: 0, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, .004, z); m.scale.set(1, .75, 1); shared.wcGroup.add(m); const s = { m, a: 0, grow: true, life: 30 }; wetSpots.push(s); return s;
+  }
+  const sparkles = [];
+  function sparkle(x, y, z) {
+    for (let k = 0; k < 7; k++) { const s = new T.Mesh(new T.OctahedronGeometry(.018, 0), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 }));
+      s.position.set(x + (Math.random() - .5) * .5, y + Math.random() * .25, z + (Math.random() - .5) * .2); shared.wcGroup.add(s); sparkles.push({ s, t: 0, d: .6 + Math.random() * .6, ph: Math.random() * 6 }); }
+  }
+  function cleanFxTick(dt) {
+    for (let i = wetSpots.length - 1; i >= 0; i--) { const w = wetSpots[i];
+      if (w.grow) w.a = Math.min(.45, w.a + dt * .25); else { w.life -= dt; if (w.life < 8) w.a = Math.max(0, w.a - dt * .06); }
+      w.m.material.opacity = w.a; if (!w.grow && w.a <= 0) { shared.wcGroup.remove(w.m); w.m.geometry.dispose(); w.m.material.dispose(); wetSpots.splice(i, 1); } }
+    for (let i = sparkles.length - 1; i >= 0; i--) { const p = sparkles[i]; p.t += dt; const k = p.t / p.d;
+      p.s.scale.setScalar(Math.sin(Math.min(1, k) * Math.PI) * 1.4 + .01); p.s.rotation.y += dt * 6; p.s.position.y += dt * .08;
+      if (k >= 1) { shared.wcGroup.remove(p.s); sparkles.splice(i, 1); } }
+  }
+  function mayaCleanTick(dt, t) {
+    const M = maya, wk = M.walker, C = mayaCart();
+    if (!M.job) { M.jobs = MAYA_JOBS.slice(); M.job = null; }
+    if (!M.job) { const j = M.jobs.shift(); if (!j) return true; M.job = { kind: j[0], x: j[1], z: j[2], face: j[3], t: j[0] === "mop" ? 5.5 : 4.2, walked: false }; M.path = [[j[1], j[2]]]; }
+    const J = M.job;
+    if (!J.walked) {
+      // Mopp beim Gehen locker mitnehmen, Wagen steht in der Raummitte
+      mayaPose(dt, t, true, false); M.mop.position.set(.24, .02, .22); M.mop.rotation.set(.12, 0, .05); M.mop.visible = true;
+      if (mayaWalk(dt * .9, t)) { J.walked = true; J.p = 0; if (J.kind === "mop") J.wet = wetSpot(J.x + Math.sin(J.face) * .55, J.z + Math.cos(J.face) * .55); }
+      return false;
+    }
+    let a = J.face - wk.rotation.y; a = Math.atan2(Math.sin(a), Math.cos(a)); wk.rotation.y += a * Math.min(1, dt * 5);
+    J.t -= dt; J.p += dt;
+    const L = M.arms[0], R = M.arms[1], sw = Math.sin(J.p * 3.2), fig = Math.sin(J.p * 6.4);
+    M.legs[0].rotation.x = -.18 + sw * .05; M.legs[1].rotation.x = .12 - sw * .05;
+    M.person.rotation.x = .1;
+    if (J.kind === "mop") {
+      // Mopp-Kopf zieht Achten über den Boden, Stiel zeigt zu den Händen
+      const bx = sw * .28, bz = .82 + fig * .07;
+      M.mop.visible = true; M.mop.position.set(bx, .02, bz); M.mop.rotation.set(-.6, 0, bx * .9);
+      L.rotation.set(-.42 + fig * .05, 0, .12 + bx * .45); L.userData.elbow.rotation.x = -.55;
+      R.rotation.set(-.5 + fig * .05, 0, -.12 + bx * .45); R.userData.elbow.rotation.x = -.35;
+      wk.position.x += Math.cos(wk.rotation.y) * sw * dt * .08;
+      M.head.rotation.x = .38; M.head.rotation.y = bx * .5;
+      if (inWC && Math.abs(sw) > .97 && !J.sw) { J.sw = true; SFX.fx.swish(); } if (Math.abs(sw) < .5) J.sw = false;
+    } else {
+      // Mopp an den Wagen gelehnt, mit dem Lappen Becken und Spiegel polieren
+      M.mop.visible = false;
+      const up = J.p > 2.2, cx = Math.sin(J.p * 7) * .25, cy = Math.cos(J.p * 7) * .2;
+      R.rotation.set((up ? -2.2 : -1.05) + cy * .5, 0, .15 + cx); R.userData.elbow.rotation.x = up ? -.3 : -.6;
+      L.rotation.set(-.4, 0, -.15); L.userData.elbow.rotation.x = -.9;
+      M.head.rotation.x = up ? -.15 : .35; M.head.rotation.y = cx * .3; M.person.rotation.x = up ? 0 : .15;
+      if (!J.sp && J.p > 1.6) { J.sp = true; if (inWC) SFX.fx.swish(); }
+    }
+    if (J.t <= 0) {
+      if (J.wet) J.wet.grow = false;
+      sparkle(J.x + Math.sin(J.face) * .5, J.kind === "mop" ? .05 : 1.1, J.z + Math.cos(J.face) * .5);
+      if (J.kind === "wipe") sparkle(J.x, 1.55, J.z + .5);
+      M.person.rotation.x = 0; M.job = null;
+      if (!M.jobs.length) return true;
+    }
+    return false;
+  }
   function mayaTrip(dt, t) {
     const M = maya;
-    if (M.state === "toWC") { mayaPose(dt, t, true, false); if (mayaWalk(dt, t)) { shared.wcGroup.add(M.walker); M.walker.position.set(-.3, 0, .4); M.walker.rotation.y = Math.PI / 2; M.state = "clean"; M.timer = 22; shared.wet.forEach(s => s.visible = true); } }
+    if (M.state === "toWC") { mayaPose(dt, t, true, false); if (mayaWalk(dt, t)) { shared.wcGroup.add(M.walker); M.walker.position.set(-.3, 0, .4); M.walker.rotation.y = Math.PI / 2; M.state = "clean"; M.timer = 60; M.jobs = MAYA_JOBS.slice(); M.job = null; const C = mayaCart(); C.position.set(.15, 0, .25); C.rotation.y = .4; C.visible = true; shared.wet.forEach(s => s.visible = true); } }
     else if (M.state === "clean") {
-      M.timer -= dt; const k = Math.sin(t / 2600);
-      M.walker.position.x = -.3 + k * .9; M.walker.position.z = .4 + Math.sin(t / 1900) * .6; M.walker.rotation.y = Math.PI / 2 + Math.cos(t / 2600) * .6;
-      mayaPose(dt, t, false, true);
-      if (M.timer <= 0) { scene.add(M.walker); M.walker.position.set(-7.75, 0, WC_DOOR_Z); M.walker.rotation.y = Math.PI / 2; M.path = [[-6.3, WC_DOOR_Z], M.home]; M.state = "back"; shared.wet.forEach(s => s.visible = false); }
+      M.timer -= dt;
+      const done = mayaCleanTick(dt, t);
+      if (done || M.timer <= 0) { M.job = null; M.person.rotation.x = 0; M.mop.visible = true; M.mop.position.set(.24, .02, .22); M.mop.rotation.set(.15, 0, 0); if (shared.cart) shared.cart.visible = false; wetSpots.forEach(w => w.grow = false); scene.add(M.walker); M.walker.position.set(-7.75, 0, WC_DOOR_Z); M.walker.rotation.y = Math.PI / 2; M.path = [[-6.3, WC_DOOR_Z], M.home]; M.state = "back"; shared.wet.forEach(s => s.visible = false); }
     } else if (M.state === "back") {
       mayaPose(dt, t, true, false);
       if (mayaWalk(dt, t)) {
@@ -4407,6 +4549,7 @@ const Room = (() => {
     el.classList.add("show"); zoom.hideAt = performance.now() + 1200;
   }
   let T = null, renderer, scene, camera, store, raf = 0, running = false, last = 0, builtSig = "";
+  let jumpY = 0, jumpV = 0, jumpHeld = false, transitT = 0, landK = 0;
   let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
   let fixedPicks = [], colliders = [], arcade = null, posterGroup = null, popcorn = null, dice = null;
   const pos = { x: 0, z: 0 };
@@ -5178,7 +5321,7 @@ const Room = (() => {
     beam.scale.set(2, .85, 1); beam.position.set(0, 3.95, .1); beam.rotation.x = -.1; g.add(beam); shared.beam = beam;
     // Ausgang mit grünem Schild
     const door = new T.Mesh(new T.PlaneGeometry(1.1, 2.2), new T.MeshLambertMaterial({ color: 0x2a2a30 })); door.position.set(CIN_DOOR.x, 5 * RISE + 1.1, CIN_DOOR.z - .01); door.rotation.y = Math.PI; g.add(door);
-    door.userData = { cinema: "exit" }; fixedPicks.push(door);
+    door.userData = { cinema: "exit" }; fixedPicks.push(door); swingDoor(door, 1.1, 1, "store");
     const exitT = canvasTex(256, 96, (c, w, h) => { c.fillStyle = "#0a7a3b"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 46px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("🏃 AUSGANG", w / 2, h / 2 + 2); });
     const ex = new T.Mesh(new T.PlaneGeometry(.8, .3), new T.MeshBasicMaterial({ map: exitT })); ex.position.set(CIN_DOOR.x, 5 * RISE + 2.45, CIN_DOOR.z - .02); ex.rotation.y = Math.PI; g.add(ex);
     // Neon „KINO“ über der Leinwand
@@ -5204,7 +5347,7 @@ const Room = (() => {
       c.font = "bold 26px Segoe UI, sans-serif"; c.textAlign = "center"; c.fillStyle = "#ffb35c"; c.fillText("SAAL 1", w / 2, 140);
     });
     const door = new T.Mesh(new T.PlaneGeometry(1.34, 2.36), new T.MeshLambertMaterial({ map: doorT })); door.position.set(0, 1.2, .04); g.add(door);
-    door.userData = { cinema: "enter" }; fixedPicks.push(door);
+    door.userData = { cinema: "enter" }; fixedPicks.push(door); doubleDoor(door, 1.34, 2.36, "kino");
     const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#14080e"; c.fillRect(0, 0, w, h); c.font = "bold 100px Segoe UI, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ff4d6d"; c.shadowBlur = 26; c.fillStyle = "#ffd0d8"; c.fillText("🎬 KINO", w / 2, h / 2 + 6); });
     const sign = new T.Mesh(new T.PlaneGeometry(1.4, .44), new T.MeshBasicMaterial({ map: signT, toneMapped: false })); sign.position.set(0, 2.76, .05); g.add(sign);
     const glow = new T.Mesh(new T.PlaneGeometry(2, 1.2), new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glow.position.set(0, 2.76, .03); g.add(glow);
@@ -5997,7 +6140,7 @@ const Room = (() => {
       startPrompt();
     });
     document.addEventListener("mousemove", e => {
-      if (!locked()) return;
+      if (!locked() || shared.myU) return;
       const zs = camera.fov / FOV; // beim Hineinzoomen ruhiger umsehen
       yaw -= e.movementX * .0024 * sens * zs; pitch = Math.max(-1.25, Math.min(1.25, pitch - e.movementY * .0024 * sens * zs));
     });
@@ -6144,7 +6287,7 @@ const Room = (() => {
     if (m.userData.shuffle != null) { shuffleUnit(units[m.userData.shuffle]); return; }
     if (m.userData.cinema) {
       const k = m.userData.cinema; setAim(null);
-      if (k === "enter") enterCinema(); else if (k === "exit") leaveCinema(); else if (k === "screen") sitDown(null); else sitDown(m.userData);
+      if (k === "enter") transit(enterCinema); else if (k === "exit") transit(leaveCinema); else if (k === "screen") sitDown(null); else sitDown(m.userData);
       return;
     }
     if (m.userData.dice) { pressDice(); return; }
@@ -6154,7 +6297,7 @@ const Room = (() => {
     if (m.userData.drinks) { Drink.get(); return; }
     if (m.userData.clerk) { Clerk.talk(); return; }
     if (m.userData.trash) { useTrash(); return; }
-    if (m.userData.wc) { if (m.userData.wc === "enter") enterWC(); else leaveWC(); return; }
+    if (m.userData.wc) { transit(m.userData.wc === "enter" ? enterWC : leaveWC); return; }
     if (m.userData.toilet != null) { useToilet(m.userData.toilet); return; }
     if (m.userData.sink != null) { washHands(m.userData.sink); return; }
     if (m.userData.dryer) { useDryer(); return; }
@@ -6217,6 +6360,10 @@ const Room = (() => {
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
     const gp = padTick(dt, t) || { x: 0, y: 0 };
     const mv = KM.down(keys, "forward") || KM.down(keys, "back") || KM.down(keys, "left") || KM.down(keys, "right") || keys.ArrowUp || keys.ArrowDown || Math.abs(gp.x) + Math.abs(gp.y) > .2;
+    { const jd = KM.down(keys, "stand");
+      if (jd && !jumpHeld && !benchSit && wcSit == null && !seated && jumpY <= 0 && !shared.myU && !(hands && hands.t > 0)) { jumpV = 3.4; SFX.fx.step && SFX.fx.step(); }
+      jumpHeld = jd;
+      if (jumpV || jumpY > 0) { jumpV -= 9.81 * dt; jumpY += jumpV * dt; if (jumpY <= 0) { jumpY = 0; if (jumpV < -1.5) { SFX.fx.step && SFX.fx.step(); landK = 1; } jumpV = 0; } } }
     if (benchSit && (mv || KM.down(keys, "stand") || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standBench();
     if (wcSit != null && (mv || KM.down(keys, "stand") || Math.abs(joy.x) + Math.abs(joy.y) > .3)) standToilet();
     if (!document.querySelector(".overlay.open") && !seated && !benchSit && wcSit == null) {
@@ -6266,7 +6413,7 @@ const Room = (() => {
       }
       else if (avg < 1 / 57 && perf.pr < perf.max && t > perf.cool) { perf.pr = Math.min(perf.max, +(perf.pr + .1).toFixed(2)); perf.cool = t + 4000; renderer.setPixelRatio(perf.pr); resize(); }
     }
-    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); dilloTick(dt, t); if (!inCinema) { npcSchedule(dt); npcVisitTick(dt, t); } handsTick(dt, t); if (inWC) { streamTick(dt, t); wcTick(dt, t); avatarTick(dt, t, mv && wcSit == null); } if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
+    Popcorn.tick(dt, t, !!bob); Drink.tick(dt, t, !!bob); clerkTick(dt, t); binTick(dt, t); pascalTick(dt, t); mayaTick(dt, t); dilloTick(dt, t); if (!inCinema) { npcSchedule(dt); npcVisitTick(dt, t); } handsTick(dt, t); if (inWC) { cleanFxTick(dt); streamTick(dt, t); wcTick(dt, t); avatarTick(dt, t, mv && wcSit == null); } if (!inCinema) { popcornTick(dt, t); drinkTick(dt, t); }
     if (popcorn && popcorn.pop > 0) {
       popcorn.pop = Math.max(0, popcorn.pop - dt);
       const mm = new T.Matrix4(), v = new T.Vector3();
@@ -6285,10 +6432,11 @@ const Room = (() => {
     }
     for (const u of units) { const b = u.btn; if (u.busy) b.rotation.z -= dt * 8; else if (b.rotation.z) b.rotation.z = 0; }
     // Türen: einfach hindurchgehen
-    if (!inCinema && !inWC && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) enterCinema();
-    if (!inCinema && !inWC && Math.abs(pos.z - WC_DOOR_Z) < .42 && pos.x < -HALF + MARGIN + .12) enterWC();
-    if (inWC && pos.x > WC.x + 2.75) leaveWC();
-    if (inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) leaveCinema();
+    doorsTick(dt);
+    if (!transitT && !inCinema && !inWC && Math.abs(pos.x - STORE_DOOR.x) < .65 && pos.z < -HALF + MARGIN + .12) transit(enterCinema);
+    if (!transitT && !inCinema && !inWC && Math.abs(pos.z - WC_DOOR_Z) < .42 && pos.x < -HALF + MARGIN + .12) transit(enterWC);
+    if (!transitT && inWC && pos.x > WC.x + 2.75) transit(leaveWC);
+    if (!transitT && inCinema && !seated && Math.abs(pos.x - (CIN.x + CIN_DOOR.x)) < .6 && pos.z > CIN.z + CD - .62) transit(leaveCinema);
     if (!inCinema && !inWC && Math.abs(pos.x - EXIT_DOOR.x) < .65 && pos.z > HALF - MARGIN - .12) { exitStore(); return; }
     if (hemi) hemi.intensity = inCinema ? .35 - .31 * lk : (quality.real ? .42 : .95) * (gfx.daylight ? DAY[curPhase || "abend"].k : 1);
     if (t - lastDayCheck > 30000) { lastDayCheck = t; dayNight(); }
@@ -6296,7 +6444,7 @@ const Room = (() => {
     if (scene.environment) scene.environmentIntensity = inCinema ? .1 - .085 * lk : .22;
     const targetY = seated ? seated.row * RISE + 1.15 : benchSit ? 1.18 : wcSit != null ? 1.12 : (inCinema ? cinFloorY(pos.z - CIN.z) : 0) + EYE;
     eyeY += (targetY - eyeY) * Math.min(1, dt * 10);
-    const chewK = Popcorn.chew(); camera.position.set(pos.x, eyeY + (seated ? 0 : bob) + (chewK > 0 ? Math.sin(t / 70) * .0035 * chewK : 0), pos.z);
+    const chewK = Popcorn.chew(); landK = Math.max(0, landK - dt * 5); camera.position.set(pos.x, eyeY + jumpY - Math.sin(landK * Math.PI) * .05 + (seated ? 0 : bob) + (chewK > 0 ? Math.sin(t / 70) * .0035 * chewK : 0), pos.z);
     if (inCinema) lightsTick(dt, t);
     camera.rotation.set(pitch, yaw, 0);
     if (Math.abs(camera.fov - zoom.target) > .01) { camera.fov += (zoom.target - camera.fov) * Math.min(1, dt * 12); camera.updateProjectionMatrix(); }
@@ -6374,7 +6522,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _urinal: i => useUrinal(i), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _urinal: i => useUrinal(i), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _jy: () => jumpY, _doorK: () => swingDoors.map(d => +d.k.toFixed(2)), _job: () => maya.job && maya.job.kind, _keys: (c, v) => { keys[c] = v; }, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -6409,7 +6557,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "90";
+const APP_VERSION = "91";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
