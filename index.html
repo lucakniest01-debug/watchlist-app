@@ -131,6 +131,20 @@
   .nt-rank { display: grid; gap: 8px; } .nt-row { display: grid; grid-template-columns: 34px 46px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; background: rgba(255,255,255,.04); }
   .nt-row img { width: 46px; height: 69px; object-fit: cover; border-radius: 6px; } .nt-row.win { background: linear-gradient(90deg, rgba(255,179,92,.25), rgba(255,255,255,.03)); border: 1px solid #ffb35c; }
   @media (max-width: 640px) { .nt-vote { grid-template-columns: 1fr; } .nt-vote img { width: 100%; height: auto; max-height: 360px; } .stat-bar { grid-template-columns: 100px 1fr 44px; } }
+  .nt-res { margin-top: 8px; display: grid; gap: 6px; max-height: 300px; overflow: auto; }
+  .nt-row2 { display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; padding: 6px 10px 6px 6px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+  .nt-row2:hover { border-color: var(--accent); } .nt-row2.on { opacity: .55; cursor: default; }
+  .nt-row2 img, .nt-row2 .nt-noimg { width: 40px; height: 60px; object-fit: cover; border-radius: 6px; display: grid; place-items: center; background: #222; }
+  .nt-row2 small { display: block; color: #9aa0ab; font-size: .8em; margin-top: 2px; } .nt-row2 em { font-style: normal; color: var(--accent); font-weight: 600; font-size: .9em; }
+  .nt-sub { color: #9aa0ab; font-size: .85em; padding: 4px 2px; }
+  .nt-quick { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .nt-quick button { flex: none; width: 74px; padding: 0; border: 2px solid transparent; border-radius: 10px; background: none; color: var(--text); cursor: pointer; font: inherit; font-size: .72em; text-align: center; }
+  .nt-quick button img, .nt-quick .nt-noimg { width: 70px; height: 105px; object-fit: cover; border-radius: 8px; display: grid; place-items: center; background: #222; margin-bottom: 3px; }
+  .nt-quick button span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .nt-quick button.on { border-color: var(--accent); } .nt-quick button:hover { border-color: rgba(255,255,255,.3); }
+  .nt-picks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .nt-pick { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 4px; border-radius: 10px; background: rgba(255,92,92,.15); border: 1px solid var(--accent); font-size: .9em; }
+  .nt-pick img, .nt-pick .nt-noimg { width: 28px; height: 42px; object-fit: cover; border-radius: 5px; display: grid; place-items: center; background: #222; } .nt-pick small { opacity: .6; }
+  .nt-pick button { background: none; border: 0; color: #ccc; cursor: pointer; }
   .cnext { margin-top: 6px; padding: 4px 9px; font-size: .78em; border-radius: 8px; border: 1px solid var(--line); background: rgba(34,197,94,.14); color: #bbf7d0; cursor: pointer; font-family: inherit; }
   .cnext:hover { background: rgba(34,197,94,.3); }
   /* Verkäufer-Sprechblase */
@@ -5592,7 +5606,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "76";
+const APP_VERSION = "77";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
@@ -5855,30 +5869,91 @@ const Pick = (() => {
 
 /* Filmabend: Mehrere stimmen nacheinander am selben Gerät ab */
 const Night = (() => {
-  let players = [], cand = [], votes = {}, pi = 0, ci = 0, src = "list";
+  let players = [], cand = [], votes = {}, pi = 0, ci = 0, src = "list", picks = [], searchSeq = 0, lastRes = [];
   try { players = JSON.parse(localStorage.getItem("watchlist-night-players") || "[]"); } catch {}
   const body = () => $("#nightBody");
+  const MAXC = 8;
+  const keyOf = c => c.id ? "i:" + c.id : c.r ? c.r.mediaType + ":" + c.r.tmdbId : "t:" + c.title;
+  const fromItem = i => ({ title: i.title, poster: i.poster, year: i.year, kind: i.kind, overview: i.overview, id: i.id });
+  const fromR = r => { const own = Shop.onList(r); return own ? fromItem(own) : { title: r.title, poster: r.poster, year: r.year, kind: r.kind, overview: r.overview, r: Object.assign({ big: r.poster ? r.poster.replace("/w185/", "/w500/") : "", backdrop: "", vote: 0 }, r) }; };
   function setup() {
     body().innerHTML = `<p class="hint" style="margin-top:0">Jeder stimmt nacheinander am selben Gerät ab – die anderen schauen weg 🙈. Am Ende gewinnt der Titel mit den meisten Punkten.</p>
       <div class="field"><label>Wer ist dabei?</label><div class="row"><input class="inp" id="ntName" placeholder="Name eingeben und Enter" style="flex:1"><button class="btn" id="ntAdd">+ Dazu</button></div>
-      <div class="nt-players">${players.map((p, k) => `<span>${esc(p)}<button data-del="${k}" title="Entfernen">✕</button></span>`).join("") || `<span style="opacity:.6">Noch niemand – mindestens 2 Leute</span>`}</div></div>
-      <div class="field"><label>Zur Auswahl stehen …</label><div class="pk-opts">${[["list", "📋 Titel von meiner Liste"], ["pop", "🔥 Beliebt in deinen Abos"], ["mix", "🎲 Gemischt"]].map(([k, l]) => `<button data-src="${k}" class="${src === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
-      <button class="btn primary" id="ntGo" ${players.length < 2 ? "disabled" : ""} style="font-size:1.05em">🍿 Abstimmung starten</button>`;
-    const add = () => { const v = $("#ntName").value.trim(); if (v && !players.includes(v) && players.length < 8) { players.push(v); savePl(); } setup(); setTimeout(() => $("#ntName").focus(), 0); };
+      <div class="nt-players" id="ntPl"></div></div>
+      <div class="field"><label>🔍 Filme &amp; Serien selbst aussuchen <small style="opacity:.6">(optional, bis zu ${MAXC})</small></label>
+        <input class="inp" id="ntQ" placeholder="Titel suchen – z. B. Interstellar, One Piece …" autocomplete="off">
+        <div class="nt-res" id="ntRes"></div>
+        <div class="nt-picks" id="ntPicks"></div></div>
+      <div class="field"><label id="ntSrcLab">Zur Auswahl stehen …</label><div class="pk-opts" id="ntSrc"></div></div>
+      <button class="btn primary" id="ntGo" style="font-size:1.05em">🍿 Abstimmung starten</button> <span class="hint" id="ntWhy"></span>`;
+    const add = () => { const v = $("#ntName").value.trim(); if (v && !players.includes(v) && players.length < 8) { players.push(v); savePl(); } $("#ntName").value = ""; drawPlayers(); $("#ntName").focus(); };
     $("#ntAdd").onclick = add; $("#ntName").onkeydown = e => { if (e.key === "Enter") add(); };
-    body().querySelectorAll("[data-del]").forEach(b => b.onclick = () => { players.splice(+b.dataset.del, 1); savePl(); setup(); });
-    body().querySelectorAll("[data-src]").forEach(b => b.onclick = () => { src = b.dataset.src; setup(); });
+    let tmr = null; $("#ntQ").oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => search($("#ntQ").value.trim()), 280); };
+    $("#ntQ").onkeydown = e => { if (e.key === "Enter" && lastRes[0]) { e.preventDefault(); addPick(lastRes[0]); } };
     $("#ntGo").onclick = start;
+    drawPlayers(); drawPicks(); search("");
+  }
+  function drawPlayers() {
+    $("#ntPl").innerHTML = players.map((p, k) => `<span>${esc(p)}<button data-del="${k}" title="Entfernen">✕</button></span>`).join("") || `<span style="opacity:.6">Noch niemand – mindestens 2 Leute</span>`;
+    $("#ntPl").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { players.splice(+b.dataset.del, 1); savePl(); drawPlayers(); });
+    drawSrc();
+  }
+  function drawSrc() {
+    const opts = [["list", "📋 Titel von meiner Liste"], ["pop", "🔥 Beliebt in deinen Abos"], ["mix", "🎲 Gemischt"]];
+    if (picks.length) opts.unshift(["own", "✋ Nur meine Auswahl"]);
+    if (!picks.length && src === "own") src = "list";
+    $("#ntSrcLab").textContent = picks.length ? (src === "own" ? "Zur Auswahl stehen …" : (picks.length === 1 ? "Zu deinem ausgesuchten Titel kommen dazu …" : `Zu deinen ${picks.length} ausgesuchten Titeln kommen dazu …`)) : "Zur Auswahl stehen …";
+    $("#ntSrc").innerHTML = opts.map(([k, l]) => `<button data-src="${k}" class="${src === k ? "on" : ""}">${l}</button>`).join("");
+    $("#ntSrc").querySelectorAll("[data-src]").forEach(b => b.onclick = () => { src = b.dataset.src; drawSrc(); });
+    const why = players.length < 2 ? "Mindestens 2 Leute eintragen" : src === "own" && picks.length < 2 ? "Mindestens 2 Titel aussuchen" : "";
+    $("#ntGo").disabled = !!why; $("#ntWhy").textContent = why;
+  }
+  function drawPicks() {
+    const el = $("#ntPicks");
+    el.innerHTML = picks.length ? picks.map((c, k) => `<div class="nt-pick">${c.poster ? `<img src="${esc(c.poster)}" alt="">` : `<span class="nt-noimg">🎞</span>`}<span>${esc(c.title)}${c.year ? ` <small>(${esc(c.year)})</small>` : ""}</span><button data-rm="${k}" title="Entfernen">✕</button></div>`).join("") : "";
+    el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { picks.splice(+b.dataset.rm, 1); drawPicks(); search($("#ntQ").value.trim()); });
+    drawSrc();
+  }
+  function addPick(c) {
+    if (picks.length >= MAXC) { toast(`Höchstens ${MAXC} Titel – entferne erst einen`); return; }
+    if (picks.some(p => keyOf(p) === keyOf(c))) return;
+    picks.push(c); if (picks.length === 2 && src !== "own") src = "own";
+    drawPicks(); try { SFX.fx.click(); } catch {}
+    search($("#ntQ").value.trim());
+  }
+  // Suche: deine Liste sofort, dazu alle Filme & Serien über TMDB
+  async function search(q) {
+    const box = $("#ntRes"); if (!box) return;
+    const seq = ++searchSeq, ql = q.toLowerCase();
+    const own = (q ? items.filter(i => i.title.toLowerCase().includes(ql)) : items.filter(i => i.status === "geplant")).slice(0, q ? 6 : 8).map(fromItem);
+    const show = (list, more) => {
+      lastRes = list.filter(c => !picks.some(p => keyOf(p) === keyOf(c)));
+      if (!q) { box.innerHTML = own.length ? `<div class="nt-sub">Schnell dazu – von deiner Liste:</div><div class="nt-quick">${own.map((c, k) => `<button data-q="${k}" class="${picks.some(p => keyOf(p) === keyOf(c)) ? "on" : ""}" title="${esc(c.title)}">${c.poster ? `<img src="${esc(c.poster)}" alt="">` : `<span class="nt-noimg">🎞</span>`}<span>${esc(c.title)}</span></button>`).join("")}</div>` : ""; box.querySelectorAll("[data-q]").forEach(b => b.onclick = () => addPick(own[+b.dataset.q])); return; }
+      box.innerHTML = list.length ? list.map((c, k) => { const on = picks.some(p => keyOf(p) === keyOf(c)); return `<button class="nt-row2 ${on ? "on" : ""}" data-k="${k}" ${on ? "disabled" : ""}>${c.poster ? `<img src="${esc(c.poster)}" alt="">` : `<span class="nt-noimg">🎞</span>`}<span><b>${esc(c.title)}</b><small>${KINDS[c.kind] || ""}${c.year ? " · " + esc(c.year) : ""}${c.id ? " · ✓ auf deiner Liste" : ""}</small></span><em>${on ? "✓ drin" : "+ Dazu"}</em></button>`; }).join("") + (more ? `<div class="nt-sub"><span class="spin"></span> suche weiter …</div>` : "")
+        : more ? `<div class="nt-sub"><span class="spin"></span> suche …</div>` : `<div class="nt-sub">Nichts gefunden für „${esc(q)}“.</div>`;
+      box.querySelectorAll("[data-k]").forEach(b => b.onclick = () => addPick(list[+b.dataset.k]));
+    };
+    show(own, q.length >= 2 && !!settings.apiKey);
+    if (!q || q.length < 2 || !settings.apiKey) return;
+    try {
+      const res = (await api("GET", "/api/search?q=" + encodeURIComponent(q))).map(fromR);
+      if (seq !== searchSeq) return;
+      const seen = new Set(own.map(keyOf)), all = [...own, ...res.filter(c => !seen.has(keyOf(c)))].slice(0, 10);
+      show(all, false);
+    } catch (e) { if (seq === searchSeq) box.innerHTML += `<div class="nt-sub">⚠ ${esc(e.message)}</div>`; }
   }
   const savePl = () => { try { localStorage.setItem("watchlist-night-players", JSON.stringify(players)); } catch {} };
   async function start() {
     body().innerHTML = `<div class="hint"><span class="spin"></span> Stelle die Auswahl zusammen …</div>`;
-    const mine = items.filter(i => i.status === "geplant" && i.poster).sort(() => Math.random() - .5).map(i => ({ title: i.title, poster: i.poster, year: i.year, kind: i.kind, overview: i.overview, id: i.id }));
+    const chosen = picks.slice(), have = new Set(chosen.map(keyOf));
+    const mine = items.filter(i => i.status === "geplant" && i.poster).sort(() => Math.random() - .5).map(fromItem).filter(c => !have.has(keyOf(c)));
     let pop = [];
-    if (src !== "list") { try { const sh = Shop.shelves()[0]; pop = (await Shop.fetchShelf(sh, 1 + Math.floor(Math.random() * 2))).filter(r => !Shop.onList(r)).sort(() => Math.random() - .5).map(r => ({ title: r.title, poster: r.poster, year: r.year, kind: r.kind, overview: r.overview, r })); } catch {} }
-    cand = (src === "list" ? mine : src === "pop" ? pop : [...mine.slice(0, 3), ...pop.slice(0, 3)]).slice(0, 6);
-    if (cand.length < 2) cand = [...mine, ...pop].slice(0, 6);
-    if (cand.length < 2) { body().innerHTML = `<div class="hint">Zu wenige Titel – setz ein paar Titel auf „Geplant“ oder wähle „Beliebt“.</div><button class="btn" id="ntBack">← Zurück</button>`; $("#ntBack").onclick = setup; return; }
+    if (src === "pop" || src === "mix") { try { const sh = Shop.shelves()[0]; pop = (await Shop.fetchShelf(sh, 1 + Math.floor(Math.random() * 2))).filter(r => !Shop.onList(r)).sort(() => Math.random() - .5).map(fromR).filter(c => !have.has(keyOf(c))); } catch {} }
+    const fill = src === "own" ? [] : src === "list" ? mine : src === "pop" ? pop : [...mine.slice(0, 3), ...pop.slice(0, 3)];
+    cand = [...chosen, ...fill].slice(0, Math.max(6, chosen.length));
+    if (cand.length < 2) cand = [...chosen, ...mine, ...pop].slice(0, 6);
+    if (cand.length < 2) { body().innerHTML = `<div class="hint">Zu wenige Titel – such dir oben ein paar Filme aus oder setz Titel auf „Geplant“.</div><button class="btn" id="ntBack">← Zurück</button>`; $("#ntBack").onclick = setup; return; }
+    cand.sort(() => Math.random() - .5);
     votes = {}; pi = 0; pass();
   }
   function pass() {
