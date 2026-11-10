@@ -3057,12 +3057,123 @@ const Room = (() => {
     pascal = { p, legs, arms, head, crate, col, i: 0, dir: 1, wait: 1.5, x: PASCAL_PATH[0][0], z: PASCAL_PATH[0][1], yaw: 0, step: 0, talking: 0, sort: 0 };
     p.position.set(pascal.x, 0, pascal.z);
   }
+  // ---------- Pascals Lager: kleiner Raum mit Filmkartons hinter der rechten Ladenwand ----------
+  const LAGER = { x: 8 + 1.6, z: 2.5 }, LW = 3.2, LD = 3.2;   // 8 = HALF (Ladenhälfte), hier noch nicht definiert
+  function buildLager() {
+    const P = Math.PI, H = 2.6, g = new T.Group(); g.position.set(LAGER.x, 0, LAGER.z); scene.add(g); shared.lagerGroup = g;
+    const floorT = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#6b6f76"; c.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { c.fillStyle = `rgba(${Math.random() < .5 ? 255 : 0},${Math.random() < .5 ? 255 : 0},${Math.random() < .5 ? 255 : 0},.05)`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } c.strokeStyle = "rgba(0,0,0,.25)"; c.lineWidth = 2; c.strokeRect(0, 0, w, h); });
+    floorT.wrapS = floorT.wrapT = T.RepeatWrapping; floorT.repeat.set(2, 2);
+    const floor = new T.Mesh(new T.PlaneGeometry(LW, LD), pbr(new T.MeshLambertMaterial({ map: floorT }), .6, 0)); floor.rotation.x = -P / 2; g.add(floor);
+    const ceil = new T.Mesh(new T.PlaneGeometry(LW, LD), new T.MeshLambertMaterial({ color: 0xd9dde2 })); ceil.rotation.x = P / 2; ceil.position.y = H; g.add(ceil);
+    const wallT = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#c9cdd2"; c.fillRect(0, 0, w, h); c.fillStyle = "#9aa1a9"; c.fillRect(0, h * .78, w, h * .22); c.fillStyle = "#e3b341"; c.fillRect(0, h * .76, w, 6); });
+    for (const [px, pz, ry, len, door] of [[-LW / 2, 0, P / 2, LD, true], [LW / 2, 0, -P / 2, LD], [0, -LD / 2, 0, LW], [0, LD / 2, P, LW]]) {
+      const t = wallT.clone(); t.needsUpdate = true; t.wrapS = T.RepeatWrapping; t.repeat.set(len / 1.6, 1);
+      const wall = new T.Mesh(door ? holedGeo(len, H, [[0, 0, .94, 2.46]]) : new T.PlaneGeometry(len, H), pbr(new T.MeshLambertMaterial({ map: t }), .7, 0)); wall.position.set(px, H / 2, pz); wall.rotation.y = ry; g.add(wall);
+    }
+    // Neonröhre + Licht
+    const tube = new T.Mesh(new T.CylinderGeometry(.03, .03, 1.4, 12), new T.MeshBasicMaterial({ color: 0xf4f8ff, toneMapped: false })); tube.rotation.z = P / 2; tube.position.set(0, H - .08, 0); g.add(tube);
+    const tubeBox = new T.Mesh(new T.BoxGeometry(1.5, .04, .12), new T.MeshLambertMaterial({ color: 0xe5e7eb })); tubeBox.position.set(0, H - .03, 0); g.add(tubeBox);
+    const lamp = new T.PointLight(0xf2f6ff, 3.2, 6, 1.4); lamp.position.set(0, H - .3, 0); g.add(lamp);
+    // Schwerlastregale voller Filme
+    const steel = pbr(new T.MeshLambertMaterial({ color: 0x3b5b8c }), .45, .5), board = new T.MeshLambertMaterial({ color: 0xb8bec6 });
+    const dvdGeo = new T.BoxGeometry(.022, .19, .135), dvds = new T.InstancedMesh(dvdGeo, new T.MeshLambertMaterial({ color: 0xffffff }), 600); let nd = 0;
+    const mtx = new T.Matrix4(), q = new T.Quaternion(), col = new T.Color(), up = new T.Vector3(0, 1, 0);
+    const pal = [0xe11d48, 0x2563eb, 0x16a34a, 0xf59e0b, 0x7c3aed, 0x0ea5e9, 0x111827, 0xf97316, 0xdb2777, 0x65a30d, 0xfacc15, 0x475569];
+    const cardM = new T.MeshLambertMaterial({ color: 0xb98a52 });
+    const labT = txt => canvasTex(128, 64, (c, w, h) => { c.fillStyle = "#b98a52"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(10, 12, w - 20, h - 24); c.fillStyle = "#1f2937"; c.font = "bold 22px Segoe UI"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(txt, w / 2, h / 2 + 1); });
+    const labels = ["DVD", "Neu!", "Blu-ray", "Action", "Anime", "Horror", "Retouren", "Klassiker"];
+    function rack(cx, cz, ry, len) {
+      const R = new T.Group(); R.position.set(cx, 0, cz); R.rotation.y = ry; g.add(R);
+      for (const x of [-len / 2 + .03, len / 2 - .03]) for (const z of [-.17, .17]) { const u = new T.Mesh(new T.BoxGeometry(.04, 2.1, .04), steel); u.position.set(x, 1.05, z); R.add(u); }
+      for (let k = 0; k < 4; k++) {
+        const y = .12 + k * .55, b = new T.Mesh(new T.BoxGeometry(len, .025, .4), board); b.position.y = y; R.add(b);
+        for (const z of [-.19, .19]) { const be = new T.Mesh(new T.BoxGeometry(len, .05, .02), new T.MeshLambertMaterial({ color: 0xea580c })); be.position.set(0, y + .015, z); R.add(be); }
+        // Reihe aus DVDs, ab und zu ein Karton dazwischen
+        let x = -len / 2 + .08;
+        while (x < len / 2 - .1 && nd < 600) {
+          if (Math.random() < .12) { const bw = .32 + Math.random() * .1; if (x + bw > len / 2 - .05) break;
+            const box = new T.Mesh(new T.BoxGeometry(bw, .3, .32), [cardM, cardM, cardM, cardM, new T.MeshLambertMaterial({ map: labT(labels[Math.floor(Math.random() * labels.length)]) }), cardM]); box.position.set(x + bw / 2, y + .165, 0); box.rotation.y = (Math.random() - .5) * .1; R.add(box); x += bw + .03; continue; }
+          R.updateMatrixWorld(); const lean = Math.random() < .05 ? .2 : 0;
+          const v = new T.Vector3(x, y + .11, (Math.random() - .5) * .02).applyMatrix4(new T.Matrix4().compose(R.position, new T.Quaternion().setFromAxisAngle(up, ry), new T.Vector3(1, 1, 1)));
+          q.setFromAxisAngle(up, ry); const qz = new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 0, 1), lean); q.multiply(qz);
+          mtx.compose(v, q, new T.Vector3(1, 1, 1)); dvds.setMatrixAt(nd, mtx); dvds.setColorAt(nd, col.setHex(pal[Math.floor(Math.random() * pal.length)])); nd++; x += .026;
+        }
+      }
+    }
+    rack(.2, LD / 2 - .22, P, 2.4); rack(.2, -LD / 2 + .22, 0, 2.4); rack(LW / 2 - .22, 0, -P / 2, 1.8);
+    dvds.count = nd; dvds.instanceMatrix.needsUpdate = true; if (dvds.instanceColor) dvds.instanceColor.needsUpdate = true; g.add(dvds);
+    // Packtisch mit Laptop, Kaffee und Klebeband, Kartons am Boden
+    const table = new T.Mesh(new T.BoxGeometry(.9, .04, .5), new T.MeshLambertMaterial({ color: 0x8b6b4a })); table.position.set(-.85, .78, 1.0); g.add(table);
+    for (const [lx, lz] of [[-1.25, .8], [-.45, .8], [-1.25, 1.2], [-.45, 1.2]]) { const l = new T.Mesh(new T.BoxGeometry(.04, .78, .04), steel); l.position.set(lx, .39, lz); g.add(l); }
+    const lap = new T.Mesh(new T.BoxGeometry(.32, .015, .22), new T.MeshLambertMaterial({ color: 0x374151 })); lap.position.set(-.95, .81, 1.0); g.add(lap);
+    const scr = new T.Mesh(new T.PlaneGeometry(.3, .19), new T.MeshBasicMaterial({ map: canvasTex(128, 80, (c, w, h) => { c.fillStyle = "#0f172a"; c.fillRect(0, 0, w, h); c.fillStyle = "#38bdf8"; c.font = "bold 12px Segoe UI"; c.fillText("Bestand: 1.284 Filme", 8, 20); for (let i = 0; i < 5; i++) { c.fillStyle = "#334155"; c.fillRect(8, 30 + i * 9, 60 + Math.random() * 50, 5); } }) }));
+    scr.position.set(-.95, .91, 1.1); scr.rotation.x = -.25; scr.rotation.y = P; g.add(scr);
+    const mug = new T.Mesh(new T.CylinderGeometry(.04, .035, .09, 14), new T.MeshLambertMaterial({ color: 0xdc2626 })); mug.position.set(-.6, .845, .95); g.add(mug);
+    const tape = new T.Mesh(new T.TorusGeometry(.04, .018, 8, 16), new T.MeshLambertMaterial({ color: 0xc8a165 })); tape.position.set(-1.2, .82, 1.05); tape.rotation.x = P / 2; g.add(tape);
+    for (const [bx, bz, s] of [[.9, -.4, 1], [.9, .2, .85], [.85, -.4, .7]]) { const b = new T.Mesh(new T.BoxGeometry(.45 * s, .35 * s, .4 * s), [cardM, cardM, cardM, cardM, new T.MeshLambertMaterial({ map: labT("Neu!") }), cardM]); b.position.set(bx, .175 * s + (s === .7 ? .35 : 0), bz); b.rotation.y = -P / 2 + (Math.random() - .5) * .3; g.add(b); }
+    // Tür im Laden (rechte Wand) mit Schild „Lager“ – und Pascals Klo-Zettel
+    const sd = new T.Group(); sd.position.set(HALF - .02, 0, LAGER.z); sd.rotation.y = -P / 2; scene.add(sd);
+    doorFrame(sd, 0, 0, -.02, 0, .94, 2.3, 0x6b7280);
+    const front = canvasTex(256, 512, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, "#7d848d"); gr.addColorStop(.5, "#9aa1a9"); gr.addColorStop(1, "#7d848d"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.strokeStyle = "rgba(0,0,0,.2)"; c.lineWidth = 4; c.strokeRect(18, 18, w - 36, h - 36);
+      c.fillStyle = "#fbbf24"; c.fillRect(40, 70, w - 80, 120); c.fillStyle = "#111827"; c.font = "bold 50px Segoe UI"; c.textAlign = "center"; c.fillText("LAGER", w / 2, 132); c.font = "bold 22px Segoe UI"; c.fillText("Nur für Personal", w / 2, 172);
+      for (let x = -40; x < w; x += 36) { c.fillStyle = "#111827"; c.beginPath(); c.moveTo(x, h - 50); c.lineTo(x + 18, h - 50); c.lineTo(x + 38, h - 20); c.lineTo(x + 20, h - 20); c.fill(); } c.fillStyle = "#fbbf24"; c.globalCompositeOperation = "destination-over"; c.fillRect(0, h - 50, w, 30); });
+    const back = canvasTex(256, 512, (c, w, h) => { c.fillStyle = "#8b929b"; c.fillRect(0, 0, w, h); c.fillStyle = "#16a34a"; c.fillRect(40, 70, w - 80, 70); c.fillStyle = "#fff"; c.font = "bold 34px Segoe UI"; c.textAlign = "center"; c.fillText("↩ Laden", w / 2, 118); });
+    const door = new T.Mesh(new T.PlaneGeometry(.86, 2.2), new T.MeshLambertMaterial({ map: front })); door.position.set(0, 1.1, .03); sd.add(door);
+    swingDoor(door, .86, 1, "store", 1.4, new T.MeshLambertMaterial({ map: back }));
+    const noteT = canvasTex(256, 180, (c, w, h) => { c.fillStyle = "#fef9c3"; c.fillRect(0, 0, w, h); c.fillStyle = "rgba(0,0,0,.06)"; for (let y = 30; y < h; y += 26) c.fillRect(0, y, w, 2);
+      c.fillStyle = "rgba(255,255,255,.7)"; c.fillRect(w / 2 - 40, -6, 80, 26); c.fillStyle = "#1e3a8a"; c.textAlign = "center"; c.font = "bold 34px Segoe Print, Comic Sans MS, cursive"; c.fillText("Bin kurz", w / 2, 66); c.fillText("auf Klo! 🚽", w / 2, 108); c.font = "24px Segoe Print, Comic Sans MS, cursive"; c.fillText("– Pascal", w / 2 + 40, 150); });
+    const note = new T.Mesh(new T.PlaneGeometry(.36, .25), new T.MeshLambertMaterial({ map: noteT })); note.position.set(0, .2, .026); note.rotation.z = -.05; note.visible = false; door.add(note); shared.pascalNote = note;
+  }
+  function lagerClamp() {
+    const lx0 = LAGER.x - LW / 2, door = Math.abs(pos.z - LAGER.z) < .3;
+    pos.x = Math.max(door ? HALF - .8 : lx0 + .3, Math.min(LAGER.x + LW / 2 - .75, pos.x)); pos.z = Math.max(LAGER.z - LD / 2 + .75, Math.min(LAGER.z + LD / 2 - .75, pos.z));
+    if (pos.x < lx0 + .3) pos.z = Math.max(LAGER.z - .3, Math.min(LAGER.z + .3, pos.z));
+  }
+  // Pascal holt neue Filme aus dem Lager und räumt ein Regal neu ein
+  function pascalJobStart() {
+    const P = pascal, route = [];
+    if (P.z < -4.5) route.push([2.4, -4.8], [2.4, -1.0]); else if (P.x < -4) route.push([-3.5, .6]);
+    route.push([5.6, LAGER.z], [7.3, LAGER.z], [8.7, LAGER.z], [LAGER.x + .3, LAGER.z + .5]);
+    P.job = { stage: "toLager", path: route, t: 0 };
+  }
+  function pascalJobTick(dt, t) {
+    const P = pascal, J = P.job; let want = P.yaw, moving = false;
+    const dvds = P.crate.children.filter(o => o.geometry && o.geometry.parameters && o.geometry.parameters.width === .035);
+    if (J.path && J.path.length) {
+      const [tx, tz] = J.path[0], dx = tx - P.x, dz = tz - P.z, L = Math.hypot(dx, dz);
+      if (L < .06) J.path.shift();
+      else { const sp = Math.min(L, 1.05 * dt); P.x += dx / L * sp; P.z += dz / L * sp; want = Math.atan2(dx, dz); moving = true;
+        if (Math.hypot(pos.x - P.x, pos.z - P.z) < .7) { P.x -= dx / L * sp; P.z -= dz / L * sp; moving = false; } }
+    } else if (J.stage === "toLager") { J.stage = "pick"; J.t = 4.5; }
+    else if (J.stage === "pick") {
+      want = 0; J.t -= dt; P.sort = 1;
+      if (J.t < 3) dvds.forEach((d, k) => d.visible = k < (3 - J.t) * 2.2);
+      if (J.t <= 0) { dvds.forEach(d => d.visible = true); const us = units.filter(u => u && u.g && !u.busy); J.u = us[Math.floor(Math.random() * us.length)];
+        if (!J.u) { J.stage = "home"; J.path = [[8.7, LAGER.z], [7.3, LAGER.z], [5.6, LAGER.z], [1.0, .5]]; return; }
+        const ux = J.u.g.position.x, uz = J.u.g.position.z, f = Math.abs(ux) > Math.abs(uz) ? [ux - Math.sign(ux) * 1.2, uz] : [ux, uz - Math.sign(uz) * 1.2];
+        J.path = [[8.7, LAGER.z], [7.3, LAGER.z], [5.6, LAGER.z]]; if (f[0] < 4.5) J.path.push([1.0, .5]); J.path.push(f); J.stage = "toShelf"; }
+    } else if (J.stage === "toShelf") { J.stage = "stock"; J.t = 4; }
+    else if (J.stage === "stock") {
+      want = Math.atan2(J.u.g.position.x - P.x, J.u.g.position.z - P.z); J.t -= dt; P.sort = 1;
+      dvds.forEach((d, k) => d.visible = k < J.t * 1.3);
+      if (J.t <= 0) { shuffleUnit(J.u); if (Math.hypot(pos.x - P.x, pos.z - P.z) < 5) toast(`📦 Pascal hat „${J.u.sh.name.replace(/^\S+\s/, "")}“ mit frischen Filmen aufgefüllt`);
+        J.stage = "home"; let bi = 0, bd = 1e9; PASCAL_PATH.forEach(([x, z], i) => { const d = Math.hypot(x - P.x, z - P.z); if (d < bd) { bd = d; bi = i; } }); J.home = bi; J.path = P.x > 4.5 ? [[1.0, .5], PASCAL_PATH[bi]] : [PASCAL_PATH[bi]]; }
+    } else if (J.stage === "home") {
+      dvds.forEach(d => d.visible = true); P.i = J.home ?? 0; P.dir = P.i >= PASCAL_PATH.length - 1 ? -1 : 1; P.wait = 1.5; P.sort = 0; P.job = null; P.next = 70 + Math.random() * 60;
+    }
+    if (J.stage !== "pick" && J.stage !== "stock") P.sort = 0;
+    return { want, moving };
+  }
   function pascalTick(dt, t) {
     const P = pascal; if (!P || inCinema || P.trip) return;
-    const d = Math.hypot(pos.x - P.x, pos.z - P.z), near = d < 2.1 || P.talking > 0;
+    const d = Math.hypot(pos.x - P.x, pos.z - P.z); let near = d < 2.1 || P.talking > 0;
     P.talking = Math.max(0, P.talking - dt);
     let want = P.yaw, moving = false;
-    if (near) {
+    if (!P.job && !near && P.wait > 0) { P.next = (P.next ?? 40 + Math.random() * 40) - dt; if (P.next <= 0 && units.length) pascalJobStart(); }
+    if (near && P.job && P.job.stage === "pick") near = false;
+    if (P.job && !near) { const r = pascalJobTick(dt, t); want = r.want; moving = r.moving; }
+    else if (near) {
       // stehen bleiben und dich anschauen
       want = Math.atan2(pos.x - P.x, pos.z - P.z);
     } else if (P.wait > 0) {
@@ -3627,6 +3738,7 @@ const Room = (() => {
   function doorsTick(dt) {
     const near = [[pos.x, pos.z]];
     for (const W of [maya && maya.walker, wcVisitor && wcVisitor.walker]) if (W && W.parent) { const v = new T.Vector3(); W.getWorldPosition(v); near.push([v.x, v.z]); }
+    if (pascal && !pascal.trip) near.push([pascal.x, pascal.z]);
     for (const D of swingDoors) {
       if (!D.wp) { D.wp = new T.Vector3(); D.pv.children[0].getWorldPosition(D.wp); }
       const d = Math.min(...near.map(([x, z]) => Math.hypot(x - D.wp.x, z - D.wp.z)));
@@ -3774,14 +3886,14 @@ const Room = (() => {
     },
     pascal: {
       male: true, next: 90 + Math.random() * 120,
-      ok: () => pascal && pascal.talking <= 0,
+      ok: () => pascal && pascal.talking <= 0 && !pascal.job,
       body: () => pascal.p, legs: () => pascal.legs, arms: () => pascal.arms, head: () => pascal.head,
-      start() { pascal.trip = true; pascal.crate.visible = false; pascal.col.x = 999; pascal.col.z = 999;
+      start() { pascal.trip = true; pascal.crate.visible = false; if (shared.pascalNote) shared.pascalNote.visible = true; pascal.col.x = 999; pascal.col.z = 999;
         const route = []; const order = [0, 1, 2]; // über die linke Seite zur WC-Tür
         if (pascal.z < -4.5) route.push([-2.6, -5.6], [-5.3, -3.5]); else if (pascal.x > -4.5) route.push([-1.8, 2.6], [-5.3, 1.5]);
         route.push([-5.3, -1.0], DOOR_IN, DOOR_AT); this.home = [pascal.x, pascal.z]; return { x: pascal.x, z: pascal.z, yaw: pascal.yaw, route, own: true }; },
       routeHome() { return [DOOR_IN, [-5.3, -1.0], [-5.3, 1.5], PASCAL_PATH[1]]; },
-      finish() { const p = pascal.p; scene.add(p); pascal.x = PASCAL_PATH[1][0]; pascal.z = PASCAL_PATH[1][1]; pascal.i = 1; pascal.dir = 1; pascal.wait = 1; pascal.trip = false; pascal.crate.visible = true; },
+      finish() { const p = pascal.p; scene.add(p); pascal.x = PASCAL_PATH[1][0]; pascal.z = PASCAL_PATH[1][1]; pascal.i = 1; pascal.dir = 1; pascal.wait = 1; if (shared.pascalNote) shared.pascalNote.visible = false; pascal.trip = false; pascal.crate.visible = true; },
     },
     maya: {
       male: false, next: 200 + Math.random() * 120,
@@ -4682,6 +4794,7 @@ const Room = (() => {
     buildClerk(4.6, -3.2, Math.atan2(-4.6, 3.2));
     trashBin(-4.45, 4.55, Math.atan2(4.45, -4.55));
     buildPascal();
+    buildLager();
     buildMaya(-4.0, -2.4, Math.atan2(4.0, 2.4));
     setTimeout(() => { if (scene) { buildDillo(); dilloTarget(); } }, 0);
     // Sitzbank vor der Mitte
@@ -5175,7 +5288,10 @@ const Room = (() => {
       if (side % 2 === 0) continue; // Vorder-/Rückwand: dort stehen die Regale dicht, mit Kino-Tür und Ausgang
       const d = HALF - .03, a = side * Math.PI / 2;
       spots.push({ x: side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d, z: side === 0 ? -d : side === 1 ? o : side === 2 ? d : -o, rot: -a });
-      const sp = spots[spots.length - 1]; if (side === 3 && Math.abs(sp.z - WC_DOOR_Z) < 1) sp.z = WC_DOOR_Z - 1.6; // nicht in die WC-Tür hängen
+      const sp = spots[spots.length - 1];
+      // nur in die schmale Lücke zwischen zwei Regalen, nicht in die Türen
+      // nur ein Plakat je Seitenwand – in der schmalen Lücke zwischen zwei Regalen, nie vor einer Tür
+      if (o > 0) { spots.pop(); continue; } sp.z = side === 1 ? -3.5 : 3.3; sp.k = .74;
     }
     const frameM = new T.MeshLambertMaterial({ color: 0xd4a94a });
     spots.forEach((s, i) => {
@@ -5188,7 +5304,7 @@ const Room = (() => {
       const url = r.big ? r.big.replace("/w500/", "/w342/") : r.poster;
       loader().load(url, t => { t.colorSpace = T.SRGBColorSpace; mat.map = t; mat.color.set(0xffffff); mat.needsUpdate = true; }, undefined, () => { mat.map = fallbackCover(r); mat.color.set(0xffffff); mat.needsUpdate = true; });
       pic.userData = { r, base: pic.position.z, poster: true }; pickables.push(pic); fixedPicks.push(pic);
-      g.position.set(s.x, 1.75, s.z); g.rotation.y = s.rot; posterGroup.add(g);
+      g.position.set(s.x, s.y || 1.75, s.z); g.rotation.y = s.rot; if (s.k) g.scale.setScalar(s.k); posterGroup.add(g);
     });
     // zwei Kino-Aufsteller aus Pappe links und rechts vor dem Podium
     [[-2.7, -1.0, .45], [2.7, -1.0, -.45]].forEach(([x, z, ry], k) => {
@@ -5898,7 +6014,7 @@ const Room = (() => {
     wallT.wrapS = T.RepeatWrapping; wallT.repeat.set(HALF * 2 / 3.2, 1);
     const wallMat = withNormal(pbr(new T.MeshLambertMaterial({ map: tx("wall", 8, 1.65) || wallT }), .9, 0, TEX.wall ? 0 : 3), "wall_n", 8, 1.65, .8);
     for (let i = 0; i < 4; i++) {
-      const a = i * Math.PI / 2, hole = i === 0 ? [STORE_DOOR.x, 1.42] : i === 1 ? [-WC_DOOR_Z, .94] : null;
+      const a = i * Math.PI / 2, hole = i === 0 ? [STORE_DOOR.x, 1.42] : i === 1 ? [-WC_DOOR_Z, .94] : i === 3 ? [2.5, .94] : null;
       const w = new T.Mesh(hole ? holedGeo(HALF * 2, 3.3, [[hole[0], 0, hole[1], 2.46]]) : new T.PlaneGeometry(HALF * 2, 3.3), wallMat);
       const dirW = new T.Vector3(Math.cos(a), 0, -Math.sin(a)), segs = wallSegs(HALF * 2, hole && hole[0], hole && hole[1] + .2); w.position.set(Math.sin(a) * -HALF, 1.65, Math.cos(a) * -HALF); w.rotation.y = a; scene.add(w);
       // Leuchtstreifen unten an der Wand
@@ -6107,7 +6223,7 @@ const Room = (() => {
   function slots() {
     const out = [], d = HALF - .35;
     // Vorder- und Rückwand: Regale zusammengerückt, damit vor Kino-Tür und Ausgang 2 m Platz frei bleiben
-    for (let side = 0; side < 4; side++) for (const o of (side % 2 === 0 ? [-5.3, -1.0, 5.1] : [-5, 0, 5])) {
+    for (let side = 0; side < 4; side++) for (const o of (side === 0 ? [-5.3, -1.0, 5.1] : side === 1 ? [-5.85, -1.15, 5.85] : side === 2 ? [5.55, -.6, -5.35] : [5.85, -1.0, -5.6])) { // links/rechts: Regale zur Seite gerückt, damit vor WC- und Lagertür Platz ist
       const a = side * Math.PI / 2;
       // Wand vor dir (z=-d), rechts (x=d), hinten (z=d), links (x=-d)
       const x = side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d;
@@ -6291,8 +6407,10 @@ const Room = (() => {
   function clampPos() {
     if (inCinema) { cinemaClamp(); return; }
     if (inWC) { wcClamp(); return; }
-    const m = HALF - MARGIN, inWcDoor = Math.abs(pos.z - WC_DOOR_Z) < .3, inCinDoor = Math.abs(pos.x - STORE_DOOR.x) < .5;
-    pos.x = Math.max(inWcDoor ? -HALF - .8 : -m, Math.min(m, pos.x)); pos.z = Math.max(inCinDoor ? -HALF - .8 : -m, Math.min(m, pos.z));
+    if (pos.x > HALF) { lagerClamp(); return; }
+    const m = HALF - MARGIN, inWcDoor = Math.abs(pos.z - WC_DOOR_Z) < .3, inCinDoor = Math.abs(pos.x - STORE_DOOR.x) < .5, inLagerDoor = Math.abs(pos.z - 2.5) < .3;
+    pos.x = Math.max(inWcDoor ? -HALF - .8 : -m, Math.min(inLagerDoor ? HALF + .8 : m, pos.x));
+    if (pos.x > m) pos.z = Math.max(2.5 - .3, Math.min(2.5 + .3, pos.z)); pos.z = Math.max(inCinDoor ? -HALF - .8 : -m, Math.min(m, pos.z));
     // im Türdurchgang seitlich führen
     if (pos.x < -m) pos.z = Math.max(WC_DOOR_Z - .3, Math.min(WC_DOOR_Z + .3, pos.z));
     if (pos.z < -m) pos.x = Math.max(STORE_DOOR.x - .5, Math.min(STORE_DOOR.x + .5, pos.x));
@@ -6575,7 +6693,7 @@ const Room = (() => {
     const v = new T.Vector3(x / 1680 * 8.4 - 4.2, 1.8 - y / 720 * 3.6, 0); cinScreen.localToWorld(v); v.project(camera);
     return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight];
   }
-  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _urinal: i => useUrinal(i), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _jy: () => jumpY, _jumpTest: () => { const r = []; pos.x = 0; pos.z = -1.9; yaw = 0; keys = {}; keys[KM.get('forward')] = true; keys[KM.get('stand')] = true; return 1; }, _where: () => inCinema ? 'c' : inWC ? 'w' : 's', _pos: () => [pos.x, pos.z, eyeY], _doorK: () => swingDoors.map(d => +d.k.toFixed(2)), _job: () => maya.job && maya.job.kind, _keys: (c, v) => { keys[c] = v; }, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; inWC = x < -HALF; inCinema = z < -HALF; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
+  return { open, close, mark, shuffle, closeArcade, _clerk: () => Clerk.talk(), _drink: () => Drink.get(), _trash: () => useTrash(), _pascal: () => Clerk.talkPascal(), _maya: () => Clerk.talkMaya(), _wc: () => enterWC(), _toilet: i => useToilet(i), _dbg: () => ({ fx: !!FX, rf: !!(FX && FX.RF), mir: shared.wcGroup && shared.wcGroup.children.filter(c => c.isReflector || (c.type === "Reflector")).length }), _wash: k => washHands(k), _visit: n => npcStartVisit(n), _urinal: i => useUrinal(i), _visitRun: (n, s) => { for (let i = 0; i < n; i++) npcVisitTick(.05, performance.now() + i * 50); return wcVisitor ? wcVisitor.phase : 'done'; }, _mayaTrip: () => { maya.timer = 0; }, _mayaState: () => maya && maya.state, _jy: () => jumpY, _pasJob: () => pascalJobStart(), _pasRun: n => { for (let i = 0; i < n; i++) pascalTick(.05, performance.now() + i * 50); return pascal.job ? pascal.job.stage : (pascal.trip ? 'trip' : 'idle'); }, _noteVis: () => shared.pascalNote && shared.pascalNote.visible, _pjob: () => { pascal.wait = 1; pascal.job = null; pascalJobStart(); return 1; }, _pstage: () => pascal.job ? pascal.job.stage : 'none', _prun: n => { for (let i = 0; i < n; i++) { if (!pascal.job) return 'none'; pascalJobTick(.05, performance.now()); pascal.p.position.set(pascal.x, 0, pascal.z); } return pascal.job ? pascal.job.stage : 'none'; }, _jumpTest: () => { const r = []; pos.x = 0; pos.z = -1.9; yaw = 0; keys = {}; keys[KM.get('forward')] = true; keys[KM.get('stand')] = true; return 1; }, _where: () => inCinema ? 'c' : inWC ? 'w' : 's', _pos: () => [pos.x, pos.z, eyeY], _doorK: () => swingDoors.map(d => +d.k.toFixed(2)), _job: () => maya.job && maya.job.kind, _keys: (c, v) => { keys[c] = v; }, _mayaRun: n => { for (let i = 0; i < n; i++) mayaTick(.05, performance.now() + i * 50); return maya.state; }, _dillo: () => dillo && [dillo.x, dillo.z], _pasPos: () => pascal && [pascal.x, pascal.z], _phone: k => { sitBench(); return Phone; }, _screenOf, _face, _onScreen, _kino: u => Cinema.openRealYT(u), _sit: () => { enterCinema(); sitDown(null); }, _enter: enterCinema, _pop: () => Popcorn.get(), _eat: () => Popcorn.eat(), _bench: () => sitBench(), _benchOn: () => benchSit, _go: (x, z, yw, pt = 0) => { pos.x = x; pos.z = z; yaw = yw; pitch = pt; inWC = x < -HALF; inCinema = z < -HALF; }, _info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, pr: perf.pr }), _dice: () => pressDice(), _at: (x, z, yw = 0) => { pos.x = CIN.x + x; pos.z = CIN.z + z; yaw = yw; pitch = 0; cinemaClamp(); return [+(pos.x - CIN.x).toFixed(2), +(pos.z - CIN.z).toFixed(2)]; } };
 })();
 window.Room = Room;
 
@@ -6610,7 +6728,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "96";
+const APP_VERSION = "99";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
