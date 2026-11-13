@@ -85,6 +85,10 @@
   .poster .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
   .badge { box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .badge { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; color: #0f1115; }
+  .dubtag { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; margin: 2px 0 4px; }
+  .dubtag.de { background: rgba(250,204,21,.14); color: #fde68a; } .dubtag.ja { background: rgba(244,63,94,.13); color: #fecdd3; }
+  .dubtag span { opacity: .55; font-size: 10px; }
+  .dubline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; font-size: 13.5px; color: var(--muted); }
   .badge.film { background: var(--film); } .badge.serie { background: var(--serie); } .badge.anime { background: var(--anime); }
   .cbody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .ctitle { font-weight: 600; line-height: 1.25; }
@@ -1136,9 +1140,20 @@ const Local = (() => {
     if (it.mediaType === "tv") {
       try { Object.assign(it, await tvDetails(it.tmdbId)); } catch {}
     }
+    if (it.kind === "anime") { try { it.dubAuto = await guessDub(it.mediaType, it.tmdbId); } catch {} }
+  }
+  // Deutsche Synchro? Schätzung über deutsche Trailer bei TMDB (ohne „OmU“ = Synchro)
+  async function guessDub(mt, id) {
+    const v = await tmdb(`/${mt}/${id}/videos`, { language: "de-DE", include_video_language: "de,ja,en,null" });
+    const res = v.results || [];
+    const dub = res.some(r => { const n = (r.name || "").toLowerCase();
+      if (/synchro|german dub|deutsche fassung/.test(n)) return true;
+      return r.iso_639_1 === "de" && !/omu|untertitel|subbed|\(ov\)| ov |original mit/.test(n); });
+    return dub ? "de" : res.length ? "ja" : "?";
   }
   function applyRefresh(dst, src) {
     Object.assign(dst, { providers: src.providers, region: src.region, updated: src.updated });
+    if (src.dubAuto) dst.dubAuto = src.dubAuto;
     if (src.runtime > 0) dst.runtime = src.runtime;
     if (!src.seasons) return false;
     Object.assign(dst, { seasons: src.seasons, lastAired: src.lastAired, nextAir: src.nextAir, showState: src.showState });
@@ -1167,6 +1182,7 @@ const Local = (() => {
       const old = it.status;
       for (const [k, v] of Object.entries(b || {})) {
         if (["status", "kind", "note", "manualWhere"].includes(k)) it[k] = v;
+        if (k === "dub" && ["", "de", "ja"].includes(v)) it.dub = v;
         if (k === "title" && String(v).trim()) it.title = String(v).trim();
       }
       logProg(it, 0, 0, old); it.modified = bump(it.modified); save(); return it;
@@ -1210,7 +1226,7 @@ const Local = (() => {
       const s = load(), newEpisodes = [];
       if (s.settings.apiKey) {
         const old = i => !i.updated || now() - Date.parse(i.updated) > 6 * 3600e3;
-        const stale = s.items.filter(i => i.tmdbId && ((i.mediaType === "tv" && (!i.seasons || old(i))) || (i.mediaType === "movie" && !i.runtime && old(i)))).slice(0, 60);
+        const stale = s.items.filter(i => i.tmdbId && ((i.mediaType === "tv" && (!i.seasons || old(i))) || (i.mediaType === "movie" && !i.runtime && old(i)) || (i.kind === "anime" && !i.dubAuto))).slice(0, 60);
         for (const it of stale) {
           try { const c = clone(it); await refreshItem(c); if (applyRefresh(it, c)) newEpisodes.push(it.title); }
           catch (e) { if (/Schlüssel|erreichbar/.test(e.message)) break; }
@@ -1378,6 +1394,13 @@ function picker(el, selected, onChange, allowCustom = true) {
   return () => sel;
 }
 
+/* ---------- Anime-Sprache ---------- */
+const dubOf = i => i.kind !== "anime" ? "" : (i.dub || (i.dubAuto === "?" ? "" : i.dubAuto) || "");
+const DUB = { de: "🇩🇪 Deutsche Synchro", ja: "🇯🇵 Nur Japanisch (OmU)" };
+function dubTag(i) {
+  const d = dubOf(i); if (!d) return "";
+  return `<div class="dubtag ${d}" title="${i.dub ? "Von dir festgelegt" : "Automatisch geschätzt (deutsche Trailer bei TMDB) – im Titel änderbar"}">${DUB[d]}${i.dub ? "" : " <span>?</span>"}</div>`;
+}
 /* ---------- Liste ---------- */
 function renderTabs() {
   const cnt = k => items.filter(i => k === "all" || i.kind === k).length;
@@ -1391,10 +1414,12 @@ function renderTabs() {
     `<div class="filters">
       ${[["all","Alle"],...Object.entries(STATUS)].map(([k,l]) => `<button class="chip ${view.status===k?"active":""}" data-status="${k}">${l}</button>`).join("")}
       <select class="small" id="provFilter"><option value="">Alle Anbieter</option>${provOpts}</select>
+      ${view.kind === "anime" ? `<select class="small" id="dubFilter"><option value="">Alle Sprachen</option><option value="de" ${view.dub==="de"?"selected":""}>🇩🇪 Mit deutscher Synchro</option><option value="ja" ${view.dub==="ja"?"selected":""}>🇯🇵 Nur Japanisch</option></select>` : ""}
     </div>`;
   $("#tabs").querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { view.kind = b.dataset.kind; render(); });
   $("#tabs").querySelectorAll("[data-status]").forEach(b => b.onclick = () => { view.status = b.dataset.status; render(); });
   $("#provFilter").onchange = e => { view.provider = e.target.value; render(); };
+  const df = $("#dubFilter"); if (df) df.onchange = e => { view.dub = e.target.value; render(); };
 }
 
 function render() {
@@ -1412,6 +1437,7 @@ function render() {
     (view.kind === "all" || i.kind === view.kind) &&
     (view.status === "all" || i.status === view.status) &&
     (!view.provider || (view.provider === "__mine" ? onMyServices(i).length : allProviderNames(i).has(view.provider))) &&
+    (view.kind !== "anime" || !view.dub || dubOf(i) === view.dub) &&
     (!q || i.title.toLowerCase().includes(q) || (i.note||"").toLowerCase().includes(q)));
   const grid = $("#grid"), empty = $("#empty");
   if (!list.length) {
@@ -1442,6 +1468,7 @@ function render() {
       <div class="cbody"><div class="ctitle">${esc(i.title)} ${i.year ? `<small>(${esc(i.year)})</small>` : ""}</div>
         ${mine.length ? `<div class="minetag">✓ In deinem Abo: ${esc(mine.join(", "))}</div>` : ""}
         ${i.mediaType === "movie" && i.runtime ? `<div class="rt">⏱ ${fmtDur(i.runtime)}</div>` : ""}
+        ${dubTag(i)}
         ${cardProgress(i)}
         <div class="where">${where}</div></div></div>`;
   }).join("");
@@ -1844,6 +1871,7 @@ function renderDetail() {
           <div class="seg" id="dStatus">${Object.entries(STATUS).map(([k,l]) => `<button data-s="${k}" class="${i.status===k?"active":""}">${l}</button>`).join("")}</div>
         </div>
         ${i.mediaType === "movie" ? `<div class="rtline">⏱ Laufzeit: <b>${i.runtime ? fmtDur(i.runtime) : settings.apiKey && i.tmdbId ? `<span class="spin"></span>` : "unbekannt"}</b>${i.runtime >= 60 ? ` <span class="hint">(${i.runtime} Min.)</span>` : ""}</div>` : ""}
+        ${i.kind === "anime" ? `<div class="dubline"><span>🗣 Sprache:</span><div class="seg" id="dDub">${[["", `Automatisch${i.dubAuto && i.dubAuto !== "?" ? ` (${i.dubAuto === "de" ? "🇩🇪 Synchro" : "🇯🇵 OmU"})` : i.tmdbId && settings.apiKey && !i.dubAuto ? " (prüfe …)" : " (unbekannt)"}`], ["de", "🇩🇪 Deutsch"], ["ja", "🇯🇵 Nur Japanisch"]].map(([k, l]) => `<button data-d="${k}" class="${(i.dub || "") === k ? "active" : ""}">${l}</button>`).join("")}</div></div>` : ""}
         ${i.overview ? `<p class="overview">${esc(i.overview)}</p>` : ""}
         <h3 style="margin:0 0 10px;font-size:15px">📺 Wo kann ich das schauen?</h3>
         ${where}
@@ -1857,11 +1885,19 @@ function renderDetail() {
       </div></div>
       ${isShow(i) ? `<div id="epsBox" class="epsbox"></div>` : ""}`;
   if (isShow(i)) renderEps();
-  $("#dKind").onchange = e => update({ kind: e.target.value });
+  $("#dKind").onchange = e => update({ kind: e.target.value }).then(() => { if (e.target.value === "anime" && current.tmdbId && !current.dubAuto) refreshCurrentQuiet(); });
+  const dd = $("#dDub"); if (dd) dd.querySelectorAll("button").forEach(b => b.onclick = () => { update({ dub: b.dataset.d }); dd.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); });
+  if (i.kind === "anime" && i.tmdbId && settings.apiKey && !i.dubAuto) refreshCurrentQuiet();
   $("#dStatus").querySelectorAll("button").forEach(b => b.onclick = () => { update({ status: b.dataset.s }); $("#dStatus").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); });
   picker($("#dWhere"), manualList(i), sel => update({ manualWhere: sel.join(", ") }));
   $("#dNote").onchange = e => update({ note: e.target.value });
   $("#dRefresh").style.display = i.tmdbId ? "" : "none";
+}
+// Anime ohne Sprach-Info: still im Hintergrund nachladen und die Ansicht auffrischen
+async function refreshCurrentQuiet() {
+  const id = current && current.id; if (!id || refreshCurrentQuiet.busy === id) return; refreshCurrentQuiet.busy = id;
+  try { const it = await api("POST", `/api/items/${id}/refresh`); const old = items.find(x => x.id === id); if (old) { replaceItem(old, it); render(); if (current && current.id === id) openDetail(id); } } catch {}
+  refreshCurrentQuiet.busy = null;
 }
 async function update(fields) {
   try { const it = await api("PUT", "/api/items/" + current.id, fields); replaceItem(current, it); render(); }
@@ -6721,7 +6757,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "102";
+const APP_VERSION = "103";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
