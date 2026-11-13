@@ -3094,7 +3094,7 @@ const Room = (() => {
     p.position.set(pascal.x, 0, pascal.z);
   }
   // ---------- Pascals Lager: kleiner Raum mit Filmkartons hinter der rechten Ladenwand ----------
-  const LAGER = { x: 8 + 1.6, z: 2.5 }, LW = 3.2, LD = 3.2;   // 8 = HALF (Ladenhälfte), hier noch nicht definiert
+  const LAGER = { x: 10 + 1.6, z: 2.5 }, LW = 3.2, LD = 3.2;   // 10 = HALF (Ladenhälfte), hier noch nicht definiert
   function buildLager() {
     const P = Math.PI, H = 2.6, g = new T.Group(); g.position.set(LAGER.x, 0, LAGER.z); scene.add(g); shared.lagerGroup = g;
     const floorT = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#6b6f76"; c.fillRect(0, 0, w, h); for (let i = 0; i < 2500; i++) { c.fillStyle = `rgba(${Math.random() < .5 ? 255 : 0},${Math.random() < .5 ? 255 : 0},${Math.random() < .5 ? 255 : 0},.05)`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } c.strokeStyle = "rgba(0,0,0,.25)"; c.lineWidth = 2; c.strokeRect(0, 0, w, h); });
@@ -3170,7 +3170,7 @@ const Room = (() => {
   function pascalJobStart() {
     const P = pascal, route = [];
     if (P.z < -4.5) route.push([2.4, -4.8], [2.4, -1.0]); else if (P.x < -4) route.push([-3.5, .6]);
-    route.push([5.6, LAGER.z], [7.3, LAGER.z], [8.7, LAGER.z], [LAGER.x + .3, LAGER.z + .5]);
+    route.push([7.6, LAGER.z], [9.3, LAGER.z], [10.7, LAGER.z], [LAGER.x + .3, LAGER.z + .5]);
     P.job = { stage: "toLager", path: route, t: 0 };
   }
   function pascalJobTick(dt, t) {
@@ -3186,9 +3186,9 @@ const Room = (() => {
       want = 0; J.t -= dt; P.sort = 1;
       if (J.t < 3) dvds.forEach((d, k) => d.visible = k < (3 - J.t) * 2.2);
       if (J.t <= 0) { dvds.forEach(d => d.visible = true); const us = units.filter(u => u && u.g && !u.busy); J.u = us[Math.floor(Math.random() * us.length)];
-        if (!J.u) { J.stage = "home"; J.path = [[8.7, LAGER.z], [7.3, LAGER.z], [5.6, LAGER.z], [1.0, .5]]; return; }
+        if (!J.u) { J.stage = "home"; J.path = [[10.7, LAGER.z], [9.3, LAGER.z], [7.6, LAGER.z], [1.0, .5]]; return; }
         const ux = J.u.g.position.x, uz = J.u.g.position.z, f = Math.abs(ux) > Math.abs(uz) ? [ux - Math.sign(ux) * 1.2, uz] : [ux, uz - Math.sign(uz) * 1.2];
-        J.path = [[8.7, LAGER.z], [7.3, LAGER.z], [5.6, LAGER.z]]; if (f[0] < 4.5) J.path.push([1.0, .5]); J.path.push(f); J.stage = "toShelf"; }
+        J.path = [[10.7, LAGER.z], [9.3, LAGER.z], [7.6, LAGER.z]]; if (f[0] < 6.5) J.path.push([1.0, .5]); J.path.push(f); J.stage = "toShelf"; }
     } else if (J.stage === "toShelf") { J.stage = "stock"; J.t = 4; }
     else if (J.stage === "stock") {
       want = Math.atan2(J.u.g.position.x - P.x, J.u.g.position.z - P.z); J.t -= dt; P.sort = 1;
@@ -3495,7 +3495,7 @@ const Room = (() => {
     D.g.position.set(D.x, 0, D.z); D.g.rotation.y = D.yaw; D.col.x = D.x; D.col.z = D.z;
   }
   // ---------- WC: eigener Raum hinter der Tür in der linken Wand ----------
-  const WC = { x: -11, z: -2.5 }, WC_DOOR_Z = -2.5, SCREEN_X = 1.75, SCREEN_Z = .8;   // WC grenzt an die linke Ladenwand
+  const WC = { x: -13, z: -2.5 }, WC_DOOR_Z = -2.5, SCREEN_X = 1.75, SCREEN_Z = .8;   // WC grenzt an die linke Ladenwand
   let inWC = false;
   function tileTex(c1, c2, n, grout = "#c8ccd2") {
     return canvasTex(256, 256, (c, w, h) => { const s = w / n; c.fillStyle = grout; c.fillRect(0, 0, w, h);
@@ -3688,7 +3688,7 @@ const Room = (() => {
       s.visible = false; return s;
     };
     const wetIn = mkWet(); wetIn.position.set(.8, 0, .8); wetIn.rotation.y = .6; g.add(wetIn);
-    const wetOut = mkWet(); wetOut.position.set(-6.9, 0, WC_DOOR_Z + 1.0); wetOut.rotation.y = 1.2; const wetHold = new T.Group(); wetHold.add(wetOut); scene.add(wetHold);
+    const wetOut = mkWet(); wetOut.position.set(-8.9, 0, WC_DOOR_Z + 1.0); wetOut.rotation.y = 1.2; const wetHold = new T.Group(); wetHold.add(wetOut); scene.add(wetHold);
     shared.wet = [wetIn, wetOut];
     // WC-Tür im Laden (linke Wand)
     const sd = new T.Group(); sd.position.set(-HALF + .02, 0, WC_DOOR_Z); sd.rotation.y = P / 2; scene.add(sd);
@@ -3898,7 +3898,7 @@ const Room = (() => {
     if (dryT > 0) dryT -= dt;
   }
   // ---------- Alle Figuren gehen ab und zu aufs WC (Kabine oder Urinal), waschen danach die Hände ----------
-  const DOOR_IN = [-6.3, WC_DOOR_Z], DOOR_AT = [-8.45, WC_DOOR_Z];
+  const DOOR_IN = [-8.3, WC_DOOR_Z], DOOR_AT = [-10.45, WC_DOOR_Z];
   const intoWC = o => { const x = o.position.x, z = o.position.z; shared.wcGroup.add(o); o.position.set(x - WC.x, 0, z - WC.z); };
   const outOfWC = o => { const x = o.position.x, z = o.position.z; scene.add(o); o.position.set(x + WC.x, 0, z + WC.z); };
   let wcVisitor = null;
@@ -4736,7 +4736,7 @@ const Room = (() => {
   let yaw = Math.PI, pitch = -0.05, keys = {}, joy = { x: 0, y: 0 }, aimed = null, pickables = [], ray, ndc, releasedAt = 0, sens = 1, glowTex = null;
   let fixedPicks = [], colliders = [], arcade = null, posterGroup = null, popcorn = null, dice = null;
   const pos = { x: 0, z: 0 };
-  const EYE = 1.62, HALF = 8, MARGIN = 1.15;
+  const EYE = 1.62, HALF = 10, MARGIN = 1.15; // Laden: 20 × 20 m
   const CASE_W = 0.27, CASE_H = 0.38, CASE_D = 0.045, PER_ROW = 12, ROWS = 4, UNIT_W = 4.1;
   const BOARD_Y = [0.12, 0.66, 1.2, 1.74];
 
@@ -5320,7 +5320,7 @@ const Room = (() => {
       const sp = spots[spots.length - 1];
       // nur in die schmale Lücke zwischen zwei Regalen, nicht in die Türen
       // nur ein Plakat je Seitenwand – in der schmalen Lücke zwischen zwei Regalen, nie vor einer Tür
-      if (o > 0) { spots.pop(); continue; } sp.z = side === 1 ? -3.5 : 3.3; sp.k = .74;
+      if (o > 0) { spots.pop(); continue; } sp.z = side === 1 ? -3.58 : 3.33; sp.k = side === 1 ? .74 : .62;
     }
     const frameM = new T.MeshLambertMaterial({ color: 0xd4a94a });
     spots.forEach((s, i) => {
@@ -5358,7 +5358,7 @@ const Room = (() => {
 
   // ---------- Kinosaal ----------
   // Der Saal liegt weit weg vom Laden (z = -40); eine Tür in der Videothek bringt dich hin.
-  const CIN = { x: -2.45, z: -16 }, CW = 6, CD = 8;   // Kino grenzt an die Rückwand (hinten oben ist der Eingang)            // halbe Breite/Tiefe
+  const CIN = { x: -2.45, z: -18 }, CW = 6, CD = 8;   // Kino grenzt an die Rückwand (hinten oben ist der Eingang)            // halbe Breite/Tiefe
   const STORE_DOOR = { x: 2.05, z: -HALF + .02 }, EXIT_DOOR = { x: -2.05, z: HALF - .02 }, CIN_DOOR = { x: 4.5, z: CD - .02 };
   let inCinema = false, seated = null, hemi = null, cinLights = [], cinScreen = null, cinScreenTex = null, lightsDim = false;
   let C3 = null, cssRenderer = null, cssScene = null, screenMat = null, holeMat = null, screenGlow = null, eyeY = 1.62, scrPointFn = null, kinoActive = false;
@@ -6252,7 +6252,7 @@ const Room = (() => {
   function slots() {
     const out = [], d = HALF - .35;
     // Vorder- und Rückwand: Regale zusammengerückt, damit vor Kino-Tür und Ausgang 2 m Platz frei bleiben
-    for (let side = 0; side < 4; side++) for (const o of (side === 0 ? [-5.3, -1.0, 5.1] : side === 1 ? [-5.85, -1.15, 5.85] : side === 2 ? [5.55, -.6, -5.35] : [5.85, -1.0, -5.6])) { // links/rechts: Regale zur Seite gerückt, damit vor WC- und Lagertür Platz ist
+    for (let side = 0; side < 4; side++) for (const o of (side === 0 ? [-6.0, -1.55, 5.65] : side === 1 ? [-6.1, -1.05, 6.1] : side === 2 ? [-6.0, -1.55, 5.65] : [6.1, -1.05, -5.6])) { // je 3 m frei vor jeder Tür // links/rechts: Regale zur Seite gerückt, damit vor WC- und Lagertür Platz ist
       const a = side * Math.PI / 2;
       // Wand vor dir (z=-d), rechts (x=d), hinten (z=d), links (x=-d)
       const x = side === 0 ? o : side === 1 ? d : side === 2 ? -o : -d;
@@ -6757,7 +6757,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "103";
+const APP_VERSION = "104";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
