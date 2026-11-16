@@ -85,6 +85,12 @@
   .poster .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
   .badge { box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .badge { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; color: #0f1115; }
+  .flag { display: inline-block; width: 15px; height: 10px; border-radius: 2px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255,255,255,.18); font-style: normal; }
+  .flag.de { background: linear-gradient(#111 0 33.3%, #dd0000 33.3% 66.6%, #ffce00 66.6%); }
+  .flag.ja { background: radial-gradient(circle at 50% 50%, #bc002d 0 28%, #fff 30%); }
+  .flag.none { background: #3a404d; color: #9aa3b5; font-size: 8px; line-height: 10px; text-align: center; font-weight: 800; }
+  .dubi { background: none; border: 0; padding: 2px 6px 2px 0; margin: 0; cursor: pointer; line-height: 1; }
+  .dubi:hover .flag { box-shadow: 0 0 0 2px var(--accent); }
   .dubtag { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; margin: 2px 0 4px; }
   .dubtag.de { background: rgba(250,204,21,.14); color: #fde68a; } .dubtag.ja { background: rgba(244,63,94,.13); color: #fecdd3; }
   .dubtag span { opacity: .55; font-size: 10px; }
@@ -1158,7 +1164,7 @@ const Local = (() => {
     if (!src.seasons) return false;
     Object.assign(dst, { seasons: src.seasons, lastAired: src.lastAired, nextAir: src.nextAir, showState: src.showState });
     const [w, a] = progress(dst);
-    if (dst.status === "gesehen" && w > 0 && w < a) { dst.status = "geplant"; dst.modified = bump(dst.modified); return true; }
+    if (dst.status === "gesehen" && w > 0 && w < a) { dst.status = "schaue"; dst.modified = bump(dst.modified); return true; }
     return false;
   }
   const clone = o => JSON.parse(JSON.stringify(o));
@@ -1183,6 +1189,7 @@ const Local = (() => {
       for (const [k, v] of Object.entries(b || {})) {
         if (["status", "kind", "note", "manualWhere"].includes(k)) it[k] = v;
         if (k === "dub" && ["", "de", "ja"].includes(v)) it.dub = v;
+        if (k === "dubEps") { const [sn, en] = String(v).split(":"); it.dubEps = it.dubEps || {}; if (en === "" || en == null) delete it.dubEps[sn]; else if (+en >= 0) it.dubEps[sn] = +en; }
         if (k === "title" && String(v).trim()) it.title = String(v).trim();
       }
       logProg(it, 0, 0, old); it.modified = bump(it.modified); save(); return it;
@@ -1396,11 +1403,19 @@ function picker(el, selected, onChange, allowCustom = true) {
 
 /* ---------- Anime-Sprache ---------- */
 const dubOf = i => i.kind !== "anime" ? "" : (i.dub || (i.dubAuto === "?" ? "" : i.dubAuto) || "");
-const DUB = { de: "🇩🇪 Deutsche Synchro", ja: "🇯🇵 Nur Japanisch (OmU)" };
+const DUB = { de: `<i class="flag de"></i> Deutsche Synchro`, ja: `<i class="flag ja"></i> Nur Japanisch (OmU)` };
 function dubTag(i) {
   const d = dubOf(i); if (!d) return "";
   return `<div class="dubtag ${d}" title="${i.dub ? "Von dir festgelegt" : "Automatisch geschätzt (deutsche Trailer bei TMDB) – im Titel änderbar"}">${DUB[d]}${i.dub ? "" : " <span>?</span>"}</div>`;
 }
+// Sprache einer einzelnen Folge: Staffel-Angabe „Synchro bis Folge N“, sonst die Angabe für den ganzen Anime
+function epDub(i, sn, en) {
+  if (i.kind !== "anime") return "";
+  const lim = i.dubEps && i.dubEps[sn];
+  if (lim != null) return en <= lim ? "de" : "ja";
+  return dubOf(i);
+}
+const flag = d => d ? `<i class="flag ${d}"></i>` : "";
 /* ---------- Liste ---------- */
 function renderTabs() {
   const cnt = k => items.filter(i => k === "all" || i.kind === k).length;
@@ -1781,7 +1796,7 @@ function renderEps() {
       <div class="shead">
         <input type="checkbox" class="scheck" ${full ? "checked" : ""} ${ai ? "" : "disabled"} title="Ganze Staffel als gesehen markieren">
         <div class="sinfo"><span class="sname">${label}</span>
-          <span class="smeta">${[s.airDate ? s.airDate.slice(0, 4) : "", durText(it, s)].filter(Boolean).join(" · ")}</span></div>
+          <span class="smeta">${[s.airDate ? s.airDate.slice(0, 4) : "", durText(it, s), seasonDubText(it, s)].filter(Boolean).join(" · ")}</span></div>
         <span class="spacer"></span>
         <div class="bar small"><i style="width:${ai ? Math.round(w / ai * 100) : 0}%"></i></div>
         <span class="scount">${w}/${ai}${s.episodeCount > ai ? ` <span class="hint">(+${s.episodeCount - ai})</span>` : ""}</span>
@@ -1812,9 +1827,23 @@ function renderEps() {
     if (openSeasons.has(s) && !epCache[s]) loadSeason(s).then(() => renderEps());
   });
   box.querySelectorAll(".ep input").forEach(cb => cb.onchange = () => markEp(+cb.dataset.s, [+cb.dataset.e], cb.checked));
+  box.querySelectorAll(".dubi").forEach(b => b.onclick = e => {
+    e.preventDefault(); e.stopPropagation();
+    const sn = +b.dataset.s, en = +b.dataset.e, d = epDub(current, sn, en);
+    // 🇩🇪 angeklickt → ab dieser Folge nur Japanisch; 🇯🇵/? angeklickt → deutsche Synchro bis einschließlich dieser Folge
+    update({ dubEps: `${sn}:${d === "de" ? en - 1 : en}` }).then(() => renderEps());
+  });
   box.querySelectorAll(".upto").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); watchedReq({ mode: "upTo", season: +b.dataset.s, episode: +b.dataset.e }); });
 }
 
+function seasonDubText(it, s) {
+  if (it.kind !== "anime") return "";
+  const lim = it.dubEps && it.dubEps[s.number], cnt = s.episodeCount || 0;
+  if (lim == null) { const d = dubOf(it); return d ? `${flag(d)} ${d === "de" ? "Synchro" : "OmU"}` : ""; }
+  if (lim <= 0) return `${flag("ja")} nur OmU`;
+  if (cnt && lim >= cnt) return `${flag("de")} Synchro`;
+  return `${flag("de")} bis F. ${lim} · ${flag("ja")} ab F. ${lim + 1}`;
+}
 function episodesHtml(s) {
   const it = current, eps = epCache[s.number];
   if (eps === undefined) return `<div class="hint" style="padding:10px 14px"><span class="spin"></span> Lade Folgen …</div>`;
@@ -1825,7 +1854,7 @@ function episodesHtml(s) {
     return `<label class="ep ${seen ? "seen" : ""} ${future ? "future" : ""}">
       <input type="checkbox" data-s="${s.number}" data-e="${e.number}" ${seen ? "checked" : ""} ${future ? "disabled" : ""}>
       <span class="enum">E${String(e.number).padStart(2, "0")}</span>
-      <span class="ename" title="${esc(e.overview)}">${esc(e.name || "Folge " + e.number)}</span>
+      <span class="ename" title="${esc(e.overview)}">${it.kind === "anime" ? `<button class="dubi" data-s="${s.number}" data-e="${e.number}" title="${epDub(it, s.number, e.number) === "de" ? "Deutsche Synchro – klicken: ab hier nur Japanisch" : epDub(it, s.number, e.number) === "ja" ? "Nur Japanisch (OmU) – klicken: deutsche Synchro bis hier" : "Sprache unbekannt – klicken: deutsche Synchro bis hier"}">${flag(epDub(it, s.number, e.number)) || `<i class="flag none">?</i>`}</button>` : ""}${esc(e.name || "Folge " + e.number)}</span>
       <span class="edate">${future ? (e.airDate ? "ab " + fmtDate(e.airDate) : "angekündigt") : fmtDate(e.airDate)}${e.runtime ? ` · ${e.runtime} Min.` : ""}</span>
       ${future || s.number === 0 ? "" : `<button class="upto" data-s="${s.number}" data-e="${e.number}" title="Alle Folgen bis hier als gesehen markieren">bis hier ✓</button>`}
     </label>`;
@@ -1871,7 +1900,7 @@ function renderDetail() {
           <div class="seg" id="dStatus">${Object.entries(STATUS).map(([k,l]) => `<button data-s="${k}" class="${i.status===k?"active":""}">${l}</button>`).join("")}</div>
         </div>
         ${i.mediaType === "movie" ? `<div class="rtline">⏱ Laufzeit: <b>${i.runtime ? fmtDur(i.runtime) : settings.apiKey && i.tmdbId ? `<span class="spin"></span>` : "unbekannt"}</b>${i.runtime >= 60 ? ` <span class="hint">(${i.runtime} Min.)</span>` : ""}</div>` : ""}
-        ${i.kind === "anime" ? `<div class="dubline"><span>🗣 Sprache:</span><div class="seg" id="dDub">${[["", `Automatisch${i.dubAuto && i.dubAuto !== "?" ? ` (${i.dubAuto === "de" ? "🇩🇪 Synchro" : "🇯🇵 OmU"})` : i.tmdbId && settings.apiKey && !i.dubAuto ? " (prüfe …)" : " (unbekannt)"}`], ["de", "🇩🇪 Deutsch"], ["ja", "🇯🇵 Nur Japanisch"]].map(([k, l]) => `<button data-d="${k}" class="${(i.dub || "") === k ? "active" : ""}">${l}</button>`).join("")}</div></div>` : ""}
+        ${i.kind === "anime" ? `<div class="dubline"><span>🗣 Sprache:</span><div class="seg" id="dDub">${[["", `Automatisch${i.dubAuto && i.dubAuto !== "?" ? ` (${i.dubAuto === "de" ? `<i class="flag de"></i> Synchro` : `<i class="flag ja"></i> OmU`})` : i.tmdbId && settings.apiKey && !i.dubAuto ? " (prüfe …)" : " (unbekannt)"}`], ["de", `<i class="flag de"></i> Deutsch`], ["ja", `<i class="flag ja"></i> Nur Japanisch`]].map(([k, l]) => `<button data-d="${k}" class="${(i.dub || "") === k ? "active" : ""}">${l}</button>`).join("")}</div></div>` : ""}
         ${i.overview ? `<p class="overview">${esc(i.overview)}</p>` : ""}
         <h3 style="margin:0 0 10px;font-size:15px">📺 Wo kann ich das schauen?</h3>
         ${where}
@@ -6757,7 +6786,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "105";
+const APP_VERSION = "107";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
