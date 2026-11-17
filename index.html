@@ -1488,9 +1488,9 @@ const Intro = (() => {
     for (const k of ["anime", "serie", "film", "anime", "serie", "film", "anime", "serie"]) { const i = pool.find(x => x.kind === k && !seen.has(x.id)); if (i) { seen.add(i.id); pick.push(i); } }
     const out = [];
     await Promise.all(pick.map(async i => { try { const d = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}`, language: "de-DE" })); if (d.backdrop_path) out.push({ img: "https://image.tmdb.org/t/p/w1280" + d.backdrop_path, title: i.title, kind: i.kind, mt: i.mediaType, id: i.tmdbId }); } catch {} }));
-    if (out.length < 6) {
+    if (out.length < 11) {
       try { const t = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: "/trending/all/week", language: "de-DE" }));
-        for (const r of (t.results || [])) { if (out.length >= 7) break; if (!r.backdrop_path || (r.media_type !== "tv" && r.media_type !== "movie")) continue;
+        for (const r of (t.results || [])) { if (out.length >= 11) break; if (!r.backdrop_path || (r.media_type !== "tv" && r.media_type !== "movie")) continue;
           const kind = (r.genre_ids || []).includes(16) && r.original_language === "ja" ? "anime" : r.media_type === "tv" ? "serie" : "film";
           out.push({ img: "https://image.tmdb.org/t/p/w1280" + r.backdrop_path, title: r.title || r.name, kind, mt: r.media_type, id: r.id }); } } catch {}
     }
@@ -1501,6 +1501,7 @@ const Intro = (() => {
       const best = yt.find(x => x.iso_639_1 === "de" && x.type === "Trailer") || yt.find(x => x.type === "Trailer") || yt[0];
       if (best) sc.yt = best.key;
     } catch {} }));
+    out.sort((a, b) => (b.yt ? 1 : 0) - (a.yt ? 1 : 0)); // Titel mit Trailer zuerst (für die Clips)
     // Reihenfolge mischen, aber Arten abwechseln
     const byK = { anime: [], serie: [], film: [] }; out.forEach(s => (byK[s.kind] || byK.film).push(s));
     const mixed = []; while (mixed.length < out.length) for (const k of ["anime", "film", "serie"]) if (byK[k].length) mixed.push(byK[k].shift());
@@ -1543,21 +1544,24 @@ const Intro = (() => {
     if (!scenes.length && typeof items !== "undefined") scenes = items.filter(i => i.poster).slice(0, 6).map(i => ({ img: i.poster.replace("/w185/", "/w500/"), title: i.title, kind: i.kind, poster: true }));
     scenes = await preload(scenes.slice(0, 6), 1400);
     if (stop) return;
-    // Clips vorbereiten: bis zu 5 Trailer laufen stumm im Hintergrund an, jeder wird kurz eingeblendet
+    // Clips vorbereiten: alle Trailer laufen stumm im Hintergrund an; gezeigt wird nur, was wirklich läuft
     const clips = [], stage = el.querySelector(".in-stage");
+    const isLive = c => c && !c.failed && c.state === 1 && performance.now() - c.since > 350;
     if (clipsOn() && navigator.onLine !== false && scenes.some(s => s.yt) && await loadYT() && !stop) {
-      scenes.filter(s => s.yt).slice(0, 4).forEach((s, n) => {
+      scenes.filter(s => s.yt).slice(0, 6).forEach((s, n) => {
         const wrap = document.createElement("div"); wrap.className = "in-clip"; const holder = document.createElement("div"); wrap.appendChild(holder); stage.appendChild(wrap);
-        const c = { s, wrap, playing: false, player: null }; s.clip = c; clips.push(c);
+        const c = { s, wrap, state: -1, since: 0, player: null }; s.clip = c; clips.push(c);
+        const setState = st => { if (st !== c.state) { c.state = st; c.since = performance.now(); } if (st !== 1) wrap.classList.remove("on"); }; // Pause/Laden → sofort ausblenden (keine Pause-Knöpfe im Bild)
         try {
           c.player = new YT.Player(holder, { videoId: s.yt, width: 1280, height: 720, host: "https://www.youtube-nocookie.com",
-            playerVars: { autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, start: 25 + n * 7, origin: location.origin },
-            events: { onReady: e => { try { e.target.mute(); e.target.playVideo(); } catch {} }, onStateChange: e => { if (e.data === 1) c.playing = true; if (e.data === 0) c.playing = false; }, onError: () => { c.playing = false; c.failed = true; } } });
+            playerVars: { autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, start: 20 + n * 6, origin: location.origin },
+            events: { onReady: e => { try { e.target.mute(); e.target.playVideo(); } catch {} }, onStateChange: e => setState(e.data), onError: () => { c.failed = true; wrap.classList.remove("on"); } } });
         } catch { c.failed = true; }
       });
-      // kurz warten, bis der erste Clip läuft (höchstens 3,5 s)
+      // warten, bis genug Clips laufen (2 Stück oder alle, höchstens 5 s)
       el.classList.add("wait");
-      for (let w = 0; w < 35 && !stop && !clips.some(c => c.playing) && !clips.every(c => c.failed); w++) await later(100);
+      const need = Math.min(2, clips.length);
+      for (let w = 0; w < 50 && !stop && clips.filter(isLive).length < need && !clips.every(c => c.failed || isLive(c)); w++) await later(100);
       el.classList.remove("wait");
     }
     if (stop) return;
@@ -1565,12 +1569,17 @@ const Intro = (() => {
     el._kill = killClips;
     boom(0); el.classList.add("go");
     const shots = [el.querySelector(".in-shot.a"), el.querySelector(".in-shot.b")], cap = el.querySelector(".in-cap"), fl = el.querySelector(".in-flash");
-    const DUR = scenes.length > 5 ? 820 : 1000;
-    for (let k = 0; k < scenes.length && !stop; k++) {
-      const s = scenes[k], sh = shots[k % 2], other = shots[(k + 1) % 2];
-      clips.forEach(c => c.wrap.classList.remove("on"));
-      const live = s.clip && s.clip.playing;
-      if (live) s.clip.wrap.classList.add("on");
+    const DUR = scenes.length > 5 ? 820 : 1000, MAXCLIPS = 4;
+    const used = new Set(); let shown = 0;
+    const slots = Math.min(6, scenes.length);
+    for (let k = 0; k < slots && !stop; k++) {
+      // bevorzugt einen laufenden Clip, sonst ein Standbild (zuerst Titel ohne Trailer)
+      let c = shown < MAXCLIPS ? clips.find(x => !used.has(x.s) && isLive(x)) : null;
+      const s = c ? c.s : (scenes.find(x => !used.has(x) && (!x.clip || x.clip.failed)) || scenes.find(x => !used.has(x)));
+      if (!s) break; used.add(s); if (c) shown++;
+      const sh = shots[k % 2], other = shots[(k + 1) % 2];
+      clips.forEach(x => x.wrap.classList.remove("on"));
+      if (c) c.wrap.classList.add("on");
       sh.style.backgroundImage = `url("${s.img}")`; sh.classList.toggle("poster", !!s.poster);
       sh.style.setProperty("--x0", (k % 2 ? -3 : 3) + "%"); sh.style.setProperty("--x1", (k % 2 ? 3 : -3) + "%");
       sh.classList.remove("on"); void sh.offsetWidth; sh.classList.add("on"); other.classList.remove("on");
@@ -1579,7 +1588,7 @@ const Intro = (() => {
       cap.querySelector(".in-title").textContent = s.title || "";
       cap.classList.remove("on"); void cap.offsetWidth; cap.classList.add("on");
       whoosh(0); if (k % 2 === 0) tone(0, 55, .5, { gain: .22, to: 45 });
-      await later(live ? 2200 : DUR);
+      await later(c ? 2200 : DUR);
     }
     clips.forEach(c => c.wrap.classList.remove("on"));
     if (stop) return;
@@ -6979,7 +6988,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "109";
+const APP_VERSION = "110";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
