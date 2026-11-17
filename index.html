@@ -1583,16 +1583,10 @@ const Intro = (() => {
     boom(0); el.classList.add("go");
     const shots = [el.querySelector(".in-shot.a"), el.querySelector(".in-shot.b")], cap = el.querySelector(".in-cap"), fl = el.querySelector(".in-flash");
     const DUR = scenes.length > 5 ? 820 : 1000;
-    const used = new Set(); let shown = 0;
-    const slots = Math.min(clips.length ? 5 : 6, scenes.length);
+    const used = new Set(); let shown = 0, k = 0;
     const setCap = s => { cap.querySelector(".in-kind").textContent = KL[s.kind] || ""; cap.querySelector(".in-kind").className = "in-kind " + (s.kind || "");
       cap.querySelector(".in-title").textContent = s.title || ""; cap.classList.remove("on", "long"); void cap.offsetWidth; cap.classList.add("on"); };
-    for (let k = 0; k < slots && !stop; k++) {
-      // erst kurz auf einen laufenden Clip warten, sonst Standbild
-      let c = null;
-      if (shown < MAXCLIPS && clips.length) for (let w = 0; w < 8 && !stop && !(c = clips.find(x => !used.has(x.s) && live(x))); w++) await later(100);
-      const s = c ? c.s : (scenes.find(x => !used.has(x) && (!x.clip || x.clip.failed)) || scenes.find(x => !used.has(x)));
-      if (!s) break; used.add(s); if (c) shown++;
+    const showScene = async (s, c) => {
       const sh = shots[k % 2], other = shots[(k + 1) % 2];
       clips.forEach(x => x.wrap.classList.remove("on"));
       sh.style.backgroundImage = `url("${s.img}")`; sh.classList.toggle("poster", !!s.poster);
@@ -1602,8 +1596,17 @@ const Intro = (() => {
       fl.classList.remove("on"); void fl.offsetWidth; fl.classList.add("on");
       setCap(s); if (c) cap.classList.add("long");
       whoosh(0); if (k % 2 === 0) tone(0, 55, .5, { gain: .22, to: 45 });
-      await later(c ? CLIP_MS : DUR);
+      k++; await later(c ? CLIP_MS : DUR);
+    };
+    // Nur Clips: jeder Platz wartet bis zu 2 s auf einen laufenden Trailer – Titel ohne laufenden Clip werden übersprungen
+    while (clips.length && shown < MAXCLIPS && !stop) {
+      let c = null;
+      for (let w = 0; w < 20 && !stop && !(c = clips.find(x => !used.has(x.s) && live(x))); w++) await later(100);
+      if (!c) break;
+      used.add(c.s); shown++; await showScene(c.s, c);
     }
+    // Standbilder nur, wenn gar kein Clip lief (z. B. ohne Internet)
+    if (!shown) for (const s of scenes.slice(0, 6)) { if (stop) break; await showScene(s, null); }
     el.classList.remove("clipshow");
     clips.forEach(c => c.wrap.classList.remove("on"));
     if (stop) return;
@@ -7003,7 +7006,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "111";
+const APP_VERSION = "1.12";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
