@@ -93,6 +93,12 @@
   #intro .in-shot.poster { background-size: contain; filter: saturate(1.1) blur(0); }
   #intro .in-shot.on { opacity: 1; animation: inKen 1.6s cubic-bezier(.2,.6,.2,1) forwards; }
   @keyframes inKen { from { transform: scale(1.18) translateX(var(--x0, 0)); } to { transform: scale(1.04) translateX(var(--x1, 0)); } }
+  #intro .in-clip { position: absolute; inset: 0; opacity: 0; transition: opacity .25s ease; overflow: hidden; pointer-events: none; z-index: 1; }
+  #intro .in-clip.on { opacity: 1; }
+  #intro .in-clip iframe { position: absolute; left: 50%; top: 50%; width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.78vh; transform: translate(-50%, -50%) scale(1.35); border: 0; pointer-events: none; }
+  #intro.wait .in-bar { height: 11vh; }
+  #intro.wait::after { content: "🎬"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 34px; opacity: .5; animation: inPulse 1s ease-in-out infinite; }
+  @keyframes inPulse { 50% { opacity: .15; transform: translate(-50%, -50%) scale(.85); } }
   #intro .in-vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); pointer-events: none; }
   #intro .in-grain { position: absolute; inset: -50%; opacity: .07; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: inGrain .5s steps(4) infinite; }
   @keyframes inGrain { 0% { transform: translate(0,0); } 25% { transform: translate(-5%,3%); } 50% { transform: translate(4%,-4%); } 75% { transform: translate(-3%,-2%); } }
@@ -982,7 +988,8 @@
           <option value="US">USA</option><option value="GB">Großbritannien</option><option value="NL">Niederlande</option>
           <option value="FR">Frankreich</option><option value="IT">Italien</option><option value="ES">Spanien</option><option value="PL">Polen</option>
         </select></div>
-      <div class="field"><label class="chk"><input type="checkbox" id="sIntro"> 🎬 Intro beim Start abspielen (Szenen aus deinen Animes, Serien und Filmen)</label></div>
+      <div class="field"><label class="chk"><input type="checkbox" id="sIntro"> 🎬 Intro beim Start abspielen (Szenen aus deinen Animes, Serien und Filmen)</label>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="sIntroClips"> 🎞 Mit kurzen Clips aus den Trailern (braucht Internet)</label></div>
       <div class="hint" id="sFile"></div>
       <div class="syncsec">
         <h3>📱 Handy & Abgleich</h3>
@@ -1480,13 +1487,20 @@ const Intro = (() => {
     const pool = items.filter(i => i.tmdbId && i.mediaType).sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || Math.random() - .5);
     for (const k of ["anime", "serie", "film", "anime", "serie", "film", "anime", "serie"]) { const i = pool.find(x => x.kind === k && !seen.has(x.id)); if (i) { seen.add(i.id); pick.push(i); } }
     const out = [];
-    await Promise.all(pick.map(async i => { try { const d = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}`, language: "de-DE" })); if (d.backdrop_path) out.push({ img: "https://image.tmdb.org/t/p/w1280" + d.backdrop_path, title: i.title, kind: i.kind }); } catch {} }));
+    await Promise.all(pick.map(async i => { try { const d = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}`, language: "de-DE" })); if (d.backdrop_path) out.push({ img: "https://image.tmdb.org/t/p/w1280" + d.backdrop_path, title: i.title, kind: i.kind, mt: i.mediaType, id: i.tmdbId }); } catch {} }));
     if (out.length < 6) {
       try { const t = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: "/trending/all/week", language: "de-DE" }));
         for (const r of (t.results || [])) { if (out.length >= 7) break; if (!r.backdrop_path || (r.media_type !== "tv" && r.media_type !== "movie")) continue;
           const kind = (r.genre_ids || []).includes(16) && r.original_language === "ja" ? "anime" : r.media_type === "tv" ? "serie" : "film";
-          out.push({ img: "https://image.tmdb.org/t/p/w1280" + r.backdrop_path, title: r.title || r.name, kind }); } } catch {}
+          out.push({ img: "https://image.tmdb.org/t/p/w1280" + r.backdrop_path, title: r.title || r.name, kind, mt: r.media_type, id: r.id }); } } catch {}
     }
+    // kurze Clips: offizieller YouTube-Trailer zu jedem Titel (deutsch bevorzugt)
+    await Promise.all(out.map(async sc => { try {
+      const v = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${sc.mt}/${sc.id}/videos`, language: "de-DE", include_video_language: "de,en,ja,null" }));
+      const yt = (v.results || []).filter(x => x.site === "YouTube" && /Trailer|Teaser|Opening|Clip/i.test(x.type || ""));
+      const best = yt.find(x => x.iso_639_1 === "de" && x.type === "Trailer") || yt.find(x => x.type === "Trailer") || yt[0];
+      if (best) sc.yt = best.key;
+    } catch {} }));
     // Reihenfolge mischen, aber Arten abwechseln
     const byK = { anime: [], serie: [], film: [] }; out.forEach(s => (byK[s.kind] || byK.film).push(s));
     const mixed = []; while (mixed.length < out.length) for (const k of ["anime", "film", "serie"]) if (byK[k].length) mixed.push(byK[k].shift());
@@ -1495,6 +1509,15 @@ const Intro = (() => {
     mixed.forEach(s => { const im = new Image(); im.src = s.img; });
   }
 
+  // YouTube-IFrame-API einmal laden (für die Clips)
+  let ytApi = null;
+  function loadYT() {
+    if (window.YT && YT.Player) return Promise.resolve(true);
+    if (!ytApi) ytApi = new Promise(res => { const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(true); };
+      const sc = document.createElement("script"); sc.src = "https://www.youtube.com/iframe_api"; sc.onerror = () => res(false); document.head.appendChild(sc); });
+    return Promise.race([ytApi, new Promise(r => setTimeout(() => r(false), 3000))]);
+  }
+  const clipsOn = () => { try { return localStorage.getItem("watchlist-intro-clips") !== "off"; } catch { return true; } };
   let running = false;
   async function play(waitForFresh) {
     if (running || !enabled() || location.hash.length > 1 || location.search.includes("share_")) return;
@@ -1511,20 +1534,43 @@ const Intro = (() => {
     let stop = false, timers = [];
     const later = (ms, f) => new Promise(r => timers.push(setTimeout(() => { if (!stop) f && f(); r(); }, ms)));
     const end = () => { if (stop) return; stop = true; timers.forEach(clearTimeout); el.classList.add("out"); if (master) try { master.gain.setTargetAtTime(0, ac.currentTime, .15); } catch {}
-      setTimeout(() => { el.remove(); try { ac && ac.close(); } catch {} running = false; }, 650); removeEventListener("keydown", key, true); };
+      setTimeout(() => { try { el._kill && el._kill(); } catch {} el.remove(); try { ac && ac.close(); } catch {} running = false; }, 650); removeEventListener("keydown", key, true); };
     const key = e => { if (["Escape", "Enter", " ", "Space"].includes(e.key) || e.code === "Space") { e.preventDefault(); e.stopPropagation(); end(); } };
     addEventListener("keydown", key, true); el.querySelector(".in-skip").onclick = end; el.addEventListener("dblclick", end);
 
     let scenes = cached();
     if (!scenes.length && waitForFresh) { await Promise.race([waitForFresh.then(refresh).catch(() => {}), later(2200)]); scenes = cached(); }
     if (!scenes.length && typeof items !== "undefined") scenes = items.filter(i => i.poster).slice(0, 6).map(i => ({ img: i.poster.replace("/w185/", "/w500/"), title: i.title, kind: i.kind, poster: true }));
-    scenes = await preload(scenes.slice(0, 7), 1400);
+    scenes = await preload(scenes.slice(0, 6), 1400);
     if (stop) return;
+    // Clips vorbereiten: bis zu 5 Trailer laufen stumm im Hintergrund an, jeder wird kurz eingeblendet
+    const clips = [], stage = el.querySelector(".in-stage");
+    if (clipsOn() && navigator.onLine !== false && scenes.some(s => s.yt) && await loadYT() && !stop) {
+      scenes.filter(s => s.yt).slice(0, 4).forEach((s, n) => {
+        const wrap = document.createElement("div"); wrap.className = "in-clip"; const holder = document.createElement("div"); wrap.appendChild(holder); stage.appendChild(wrap);
+        const c = { s, wrap, playing: false, player: null }; s.clip = c; clips.push(c);
+        try {
+          c.player = new YT.Player(holder, { videoId: s.yt, width: 1280, height: 720, host: "https://www.youtube-nocookie.com",
+            playerVars: { autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, start: 25 + n * 7, origin: location.origin },
+            events: { onReady: e => { try { e.target.mute(); e.target.playVideo(); } catch {} }, onStateChange: e => { if (e.data === 1) c.playing = true; if (e.data === 0) c.playing = false; }, onError: () => { c.playing = false; c.failed = true; } } });
+        } catch { c.failed = true; }
+      });
+      // kurz warten, bis der erste Clip läuft (höchstens 3,5 s)
+      el.classList.add("wait");
+      for (let w = 0; w < 35 && !stop && !clips.some(c => c.playing) && !clips.every(c => c.failed); w++) await later(100);
+      el.classList.remove("wait");
+    }
+    if (stop) return;
+    const killClips = () => clips.forEach(c => { try { c.player && c.player.destroy(); } catch {} c.wrap.remove(); });
+    el._kill = killClips;
     boom(0); el.classList.add("go");
     const shots = [el.querySelector(".in-shot.a"), el.querySelector(".in-shot.b")], cap = el.querySelector(".in-cap"), fl = el.querySelector(".in-flash");
     const DUR = scenes.length > 5 ? 820 : 1000;
     for (let k = 0; k < scenes.length && !stop; k++) {
       const s = scenes[k], sh = shots[k % 2], other = shots[(k + 1) % 2];
+      clips.forEach(c => c.wrap.classList.remove("on"));
+      const live = s.clip && s.clip.playing;
+      if (live) s.clip.wrap.classList.add("on");
       sh.style.backgroundImage = `url("${s.img}")`; sh.classList.toggle("poster", !!s.poster);
       sh.style.setProperty("--x0", (k % 2 ? -3 : 3) + "%"); sh.style.setProperty("--x1", (k % 2 ? 3 : -3) + "%");
       sh.classList.remove("on"); void sh.offsetWidth; sh.classList.add("on"); other.classList.remove("on");
@@ -1533,8 +1579,9 @@ const Intro = (() => {
       cap.querySelector(".in-title").textContent = s.title || "";
       cap.classList.remove("on"); void cap.offsetWidth; cap.classList.add("on");
       whoosh(0); if (k % 2 === 0) tone(0, 55, .5, { gain: .22, to: 45 });
-      await later(DUR);
+      await later(live ? 2200 : DUR);
     }
+    clips.forEach(c => c.wrap.classList.remove("on"));
     if (stop) return;
     // Logo
     shots.forEach(s => s.classList.remove("on")); cap.classList.remove("on");
@@ -1542,7 +1589,8 @@ const Intro = (() => {
     await later(2300);
     end();
   }
-  return { play, refresh, enabled, setEnabled };
+  const setClips = on => { try { localStorage.setItem("watchlist-intro-clips", on ? "on" : "off"); } catch {} };
+  return { play, refresh, enabled, setEnabled, clipsOn, setClips };
 })();
 /* ---------- Anime-Sprache ---------- */
 const dubOf = i => i.kind !== "anime" ? "" : (i.dub || (i.dubAuto === "?" ? "" : i.dubAuto) || "");
@@ -2108,6 +2156,7 @@ function openSettings() {
   if (MODE === "local") $("#sFile").innerHTML = "Deine Liste ist auf diesem Handy gespeichert" + (Sync.token ? " und wird mit deinem PC abgeglichen." : ".");
   getMine = picker($("#sMine"), settings.myServices || [], sel => saveQuick({ myServices: sel }), false);
   $("#sRegion").onchange = e => saveQuick({ region: e.target.value }, true);
+  $("#sIntroClips").checked = Intro.clipsOn(); $("#sIntroClips").onchange = e => Intro.setClips(e.target.checked);
   $("#sIntro").checked = Intro.enabled(); $("#sIntro").onchange = e => { Intro.setEnabled(e.target.checked); toast(e.target.checked ? "🎬 Intro an" : "Intro aus"); };
   renderSyncSettings(); Sync.status();
   $("#ovSettings").classList.add("open");
@@ -6930,7 +6979,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "108";
+const APP_VERSION = "109";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
