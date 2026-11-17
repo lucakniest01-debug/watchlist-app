@@ -93,8 +93,13 @@
   #intro .in-shot.poster { background-size: contain; filter: saturate(1.1) blur(0); }
   #intro .in-shot.on { opacity: 1; animation: inKen 1.6s cubic-bezier(.2,.6,.2,1) forwards; }
   @keyframes inKen { from { transform: scale(1.18) translateX(var(--x0, 0)); } to { transform: scale(1.04) translateX(var(--x1, 0)); } }
-  #intro .in-clip { position: absolute; inset: 0; opacity: 0; transition: opacity .25s ease; overflow: hidden; pointer-events: none; z-index: 1; }
-  #intro .in-clip.on { opacity: 1; }
+  #intro .in-clip { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  #intro .in-clip.on { z-index: 1; }
+  #intro .in-black { position: absolute; inset: 0; background: #000; z-index: 2; transition: opacity .2s ease; }
+  #intro.clipshow .in-black { opacity: 0; }
+  #intro .in-shot { z-index: 3; }
+  #intro.clipshow .in-shot { opacity: 0 !important; transition: opacity .2s ease; }
+  #intro .in-cap.long.on { animation-duration: 4.2s; }
   #intro .in-clip iframe { position: absolute; left: 50%; top: 50%; width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.78vh; transform: translate(-50%, -50%) scale(1.35); border: 0; pointer-events: none; }
   #intro.wait .in-bar { height: 11vh; }
   #intro.wait::after { content: "🎬"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 34px; opacity: .5; animation: inPulse 1s ease-in-out infinite; }
@@ -1524,7 +1529,7 @@ const Intro = (() => {
     if (running || !enabled() || location.hash.length > 1 || location.search.includes("share_")) return;
     running = true;
     const el = document.createElement("div"); el.id = "intro";
-    el.innerHTML = `<div class="in-stage"><div class="in-shot a"></div><div class="in-shot b"></div></div>
+    el.innerHTML = `<div class="in-stage"><div class="in-black"></div><div class="in-shot a"></div><div class="in-shot b"></div></div>
       <div class="in-vig"></div><div class="in-grain"></div><div class="in-flash"></div>
       <div class="in-cap"><span class="in-kind"></span><span class="in-title"></span></div>
       <div class="in-logo"><img class="in-mark" src="icon-192.png" alt=""><div class="in-name">Meine <b>Watchlist</b></div><div class="in-sub">Filme · Serien · Anime</div></div>
@@ -1544,52 +1549,62 @@ const Intro = (() => {
     if (!scenes.length && typeof items !== "undefined") scenes = items.filter(i => i.poster).slice(0, 6).map(i => ({ img: i.poster.replace("/w185/", "/w500/"), title: i.title, kind: i.kind, poster: true }));
     scenes = await preload(scenes.slice(0, 6), 1400);
     if (stop) return;
-    // Clips vorbereiten: alle Trailer laufen stumm im Hintergrund an; gezeigt wird nur, was wirklich läuft
-    const clips = [], stage = el.querySelector(".in-stage");
-    const isLive = c => c && !c.failed && c.state === 1 && performance.now() - c.since > 350;
+    // Clips vorbereiten: alle Trailer laufen stumm (und für den Browser „sichtbar“, unter einer schwarzen Abdeckung) im Hintergrund.
+    // Gezeigt wird ein Clip nur, wenn seine Abspielzeit wirklich weiterläuft – nie Lade-/Pause-Bildschirme.
+    const clips = [], stage = el.querySelector(".in-stage"), CLIP_MS = 4200, MAXCLIPS = 4;
+    const live = c => c && !c.failed && c.adv && performance.now() - c.adv > 700;
+    let poll = null;
     if (clipsOn() && navigator.onLine !== false && scenes.some(s => s.yt) && await loadYT() && !stop) {
       scenes.filter(s => s.yt).slice(0, 6).forEach((s, n) => {
         const wrap = document.createElement("div"); wrap.className = "in-clip"; const holder = document.createElement("div"); wrap.appendChild(holder); stage.appendChild(wrap);
-        const c = { s, wrap, state: -1, since: 0, player: null }; s.clip = c; clips.push(c);
-        const setState = st => { if (st !== c.state) { c.state = st; c.since = performance.now(); } if (st !== 1) wrap.classList.remove("on"); }; // Pause/Laden → sofort ausblenden (keine Pause-Knöpfe im Bild)
+        const c = { s, wrap, adv: 0, lastT: -1, player: null, ready: false, kicked: false, born: performance.now() }; s.clip = c; clips.push(c);
         try {
           c.player = new YT.Player(holder, { videoId: s.yt, width: 1280, height: 720, host: "https://www.youtube-nocookie.com",
-            playerVars: { autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, start: 20 + n * 6, origin: location.origin },
-            events: { onReady: e => { try { e.target.mute(); e.target.playVideo(); } catch {} }, onStateChange: e => setState(e.data), onError: () => { c.failed = true; wrap.classList.remove("on"); } } });
+            playerVars: { autoplay: 1, mute: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, cc_load_policy: 0, start: 30 + n * 9, origin: location.origin },
+            events: { onReady: () => { c.ready = true; }, onError: () => { c.failed = true; } } });
         } catch { c.failed = true; }
       });
-      // warten, bis genug Clips laufen (2 Stück oder alle, höchstens 5 s)
+      // Fortschritt messen: läuft die Zeit weiter, gilt der Clip als „live“
+      poll = setInterval(() => { const now = performance.now();
+        for (const c of clips) { if (c.failed || !c.ready) continue; let t = -1, st = -1; try { t = c.player.getCurrentTime(); st = c.player.getPlayerState(); } catch {}
+          if (st === 1 && t > c.lastT + .03) { if (!c.adv) c.adv = now; } else c.adv = 0;
+          c.lastT = t;
+          // Autoplay klappt nicht? Einmal selbst anstoßen (passiert unter der Abdeckung, also unsichtbar)
+          if (!c.kicked && st !== 1 && now - c.born > 2500) { c.kicked = true; try { c.player.mute(); c.player.playVideo(); } catch {} }
+          if (c.wrap.classList.contains("on") && !live(c)) { c.wrap.classList.remove("on"); el.classList.remove("clipshow"); }
+        } }, 100);
       el.classList.add("wait");
       const need = Math.min(2, clips.length);
-      for (let w = 0; w < 50 && !stop && clips.filter(isLive).length < need && !clips.every(c => c.failed || isLive(c)); w++) await later(100);
+      for (let w = 0; w < 60 && !stop && clips.filter(live).length < need && !clips.every(c => c.failed || live(c)); w++) await later(100);
       el.classList.remove("wait");
     }
-    if (stop) return;
-    const killClips = () => clips.forEach(c => { try { c.player && c.player.destroy(); } catch {} c.wrap.remove(); });
-    el._kill = killClips;
+    if (stop) { clearInterval(poll); return; }
+    el._kill = () => { clearInterval(poll); clips.forEach(c => { try { c.player && c.player.destroy(); } catch {} c.wrap.remove(); }); };
     boom(0); el.classList.add("go");
     const shots = [el.querySelector(".in-shot.a"), el.querySelector(".in-shot.b")], cap = el.querySelector(".in-cap"), fl = el.querySelector(".in-flash");
-    const DUR = scenes.length > 5 ? 820 : 1000, MAXCLIPS = 4;
+    const DUR = scenes.length > 5 ? 820 : 1000;
     const used = new Set(); let shown = 0;
-    const slots = Math.min(6, scenes.length);
+    const slots = Math.min(clips.length ? 5 : 6, scenes.length);
+    const setCap = s => { cap.querySelector(".in-kind").textContent = KL[s.kind] || ""; cap.querySelector(".in-kind").className = "in-kind " + (s.kind || "");
+      cap.querySelector(".in-title").textContent = s.title || ""; cap.classList.remove("on", "long"); void cap.offsetWidth; cap.classList.add("on"); };
     for (let k = 0; k < slots && !stop; k++) {
-      // bevorzugt einen laufenden Clip, sonst ein Standbild (zuerst Titel ohne Trailer)
-      let c = shown < MAXCLIPS ? clips.find(x => !used.has(x.s) && isLive(x)) : null;
+      // erst kurz auf einen laufenden Clip warten, sonst Standbild
+      let c = null;
+      if (shown < MAXCLIPS && clips.length) for (let w = 0; w < 8 && !stop && !(c = clips.find(x => !used.has(x.s) && live(x))); w++) await later(100);
       const s = c ? c.s : (scenes.find(x => !used.has(x) && (!x.clip || x.clip.failed)) || scenes.find(x => !used.has(x)));
       if (!s) break; used.add(s); if (c) shown++;
       const sh = shots[k % 2], other = shots[(k + 1) % 2];
       clips.forEach(x => x.wrap.classList.remove("on"));
-      if (c) c.wrap.classList.add("on");
       sh.style.backgroundImage = `url("${s.img}")`; sh.classList.toggle("poster", !!s.poster);
       sh.style.setProperty("--x0", (k % 2 ? -3 : 3) + "%"); sh.style.setProperty("--x1", (k % 2 ? 3 : -3) + "%");
       sh.classList.remove("on"); void sh.offsetWidth; sh.classList.add("on"); other.classList.remove("on");
+      if (c) { c.wrap.classList.add("on"); el.classList.add("clipshow"); } else el.classList.remove("clipshow");
       fl.classList.remove("on"); void fl.offsetWidth; fl.classList.add("on");
-      cap.querySelector(".in-kind").textContent = KL[s.kind] || ""; cap.querySelector(".in-kind").className = "in-kind " + (s.kind || "");
-      cap.querySelector(".in-title").textContent = s.title || "";
-      cap.classList.remove("on"); void cap.offsetWidth; cap.classList.add("on");
+      setCap(s); if (c) cap.classList.add("long");
       whoosh(0); if (k % 2 === 0) tone(0, 55, .5, { gain: .22, to: 45 });
-      await later(c ? 2200 : DUR);
+      await later(c ? CLIP_MS : DUR);
     }
+    el.classList.remove("clipshow");
     clips.forEach(c => c.wrap.classList.remove("on"));
     if (stop) return;
     // Logo
@@ -6988,7 +7003,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "110";
+const APP_VERSION = "111";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
