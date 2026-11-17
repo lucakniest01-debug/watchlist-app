@@ -85,6 +85,45 @@
   .poster .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
   .badge { box-shadow: 0 2px 8px rgba(0,0,0,.35); }
   .badge { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; color: #0f1115; }
+  /* ---------- Intro ---------- */
+  #intro { position: fixed; inset: 0; z-index: 99999; background: #000; overflow: hidden; cursor: default; transition: opacity .6s ease; }
+  #intro.out { opacity: 0; pointer-events: none; }
+  #intro .in-stage { position: absolute; inset: 0; }
+  #intro .in-shot { position: absolute; inset: -6%; background: #000 center/cover no-repeat; opacity: 0; transform: scale(1.12) translateX(var(--x0, 0)); filter: saturate(1.15) contrast(1.06); }
+  #intro .in-shot.poster { background-size: contain; filter: saturate(1.1) blur(0); }
+  #intro .in-shot.on { opacity: 1; animation: inKen 1.6s cubic-bezier(.2,.6,.2,1) forwards; }
+  @keyframes inKen { from { transform: scale(1.18) translateX(var(--x0, 0)); } to { transform: scale(1.04) translateX(var(--x1, 0)); } }
+  #intro .in-vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); pointer-events: none; }
+  #intro .in-grain { position: absolute; inset: -50%; opacity: .07; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: inGrain .5s steps(4) infinite; }
+  @keyframes inGrain { 0% { transform: translate(0,0); } 25% { transform: translate(-5%,3%); } 50% { transform: translate(4%,-4%); } 75% { transform: translate(-3%,-2%); } }
+  #intro .in-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; mix-blend-mode: overlay; }
+  #intro .in-flash.on { animation: inFlash .35s ease-out; }
+  @keyframes inFlash { 0% { opacity: .85; } 100% { opacity: 0; } }
+  #intro .in-bar { position: absolute; left: 0; right: 0; height: 0; background: #000; z-index: 3; transition: height .7s cubic-bezier(.2,.7,.2,1); }
+  #intro .in-bar.top { top: 0; } #intro .in-bar.bot { bottom: 0; }
+  #intro.go .in-bar { height: 11vh; } #intro.logo .in-bar { height: 0; }
+  #intro .in-cap { position: absolute; left: 6vw; bottom: 15vh; z-index: 4; display: flex; flex-direction: column; gap: 6px; opacity: 0; transform: translateX(-30px); }
+  #intro .in-cap.on { animation: inCap .8s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes inCap { 0% { opacity: 0; transform: translateX(-30px); letter-spacing: .02em; } 25% { opacity: 1; transform: translateX(0); } 80% { opacity: 1; } 100% { opacity: .0; transform: translateX(12px); } }
+  #intro .in-kind { align-self: flex-start; font: 800 12px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .18em; text-transform: uppercase; padding: 5px 9px; border-radius: 5px; color: #0f1115; background: var(--film); }
+  #intro .in-kind.serie { background: var(--serie); } #intro .in-kind.anime { background: var(--anime); }
+  #intro .in-title { font: 800 clamp(26px, 4.6vw, 64px)/1.05 "Segoe UI", system-ui, sans-serif; color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,.85); max-width: 80vw; }
+  #intro .in-logo { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; opacity: 0; pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgba(255,92,92,.18), transparent 55%), #050507; transition: opacity .5s ease; }
+  #intro.logo .in-logo { opacity: 1; }
+  #intro .in-mark { width: 96px; height: 96px; border-radius: 24px; box-shadow: 0 0 70px rgba(255,92,92,.5); transform: scale(.4); opacity: 0; }
+  .chk { display: flex; align-items: center; gap: 9px; cursor: pointer; color: var(--text); font-size: 14px; }
+  #intro.logo .in-mark { animation: inMark .9s cubic-bezier(.2,1.4,.3,1) forwards; }
+  @keyframes inMark { to { transform: scale(1); opacity: 1; } }
+  #intro .in-name { font: 800 clamp(34px, 6vw, 78px)/1 "Segoe UI", system-ui, sans-serif; color: #fff; letter-spacing: -.01em; opacity: 0; transform: translateY(14px); filter: blur(8px); }
+  #intro .in-name b { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #intro.logo .in-name { animation: inName .9s .25s cubic-bezier(.2,.7,.2,1) forwards; }
+  @keyframes inName { to { opacity: 1; transform: none; filter: none; } }
+  #intro .in-sub { font: 600 14px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .4em; text-transform: uppercase; color: #9aa3b5; opacity: 0; }
+  #intro.logo .in-sub { animation: inName .8s .6s ease forwards; }
+  #intro .in-skip { position: absolute; right: 22px; bottom: 18px; z-index: 6; background: rgba(255,255,255,.08); color: #e8eaf0; border: 1px solid rgba(255,255,255,.18); border-radius: 20px; padding: 7px 14px; font: 600 13px "Segoe UI", system-ui, sans-serif; cursor: pointer; backdrop-filter: blur(6px); }
+  #intro .in-skip:hover { background: rgba(255,255,255,.16); }
+  @media (prefers-reduced-motion: reduce) { #intro .in-shot.on, #intro .in-grain { animation: none; } }
   .flag { display: inline-block; width: 15px; height: 10px; border-radius: 2px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255,255,255,.18); font-style: normal; }
   .flag.de { background: linear-gradient(#111 0 33.3%, #dd0000 33.3% 66.6%, #ffce00 66.6%); }
   .flag.ja { background: radial-gradient(circle at 50% 50%, #bc002d 0 28%, #fff 30%); }
@@ -943,6 +982,7 @@
           <option value="US">USA</option><option value="GB">Großbritannien</option><option value="NL">Niederlande</option>
           <option value="FR">Frankreich</option><option value="IT">Italien</option><option value="ES">Spanien</option><option value="PL">Polen</option>
         </select></div>
+      <div class="field"><label class="chk"><input type="checkbox" id="sIntro"> 🎬 Intro beim Start abspielen (Szenen aus deinen Animes, Serien und Filmen)</label></div>
       <div class="hint" id="sFile"></div>
       <div class="syncsec">
         <h3>📱 Handy & Abgleich</h3>
@@ -1401,6 +1441,109 @@ function picker(el, selected, onChange, allowCustom = true) {
   return () => sel;
 }
 
+/* ---------- Intro beim Start: Szenenbilder aus Animes, Serien und Filmen, dann das Logo ---------- */
+const Intro = (() => {
+  const LS = "watchlist-intro-scenes", OFF = "watchlist-intro";
+  const enabled = () => { try { return localStorage.getItem(OFF) !== "off"; } catch { return true; } };
+  const setEnabled = on => { try { localStorage.setItem(OFF, on ? "on" : "off"); } catch {} };
+  const cached = () => { try { return JSON.parse(localStorage.getItem(LS) || "[]"); } catch { return []; } };
+  const KL = { anime: "Anime", serie: "Serie", film: "Film" };
+  let ac = null, master = null;
+  // kleiner Synth-Soundtrack (WebAudio) – leise, ohne Dateien
+  function audio() {
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .55; master.connect(ac.destination); if (ac.state === "suspended") ac.resume().catch(() => {}); } catch { ac = null; }
+  }
+  function noise(at, dur, { gain = .2, f0 = 400, f1 = 4000, q = .9 } = {}) {
+    if (!ac) return; const t = ac.currentTime + at, n = ac.createBufferSource(), b = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    n.buffer = b; const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = ac.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + dur * .7); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    n.connect(f).connect(g).connect(master); n.start(t); n.stop(t + dur + .05);
+  }
+  function tone(at, freq, dur, { gain = .2, type = "sine", to = null, attack = .01 } = {}) {
+    if (!ac) return; const t = ac.currentTime + at, o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05);
+  }
+  const boom = at => { tone(at, 90, 1.1, { gain: .5, to: 38 }); noise(at, .35, { gain: .25, f0: 120, f1: 60 }); };
+  const whoosh = at => noise(at, .45, { gain: .18, f0: 300, f1: 5000 });
+  const chord = at => [261.6, 329.6, 392, 523.3].forEach((f, i) => { tone(at, f, 2.4, { gain: .07, type: "triangle", attack: .25 }); tone(at + i * .07, f * 2, 1.2, { gain: .025 }); });
+
+  function preload(list, ms) {
+    return Promise.all(list.map(s => new Promise(res => { const im = new Image(); let done = false; const ok = v => { if (!done) { done = true; res(v ? s : null); } };
+      im.onload = () => ok(true); im.onerror = () => ok(false); setTimeout(() => ok(im.complete && im.naturalWidth), ms); im.src = s.img; })))
+      .then(r => r.filter(Boolean));
+  }
+  // Szenen für das nächste Mal vorbereiten: Hintergrundbilder deiner Titel (gemischt Anime/Serie/Film), ergänzt um Trends
+  async function refresh() {
+    if (!settings.apiKey) return;
+    const pick = [], seen = new Set(), order = { schaue: 0, geplant: 1, gesehen: 2 };
+    const pool = items.filter(i => i.tmdbId && i.mediaType).sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || Math.random() - .5);
+    for (const k of ["anime", "serie", "film", "anime", "serie", "film", "anime", "serie"]) { const i = pool.find(x => x.kind === k && !seen.has(x.id)); if (i) { seen.add(i.id); pick.push(i); } }
+    const out = [];
+    await Promise.all(pick.map(async i => { try { const d = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${i.mediaType}/${i.tmdbId}`, language: "de-DE" })); if (d.backdrop_path) out.push({ img: "https://image.tmdb.org/t/p/w1280" + d.backdrop_path, title: i.title, kind: i.kind }); } catch {} }));
+    if (out.length < 6) {
+      try { const t = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: "/trending/all/week", language: "de-DE" }));
+        for (const r of (t.results || [])) { if (out.length >= 7) break; if (!r.backdrop_path || (r.media_type !== "tv" && r.media_type !== "movie")) continue;
+          const kind = (r.genre_ids || []).includes(16) && r.original_language === "ja" ? "anime" : r.media_type === "tv" ? "serie" : "film";
+          out.push({ img: "https://image.tmdb.org/t/p/w1280" + r.backdrop_path, title: r.title || r.name, kind }); } } catch {}
+    }
+    // Reihenfolge mischen, aber Arten abwechseln
+    const byK = { anime: [], serie: [], film: [] }; out.forEach(s => (byK[s.kind] || byK.film).push(s));
+    const mixed = []; while (mixed.length < out.length) for (const k of ["anime", "film", "serie"]) if (byK[k].length) mixed.push(byK[k].shift());
+    if (mixed.length) try { localStorage.setItem(LS, JSON.stringify(mixed.slice(0, 7))); } catch {}
+    // Bilder schon in den Browser-Cache laden
+    mixed.forEach(s => { const im = new Image(); im.src = s.img; });
+  }
+
+  let running = false;
+  async function play(waitForFresh) {
+    if (running || !enabled() || location.hash.length > 1 || location.search.includes("share_")) return;
+    running = true;
+    const el = document.createElement("div"); el.id = "intro";
+    el.innerHTML = `<div class="in-stage"><div class="in-shot a"></div><div class="in-shot b"></div></div>
+      <div class="in-vig"></div><div class="in-grain"></div><div class="in-flash"></div>
+      <div class="in-cap"><span class="in-kind"></span><span class="in-title"></span></div>
+      <div class="in-logo"><img class="in-mark" src="icon-192.png" alt=""><div class="in-name">Meine <b>Watchlist</b></div><div class="in-sub">Filme · Serien · Anime</div></div>
+      <div class="in-bar top"></div><div class="in-bar bot"></div>
+      <button class="in-skip">Überspringen ⏭</button>`;
+    document.body.appendChild(el);
+    audio();
+    let stop = false, timers = [];
+    const later = (ms, f) => new Promise(r => timers.push(setTimeout(() => { if (!stop) f && f(); r(); }, ms)));
+    const end = () => { if (stop) return; stop = true; timers.forEach(clearTimeout); el.classList.add("out"); if (master) try { master.gain.setTargetAtTime(0, ac.currentTime, .15); } catch {}
+      setTimeout(() => { el.remove(); try { ac && ac.close(); } catch {} running = false; }, 650); removeEventListener("keydown", key, true); };
+    const key = e => { if (["Escape", "Enter", " ", "Space"].includes(e.key) || e.code === "Space") { e.preventDefault(); e.stopPropagation(); end(); } };
+    addEventListener("keydown", key, true); el.querySelector(".in-skip").onclick = end; el.addEventListener("dblclick", end);
+
+    let scenes = cached();
+    if (!scenes.length && waitForFresh) { await Promise.race([waitForFresh.then(refresh).catch(() => {}), later(2200)]); scenes = cached(); }
+    if (!scenes.length && typeof items !== "undefined") scenes = items.filter(i => i.poster).slice(0, 6).map(i => ({ img: i.poster.replace("/w185/", "/w500/"), title: i.title, kind: i.kind, poster: true }));
+    scenes = await preload(scenes.slice(0, 7), 1400);
+    if (stop) return;
+    boom(0); el.classList.add("go");
+    const shots = [el.querySelector(".in-shot.a"), el.querySelector(".in-shot.b")], cap = el.querySelector(".in-cap"), fl = el.querySelector(".in-flash");
+    const DUR = scenes.length > 5 ? 820 : 1000;
+    for (let k = 0; k < scenes.length && !stop; k++) {
+      const s = scenes[k], sh = shots[k % 2], other = shots[(k + 1) % 2];
+      sh.style.backgroundImage = `url("${s.img}")`; sh.classList.toggle("poster", !!s.poster);
+      sh.style.setProperty("--x0", (k % 2 ? -3 : 3) + "%"); sh.style.setProperty("--x1", (k % 2 ? 3 : -3) + "%");
+      sh.classList.remove("on"); void sh.offsetWidth; sh.classList.add("on"); other.classList.remove("on");
+      fl.classList.remove("on"); void fl.offsetWidth; fl.classList.add("on");
+      cap.querySelector(".in-kind").textContent = KL[s.kind] || ""; cap.querySelector(".in-kind").className = "in-kind " + (s.kind || "");
+      cap.querySelector(".in-title").textContent = s.title || "";
+      cap.classList.remove("on"); void cap.offsetWidth; cap.classList.add("on");
+      whoosh(0); if (k % 2 === 0) tone(0, 55, .5, { gain: .22, to: 45 });
+      await later(DUR);
+    }
+    if (stop) return;
+    // Logo
+    shots.forEach(s => s.classList.remove("on")); cap.classList.remove("on");
+    el.classList.add("logo"); boom(0); chord(.12); noise(0, 1.2, { gain: .12, f0: 2000, f1: 200 });
+    await later(2300);
+    end();
+  }
+  return { play, refresh, enabled, setEnabled };
+})();
 /* ---------- Anime-Sprache ---------- */
 const dubOf = i => i.kind !== "anime" ? "" : (i.dub || (i.dubAuto === "?" ? "" : i.dubAuto) || "");
 const DUB = { de: `<i class="flag de"></i> Deutsche Synchro`, ja: `<i class="flag ja"></i> Nur Japanisch (OmU)` };
@@ -1965,6 +2108,7 @@ function openSettings() {
   if (MODE === "local") $("#sFile").innerHTML = "Deine Liste ist auf diesem Handy gespeichert" + (Sync.token ? " und wird mit deinem PC abgeglichen." : ".");
   getMine = picker($("#sMine"), settings.myServices || [], sel => saveQuick({ myServices: sel }), false);
   $("#sRegion").onchange = e => saveQuick({ region: e.target.value }, true);
+  $("#sIntro").checked = Intro.enabled(); $("#sIntro").onchange = e => { Intro.setEnabled(e.target.checked); toast(e.target.checked ? "🎬 Intro an" : "Intro aus"); };
   renderSyncSettings(); Sync.status();
   $("#ovSettings").classList.add("open");
 }
@@ -6786,7 +6930,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "107";
+const APP_VERSION = "108";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
@@ -7378,7 +7522,10 @@ function showQR(fresh) {
     return true;
   };
   addEventListener("hashchange", connectFromHash);
+  let introLoaded; const introWait = new Promise(r => introLoaded = r);
+  Intro.play(introWait);
   try { await load(); } catch (e) { toast(e.message, true); }
+  introLoaded(); setTimeout(() => Intro.refresh().catch(() => {}), 4000); // Szenen fürs nächste Mal vorbereiten
   await Sync.loadLocal(); Sync.status();
   if (!(await connectFromHash()) && Sync.token) await Sync.run();
   try { if (localStorage.getItem("watchlist-view") === "shop" && !location.search.includes("share_")) setView("shop"); } catch {}
