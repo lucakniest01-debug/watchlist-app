@@ -135,6 +135,18 @@
   #intro .in-skip { position: absolute; right: 22px; bottom: 18px; z-index: 6; background: rgba(255,255,255,.08); color: #e8eaf0; border: 1px solid rgba(255,255,255,.18); border-radius: 20px; padding: 7px 14px; font: 600 13px "Segoe UI", system-ui, sans-serif; cursor: pointer; backdrop-filter: blur(6px); }
   #intro .in-skip:hover { background: rgba(255,255,255,.16); }
   @media (prefers-reduced-motion: reduce) { #intro .in-shot.on, #intro .in-grain { animation: none; } }
+  /* ---------- Sammlung / Scanner ---------- */
+  .scwrap { position: relative; border-radius: 14px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; }
+  .scwrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .scframe { position: absolute; left: 12%; right: 12%; top: 28%; bottom: 28%; border: 2px solid rgba(255,255,255,.85); border-radius: 10px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); }
+  .scframe i { position: absolute; left: 6px; right: 6px; height: 2px; top: 50%; background: #ff4d4d; box-shadow: 0 0 10px #ff4d4d; animation: scLine 1.6s ease-in-out infinite; }
+  @keyframes scLine { 0%, 100% { top: 12%; } 50% { top: 86%; } }
+  .schit { display: none; } .schit.show { display: block; }
+  .scr { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; background: var(--panel2); margin-bottom: 6px; }
+  .scr img, .scr .noimg { width: 40px; height: 60px; border-radius: 5px; object-fit: cover; background: #2a2f3a; flex: none; }
+  .scr .info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .owntag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 6px; margin: 2px 0 4px; background: rgba(96,165,250,.15); color: #bfdbfe; }
+  .tab.own { margin-left: 6px; }
   .flag { display: inline-block; width: 15px; height: 10px; border-radius: 2px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255,255,255,.18); font-style: normal; }
   .flag.de { background: linear-gradient(#111 0 33.3%, #dd0000 33.3% 66.6%, #ffce00 66.6%); }
   .flag.ja { background: radial-gradient(circle at 50% 50%, #bc002d 0 28%, #fff 30%); }
@@ -785,6 +797,7 @@
     <button class="btn icon" id="btnStats" title="Statistik &amp; Jahresrückblick">📊</button>
     <button class="btn icon" id="btnSync" title="Abgleich PC ↔ Handy" style="display:none">☁</button>
     <button class="btn icon" id="btnRefreshAll" title="Streaming-Infos für alle Titel aktualisieren">⟳</button>
+    <button class="btn icon" id="btnScan" title="DVD/Blu-ray per Barcode einscannen">📷</button>
     <button class="btn icon" id="btnSettings" title="Einstellungen">⚙</button>
     <button class="btn primary" id="btnAdd">+ Hinzufügen</button>
   </div>
@@ -809,6 +822,29 @@
 </main>
 
 <!-- Hinzufügen -->
+<div class="overlay" id="ovScan">
+  <div class="modal">
+    <div class="mhead"><h2>📷 DVD / Blu-ray einscannen</h2><button class="x" data-close>×</button></div>
+    <div class="mbody">
+      <div class="scwrap"><video id="scVideo" playsinline muted></video><div class="scframe"><i></i></div></div>
+      <div class="hint" id="scState" style="margin:8px 0 12px"></div>
+      <div class="row" style="gap:8px;margin-bottom:10px">
+        <input class="inp" id="scCode" inputmode="numeric" placeholder="Barcode-Nummer (falls die Kamera nicht klappt)" style="flex:1">
+        <button class="btn" id="scCodeGo">Suchen</button>
+      </div>
+      <div id="scHit" class="schit">
+        <div class="hint" id="scRaw" style="margin-bottom:6px"></div>
+        <div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <input class="inp" id="scTitle" placeholder="Titel" style="flex:1;min-width:180px">
+          <button class="btn" id="scSearch">🔍</button>
+          <select class="inp" id="scFormat" style="width:auto" title="Format"></select>
+          <select class="inp" id="scStatus" style="width:auto" title="Status, falls der Titel neu auf die Liste kommt"></select>
+        </div>
+        <div id="scRes"></div>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="ovAdd">
   <div class="modal">
     <div class="mhead"><h2>Titel hinzufügen</h2>
@@ -1241,6 +1277,7 @@ const Local = (() => {
       for (const [k, v] of Object.entries(b || {})) {
         if (["status", "kind", "note", "manualWhere"].includes(k)) it[k] = v;
         if (k === "dub" && ["", "de", "ja"].includes(v)) it.dub = v;
+        if (k === "owned" || k === "ean") it[k] = v;
         if (k === "dubEps") { const [sn, en] = String(v).split(":"); it.dubEps = it.dubEps || {}; if (en === "" || en == null) delete it.dubEps[sn]; else if (+en >= 0) it.dubEps[sn] = +en; }
         if (k === "title" && String(v).trim()) it.title = String(v).trim();
       }
@@ -1296,6 +1333,11 @@ const Local = (() => {
     }],
     ["GET", /^\/api\/search$/, async (m, b, q) => q.get("q") ? search(q.get("q")) : []],
     ["GET", /^\/api\/lookup$/, async (m, b, q) => lookup(q)],
+    ["GET", /^\/api\/ean$/, async (m, b, q) => {
+      const code = (q.get("code") || "").replace(/\D/g, "");
+      try { const r = await fetch("https://api.upcitemdb.com/prod/trial/lookup?upc=" + code); const j = await r.json(); if (j.items && j.items[0] && j.items[0].title) return { code, title: j.items[0].title }; } catch {}
+      err("Zu diesem Barcode wurde nichts gefunden – gib den Titel einfach selbst ein", 502);
+    }],
     ["GET", /^\/api\/tmdb$/, async (m, b, q) => {
       const path = q.get("path") || "";
       if (path.includes("..") || !/^\/(discover\/(movie|tv)|trending\/|watch\/providers\/|movie\/|tv\/)/.test(path)) err("Nicht erlaubt");
@@ -1619,6 +1661,102 @@ const Intro = (() => {
   const setClips = on => { try { localStorage.setItem("watchlist-intro-clips", on ? "on" : "off"); } catch {} };
   return { play, refresh, enabled, setEnabled, clipsOn, setClips };
 })();
+/* ---------- Sammlung: DVDs/Blu-rays per Barcode einscannen ---------- */
+const FORMATS = ["DVD", "Blu-ray", "4K UHD", "VHS", "Andere"];
+const Scan = (() => {
+  let stream = null, timer = null, busy = false, lastCode = "", detector = null, quaggaP = null;
+  const ov = () => $("#ovScan");
+  const guessFormat = t => /4k|uhd/i.test(t) ? "4K UHD" : /blu[\s-]?ray|bluray|bd\b/i.test(t) ? "Blu-ray" : /vhs/i.test(t) ? "VHS" : "DVD";
+  // Produktname → Suchbegriff: „Inception [Blu-ray] (Special Edition, 2 Discs)“ → „Inception“
+  const cleanTitle = t => String(t || "")
+    .replace(/\[[^\]]*\]|\([^)]*\)/g, " ")
+    .replace(/\b(dvd|blu[\s-]?ray|bluray|4k|uhd|ultra hd|steelbook|special|limited|collector'?s?|edition|deluxe|extended|director'?s cut|uncut|remastered|digibook|mediabook|disc|discs|\d+\s*discs?|box|set|staffel\s*\d+|season\s*\d+|komplette|complete|series|serie|film|movie|neu|ovp|fsk\s*\d+|import|de|ger|german|deutsch)\b/gi, " ")
+    .replace(/[-–|:,/]+\s*$/g, "").replace(/\s{2,}/g, " ").trim();
+  async function loadQuagga() {
+    if (window.Quagga) return true;
+    if (!quaggaP) quaggaP = new Promise(res => { const s = document.createElement("script"); s.src = "quagga.min.js"; s.onload = () => res(true); s.onerror = () => res(false); document.head.appendChild(s); });
+    return quaggaP;
+  }
+  async function makeDetector() {
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("ean_13")) return new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e"] }); } } catch {}
+    return null;
+  }
+  const validEan = c => { if (!/^\d{8}$|^\d{12,13}$/.test(c)) return false; const d = c.padStart(13, "0").split("").map(Number); const sum = d.slice(0, 12).reduce((a, n, i) => a + n * (i % 2 ? 3 : 1), 0); return (10 - sum % 10) % 10 === d[12] || c.length === 8; };
+  async function decodeFrame(video, canvas) {
+    if (detector) { try { const r = await detector.detect(video); if (r.length) return r[0].rawValue; } catch {} return null; }
+    if (!window.Quagga) return null;
+    const w = Math.min(960, video.videoWidth), h = Math.round(video.videoHeight * w / video.videoWidth);
+    canvas.width = w; canvas.height = h; canvas.getContext("2d").drawImage(video, 0, 0, w, h);
+    return new Promise(res => { try { Quagga.decodeSingle({ src: canvas.toDataURL("image/jpeg", .85), numOfWorkers: 0, locate: true, inputStream: { size: w },
+      decoder: { readers: ["ean_reader", "ean_8_reader", "upc_reader"] } }, r => res(r && r.codeResult ? r.codeResult.code : null)); } catch { res(null); } });
+  }
+  function stopCam() { clearInterval(timer); timer = null; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; const v = $("#scVideo"); if (v) v.srcObject = null; }
+  async function startCam() {
+    const st = $("#scState");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { st.textContent = "Keine Kamera verfügbar – gib die Nummer unter dem Barcode einfach unten ein."; return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+    } catch { st.textContent = "Kein Zugriff auf die Kamera – erlaube ihn oder gib die Nummer unten ein."; return; }
+    const v = $("#scVideo"); v.srcObject = stream; await v.play().catch(() => {});
+    detector = await makeDetector(); if (!detector) await loadQuagga();
+    st.innerHTML = "Halte den <b>Barcode</b> auf der Rückseite der Hülle in den Rahmen …";
+    const canvas = document.createElement("canvas");
+    timer = setInterval(async () => {
+      if (busy || !v.videoWidth) return; busy = true;
+      const code = await decodeFrame(v, canvas); busy = false;
+      if (code && validEan(code) && code !== lastCode) { lastCode = code; if (navigator.vibrate) navigator.vibrate(60); try { SFX && SFX.fx && SFX.fx.bleep && SFX.fx.bleep(0, .08); } catch {} found(code); }
+    }, detector ? 250 : 550);
+  }
+  async function found(code) {
+    $("#scCode").value = code; $("#scHit").classList.add("show");
+    const box = $("#scRes"); box.innerHTML = `<div class="hint"><span class="spin"></span> Suche Barcode ${esc(code)} …</div>`;
+    let name = "";
+    try { name = (await api("GET", "/api/ean?code=" + code)).title; } catch (e) { box.innerHTML = `<div class="hint">${esc(e.message)}</div>`; $("#scTitle").focus(); }
+    if (name) { $("#scTitle").value = cleanTitle(name) || name; $("#scFormat").value = guessFormat(name); $("#scRaw").textContent = "Gefunden: " + name; await search(); }
+  }
+  async function search() {
+    const q = $("#scTitle").value.trim(), box = $("#scRes"); if (!q) return;
+    if (!settings.apiKey) { box.innerHTML = `<div class="hint">Für die Suche brauchst du einen TMDB-Schlüssel (⚙).</div>`; return; }
+    box.innerHTML = `<div class="hint"><span class="spin"></span> Suche „${esc(q)}“ …</div>`;
+    try {
+      const res = (await api("GET", "/api/search?q=" + encodeURIComponent(q))).slice(0, 6);
+      if (!res.length) { box.innerHTML = `<div class="hint">Kein Film/keine Serie gefunden – ändere den Suchbegriff oben.</div>`; return; }
+      box.innerHTML = res.map((r, i) => { const have = items.find(x => x.tmdbId === r.tmdbId && x.mediaType === r.mediaType);
+        return `<div class="scr">${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}<div class="info"><b>${esc(r.title)}</b><span class="hint">${esc(r.year)} · ${KINDS[r.kind] || ""}${have ? (have.owned ? ` · 📀 schon in der Sammlung (${esc(have.owned)})` : " · auf deiner Liste") : ""}</span></div>
+          <button class="btn primary sm" data-i="${i}">${have && have.owned ? "Format ändern" : "📀 In Sammlung"}</button></div>`; }).join("");
+      box.querySelectorAll("[data-i]").forEach(b => b.onclick = () => add(res[+b.dataset.i], b));
+    } catch (e) { box.innerHTML = `<div class="hint" style="color:#ff7b7b">${esc(e.message)}</div>`; }
+  }
+  async function add(r, btn) {
+    btn.disabled = true; btn.innerHTML = `<span class="spin"></span>`;
+    const fmt = $("#scFormat").value, ean = ($("#scCode").value || "").trim();
+    try {
+      let it = items.find(x => x.tmdbId === r.tmdbId && x.mediaType === r.mediaType);
+      if (!it) { const res = await api("POST", "/api/items", { tmdbId: r.tmdbId, mediaType: r.mediaType, kind: r.kind, title: r.title, year: r.year, poster: r.poster, overview: r.overview, status: $("#scStatus").value, owned: fmt, ean }); it = res.item; items.unshift(it); }
+      else { const upd = await api("PUT", "/api/items/" + it.id, { owned: fmt, ean }); Object.assign(it, upd); }
+      render(); btn.textContent = "✓ In Sammlung"; toast(`📀 „${r.title}“ ist jetzt in deiner Sammlung (${fmt})`);
+      // bereit für die nächste Hülle
+      setTimeout(() => { $("#scHit").classList.remove("show"); $("#scRes").innerHTML = ""; $("#scTitle").value = ""; $("#scCode").value = ""; $("#scRaw").textContent = ""; lastCode = ""; }, 1400);
+    } catch (e) { btn.disabled = false; btn.textContent = "📀 In Sammlung"; toast(e.message, true); }
+  }
+  function open() {
+    ov().classList.add("open"); lastCode = ""; $("#scHit").classList.remove("show"); $("#scRes").innerHTML = ""; $("#scRaw").textContent = "";
+    $("#scState").innerHTML = `<span class="spin"></span> Kamera wird gestartet …`; startCam();
+  }
+  function close() { stopCam(); ov().classList.remove("open"); }
+  function wire() {
+    $("#btnScan").onclick = open;
+    ov().querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+    ov().addEventListener("click", e => { if (e.target === ov()) close(); });
+    $("#scCode").onkeydown = e => { if (e.key === "Enter") { const c = e.target.value.replace(/\D/g, ""); if (c.length >= 8) { lastCode = c; found(c); } } };
+    $("#scCodeGo").onclick = () => { const c = $("#scCode").value.replace(/\D/g, ""); if (c.length >= 8) { lastCode = c; found(c); } };
+    $("#scTitle").onkeydown = e => { if (e.key === "Enter") search(); };
+    $("#scSearch").onclick = search;
+    $("#scFormat").innerHTML = FORMATS.map(f => `<option>${f}</option>`).join("");
+    $("#scStatus").innerHTML = Object.entries(STATUS).map(([k, l]) => `<option value="${k}" ${k === "gesehen" ? "selected" : ""}>${l}</option>`).join("");
+  }
+  return { open, close, wire, cleanTitle };
+})();
 /* ---------- Anime-Sprache ---------- */
 const dubOf = i => i.kind !== "anime" ? "" : (i.dub || (i.dubAuto === "?" ? "" : i.dubAuto) || "");
 const DUB = { de: `<i class="flag de"></i> Deutsche Synchro`, ja: `<i class="flag ja"></i> Nur Japanisch (OmU)` };
@@ -1644,6 +1782,7 @@ function renderTabs() {
     [...provs.entries()].sort((a,b) => b[1]-a[1]).map(([n,c]) => `<option value="${esc(n)}" ${view.provider===n?"selected":""}>${esc(n)} (${c})</option>`).join("");
   $("#tabs").innerHTML =
     Object.entries(KINDS_PL).map(([k,l]) => `<button class="tab ${view.kind===k?"active":""}" data-kind="${k}">${l}<span class="n">${cnt(k)}</span></button>`).join("") +
+    `<button class="tab own ${view.kind==="owned"?"active":""}" data-kind="owned">📀 Sammlung<span class="n">${items.filter(i => i.owned).length}</span></button>` +
     `<div class="filters">
       ${[["all","Alle"],...Object.entries(STATUS)].map(([k,l]) => `<button class="chip ${view.status===k?"active":""}" data-status="${k}">${l}</button>`).join("")}
       <select class="small" id="provFilter"><option value="">Alle Anbieter</option>${provOpts}</select>
@@ -1667,7 +1806,7 @@ function render() {
      <button class="btn primary" onclick="openSettings()">Jetzt einrichten</button></div>`;
   const q = view.q.toLowerCase();
   const list = items.filter(i =>
-    (view.kind === "all" || i.kind === view.kind) &&
+    (view.kind === "all" || i.kind === view.kind || (view.kind === "owned" && i.owned)) &&
     (view.status === "all" || i.status === view.status) &&
     (!view.provider || (view.provider === "__mine" ? onMyServices(i).length : allProviderNames(i).has(view.provider))) &&
     (view.kind !== "anime" || !view.dub || dubOf(i) === view.dub) &&
@@ -1701,6 +1840,7 @@ function render() {
       <div class="cbody"><div class="ctitle">${esc(i.title)} ${i.year ? `<small>(${esc(i.year)})</small>` : ""}</div>
         ${mine.length ? `<div class="minetag">✓ In deinem Abo: ${esc(mine.join(", "))}</div>` : ""}
         ${i.mediaType === "movie" && i.runtime ? `<div class="rt">⏱ ${fmtDur(i.runtime)}</div>` : ""}
+        ${i.owned ? `<div class="owntag" title="In deiner Sammlung">📀 ${esc(i.owned)}</div>` : ""}
         ${dubTag(i)}
         ${cardProgress(i)}
         <div class="where">${where}</div></div></div>`;
@@ -2127,6 +2267,7 @@ function renderDetail() {
           <a class="lnk" data-href="${esc(justwatchUrl(i.title))}">Auf JustWatch suchen ↗</a>
         </div>
         <div class="field"><label>Eigene Angabe „Wo schauen“ – anklicken oder eigenen eintragen (z. B. DVD)</label><div id="dWhere"></div></div>
+        <div class="field"><label>📀 Meine Sammlung</label><select class="inp" id="dOwned" style="width:auto"><option value="">Nicht in meiner Sammlung</option>${FORMATS.map(f => `<option ${i.owned === f ? "selected" : ""}>${f}</option>`).join("")}</select>${i.ean ? ` <span class="hint">Barcode ${esc(i.ean)}</span>` : ""}</div>
         <div class="field"><label>Notiz</label><textarea class="inp" id="dNote" placeholder="z. B. Empfehlung von Max, ab Staffel 2 weiter">${esc(i.note)}</textarea></div>
         ${i.updated ? `<div class="attrib">Streaming-Daten: JustWatch über TMDB · Stand ${new Date(i.updated).toLocaleDateString("de-DE")}</div>` : ""}
       </div></div>
@@ -2138,6 +2279,7 @@ function renderDetail() {
   $("#dStatus").querySelectorAll("button").forEach(b => b.onclick = () => { update({ status: b.dataset.s }); $("#dStatus").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b)); });
   picker($("#dWhere"), manualList(i), sel => update({ manualWhere: sel.join(", ") }));
   $("#dNote").onchange = e => update({ note: e.target.value });
+  $("#dOwned").onchange = e => update({ owned: e.target.value });
   $("#dRefresh").style.display = i.tmdbId ? "" : "none";
 }
 // Anime ohne Sprach-Info: still im Hintergrund nachladen und die Ansicht auffrischen
@@ -2203,6 +2345,7 @@ function saveQuick(change, refreshAfter) {
   });
 }
 $("#btnSettings").onclick = openSettings;
+Scan.wire();
 $("#sSave").onclick = async () => {
   const b = $("#sSave"); b.disabled = true; b.innerHTML = `<span class="spin"></span> Prüfe …`;
   const regionChanged = $("#sRegion").value !== settings.region;
@@ -7006,7 +7149,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "1.12";
+const APP_VERSION = "1.13";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
