@@ -297,6 +297,11 @@
   .suggest { position: absolute; top: calc(100% + 6px); left: 0; width: min(560px, 90vw); background: var(--panel); border: 1px solid #3c4352;
              border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.55); display: none; max-height: 70vh; overflow: auto; z-index: 30; }
   .suggest.open { display: block; }
+  .rlen { font-size: 12.5px; color: #c9cfdb; margin: 2px 0 3px; line-height: 1.4; }
+  .rlen:empty { display: none; }
+  .rlen b { color: #fff; font-weight: 700; }
+  .rlen .lstate { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: #2b313d; color: #aab2c2; }
+  .rlen .lstate.run { background: rgba(34,197,94,.15); color: #86efac; }
   .suggest .sh { padding: 8px 12px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
   .suggest .si { display: flex; gap: 10px; align-items: center; padding: 7px 12px; cursor: pointer; }
   .suggest .si:hover, .suggest .si.hl { background: var(--panel2); }
@@ -1911,6 +1916,29 @@ let sugSeq = 0, sugTimer = null, sugResults = [];
 const sugBox = () => $("#suggest");
 function closeSuggest() { sugBox().classList.remove("open"); }
 function ownMatches(q) { q = q.toLowerCase(); return items.filter(i => i.title.toLowerCase().includes(q)).slice(0, 4); }
+// Wie lange geht ein Titel? Staffeln, Folgen, Gesamtdauer – direkt von TMDB, ohne ihn auf die Liste zu setzen
+const lenCache = new Map();
+function lengthInfo(r) {
+  const k = r.mediaType + ":" + r.tmdbId;
+  if (!lenCache.has(k)) lenCache.set(k, (async () => {
+    const d = await api("GET", "/api/tmdb?" + new URLSearchParams({ path: `/${r.mediaType}/${r.tmdbId}`, language: "de-DE" }));
+    if (r.mediaType === "movie") return d.runtime ? `⏱ <b>${fmtDur(d.runtime)}</b>` : "";
+    // Folgen ohne Specials (Staffel 0) zählen, wenn die Staffelliste da ist
+    const main = (d.seasons || []).filter(x => x.season_number > 0);
+    const eps = main.length ? main.reduce((a, x) => a + (x.episode_count || 0), 0) : d.number_of_episodes || 0, seas = main.length || d.number_of_seasons || 0;
+    const ert = (d.episode_run_time || []).filter(Boolean);
+    const rt = ert.length ? ert.reduce((a, b) => a + b, 0) / ert.length : (d.last_episode_to_air && d.last_episode_to_air.runtime) || (d.next_episode_to_air && d.next_episode_to_air.runtime) || 0;
+    const state = { "Ended": "abgeschlossen", "Canceled": "abgesetzt", "Returning Series": "läuft noch", "In Production": "in Produktion", "Planned": "geplant" }[d.status] || "";
+    const parts = [];
+    if (seas) parts.push(`${seas} Staffel${seas === 1 ? "" : "n"}`);
+    if (eps) parts.push(`${eps} Folgen`);
+    if (rt && eps) parts.push(`<b>≈ ${fmtDur(rt * eps)}</b> gesamt <span class="hint">(${Math.round(rt)} Min./Folge)</span>`);
+    if (state) parts.push(`<span class="lstate ${d.status === "Returning Series" ? "run" : ""}">${state}</span>`);
+    return parts.length ? "📺 " + parts.join(" · ") : "";
+  })().catch(() => { lenCache.delete(k); return ""; }));
+  return lenCache.get(k);
+}
+function fillLength(r, id) { lengthInfo(r).then(h => { const el = document.getElementById(id); if (el) el.innerHTML = h; }); }
 function renderSuggest(q, state) {
   const own = ownMatches(q);
   let h = "";
@@ -1927,10 +1955,12 @@ function renderSuggest(q, state) {
     return `<div class="si" data-sug="${idx}">
       ${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}
       <div class="info"><div class="t">${esc(r.title)} <span class="hint">${esc(r.year)} · ${KINDS[r.kind]}</span></div>
+        <div class="rlen" id="sl${idx}"></div>
         <div class="rprov" id="sp${idx}">${r.providers ? provLine(r.providers) : idx < 8 ? `<span class="hint"><span class="spin"></span></span>` : ""}</div></div>
       ${have ? `<span class="hint">✓ Auf Liste</span>` : `<button class="btn primary add" data-sadd="${idx}">+ Hinzufügen</button>`}</div>`;
   }).join("");
   const box = sugBox(); box.innerHTML = h; box.classList.add("open");
+  if (Array.isArray(sugResults) && state == null) sugResults.slice(0, 8).forEach((r, idx) => fillLength(r, "sl" + idx));
   box.querySelectorAll("[data-own]").forEach(el => el.onclick = () => { closeSuggest(); openDetail(el.dataset.own); });
   box.querySelectorAll("[data-sug]").forEach(el => el.onclick = ev => {
     const r = sugResults[+el.dataset.sug]; const have = items.find(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
@@ -2037,12 +2067,14 @@ async function doSearch() {
       const have = items.some(i => i.tmdbId === r.tmdbId && i.mediaType === r.mediaType);
       return `<div class="res ${r._best ? "best" : ""}">${r.poster ? `<img src="${esc(r.poster)}">` : `<div class="noimg"></div>`}
         <div class="info"><b>${esc(r.title)}</b> <span class="hint">${esc(r.year)} · ${r.mediaType === "movie" ? "Film" : "TV"}</span>
+          <div class="rlen" id="rl${idx}"></div>
           <div class="rprov" id="rp${idx}">${idx < 8 ? `<span class="hint"><span class="spin"></span> Anbieter …</span>` : ""}</div>
           <p>${esc(r.overview)}</p></div>
         <select data-idx="${idx}">${Object.entries(KINDS).map(([k,l]) => `<option value="${k}" ${r.kind===k?"selected":""}>${l}</option>`).join("")}</select>
         <button class="btn ${have ? "" : "primary"}" data-add="${idx}" ${have ? "disabled" : ""}>${have ? "✓ Auf Liste" : "+ Hinzufügen"}</button></div>`;
     }).join("");
     box.querySelectorAll("[data-add]").forEach(b => b.onclick = () => addResult(+b.dataset.add, b));
+    res.slice(0, 10).forEach((r, idx) => fillLength(r, "rl" + idx));
     // Anbieter für die ersten Treffer nachladen
     res.slice(0, 8).forEach(async (r, idx) => {
       try {
@@ -7177,7 +7209,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "1.14";
+const APP_VERSION = "1.15";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
