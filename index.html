@@ -44,10 +44,28 @@
   .logo { font-weight: 700; font-size: 20px; letter-spacing: .2px; margin-right: 8px; white-space: nowrap; }
   .logo .ver { display: inline-block; margin-left: 8px; vertical-align: 3px; font-size: 11px; font-weight: 700; letter-spacing: .3px; padding: 2px 7px; border-radius: 20px; color: var(--muted); background: var(--panel2); border: 1px solid var(--line); }
   .logo span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .search { flex: 1; max-width: 420px; position: relative; }
-  .search input { width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px 9px 34px; outline: none; }
-  .search input:focus { border-color: var(--accent); }
-  .search::before { content: "⌕"; position: absolute; left: 12px; top: 6px; color: var(--muted); font-size: 18px; }
+  /* Suchleiste: Pille mit Lupe, Tastenkürzel-Hinweis und Löschen-Knopf */
+  .search { flex: 1 1 280px; min-width: 230px; max-width: 480px; position: relative; }
+  .search input { width: 100%; height: 42px; border-radius: 999px; padding: 0 78px 0 42px; outline: none; font-size: 14.5px;
+    border: 1px solid transparent; color: var(--text);
+    background: linear-gradient(#1b1f28, #1b1f28) padding-box, linear-gradient(90deg, #2e3441, #2a2f3a) border-box;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 10px rgba(0,0,0,.25); transition: box-shadow .2s ease, background .2s ease; }
+  .search input::placeholder { color: #7d869a; }
+  .search input:hover { background: linear-gradient(#1f242e, #1f242e) padding-box, linear-gradient(90deg, #3a4150, #343a47) border-box; }
+  .search input:focus { background: linear-gradient(#20252f, #20252f) padding-box, linear-gradient(90deg, var(--accent), var(--accent2)) border-box;
+    box-shadow: 0 0 0 4px rgba(255,92,92,.13), 0 6px 22px rgba(0,0,0,.35); }
+  .search .sico { position: absolute; left: 15px; top: 50%; width: 17px; height: 17px; transform: translateY(-50%); color: #8b93a7; pointer-events: none; transition: color .2s ease; }
+  .search:focus-within .sico { color: var(--accent); }
+  .search .skbd { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: 600 11px/1 "Segoe UI", system-ui, sans-serif; color: #8b93a7;
+    padding: 4px 7px; border-radius: 6px; border: 1px solid #353b48; background: #232833; pointer-events: none; transition: opacity .15s ease; }
+  .search:focus-within .skbd, .search.has .skbd { opacity: 0; }
+  .search .sclr { position: absolute; right: 8px; top: 50%; transform: translateY(-50%) scale(.7); width: 26px; height: 26px; border-radius: 50%; border: 0;
+    background: #2c3240; color: #c3c9d6; font-size: 15px; line-height: 26px; padding: 0; opacity: 0; pointer-events: none; transition: all .15s ease; }
+  .search.has .sclr { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
+  .search .sclr:hover { background: var(--accent); color: #fff; }
+  #viewSw button { white-space: nowrap; }
+  @media (max-width: 1420px) { #btnPick .lbl { display: none; } .search .skbd { display: none; } .search input { padding-right: 44px; }
+    .toprow { gap: 10px; } }
   .spacer { flex: 1; }
   .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; white-space: nowrap; }
   .btn:hover { border-color: #3c4352; background: #252a35; }
@@ -732,7 +750,8 @@
     .logo { font-size: 17px; flex: 1; margin-right: 0; }
     .toprow > .spacer { display: none; }
     .search { order: 10; flex: 1 1 100%; max-width: none; }
-    .search input { padding: 11px 12px 11px 34px; font-size: 16px; }
+    .search input { height: 46px; padding: 0 44px 0 42px; font-size: 16px; }
+    .search .skbd { display: none; }
     .suggest { width: calc(100vw - 24px); max-height: 65vh; }
     #btnAdd { position: fixed; right: 18px; bottom: calc(22px + env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%;
               padding: 0; font-size: 0; z-index: 15; box-shadow: 0 8px 24px rgba(255,92,92,.45); }
@@ -789,10 +808,12 @@
   <div class="toprow">
     <div class="logo"><img src="icon-32.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">Meine <span>Watchlist</span><b class="ver" id="appVer" title="Installierte Version"></b></div>
     <div class="seg viewsw" id="viewSw"><button data-v="list" class="active">📋 Meine Liste</button><button data-v="shop">🎬 Videothek</button></div>
-    <div class="search"><input id="q" placeholder="Film, Serie oder Anime suchen …" autocomplete="off">
+    <div class="search"><svg class="sico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+      <input id="q" placeholder="Titel suchen …" autocomplete="off" spellcheck="false">
+      <span class="skbd" title="Tastenkürzel">Strg K</span><button class="sclr" id="qClear" title="Suche leeren" aria-label="Suche leeren">×</button>
       <div class="suggest" id="suggest"></div></div>
     <div class="spacer"></div>
-    <button class="btn" id="btnPick" title="Was gucke ich heute? – passender Vorschlag nach Stimmung und Zeit">🎯 Was gucke ich?</button>
+    <button class="btn" id="btnPick" title="Was gucke ich heute? – passender Vorschlag nach Stimmung und Zeit">🎯<span class="lbl"> Was gucke ich?</span></button>
     <button class="btn icon" id="btnNight" title="Filmabend: gemeinsam abstimmen, was ihr schaut">🍿</button>
     <button class="btn icon" id="btnStats" title="Statistik &amp; Jahresrückblick">📊</button>
     <button class="btn icon" id="btnSync" title="Abgleich PC ↔ Handy" style="display:none">☁</button>
@@ -1944,7 +1965,7 @@ async function runSuggest() {
   } catch (e) { if (seq === sugSeq) renderSuggest(q, e.message); }
 }
 $("#q").oninput = e => {
-  view.q = e.target.value; render();
+  view.q = e.target.value; render(); $(".search").classList.toggle("has", !!e.target.value);
   clearTimeout(sugTimer); sugTimer = setTimeout(runSuggest, 280);
 };
 $("#q").onfocus = () => { if ($("#q").value.trim().length >= 2) runSuggest(); };
@@ -1953,6 +1974,13 @@ $("#q").onkeydown = e => {
   if (e.key === "Enter") { clearTimeout(sugTimer); runSuggest(); }
 };
 document.addEventListener("mousedown", e => { if (!e.target.closest(".search")) closeSuggest(); });
+$("#qClear").onclick = () => { const q = $("#q"); q.value = ""; q.dispatchEvent(new Event("input")); closeSuggest(); q.focus(); };
+// Strg+K oder „/“ springt in die Suche
+addEventListener("keydown", e => {
+  if (document.querySelector(".overlay.open") || (typeof VIEW !== "undefined" && VIEW === "shop")) return;
+  const typing = e.target.closest && e.target.closest("input, textarea, select, [contenteditable]");
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k" || (!typing && e.key === "/")) { e.preventDefault(); $("#q").focus(); $("#q").select(); }
+});
 
 /* ---------- Hinzufügen ---------- */
 let getManualWhere = () => [];
@@ -7149,7 +7177,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "1.13";
+const APP_VERSION = "1.14";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
