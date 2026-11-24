@@ -7211,7 +7211,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "1.16";
+const APP_VERSION = "1.17";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
@@ -7765,9 +7765,16 @@ function renderSyncSettings() {
     };
   } else {
     $("#deployBox").innerHTML = "";
-    if (!Sync.token) setTimeout(() => { $("#deployBox").innerHTML = `<div class="invbox"><h3>💾 Liste sichern</h3>
+    const invHtml = settings.apiKey ? `<div class="invbox"><h3>👪 Watchlist weitergeben</h3>
+        <div class="hint" style="margin-bottom:8px">Schick Familie & Freunden einen Link: Sie bekommen eine <b>eigene, leere Watchlist</b> – ohne PC und ohne TMDB-Schlüssel.</div>
+        <div class="row" style="gap:8px"><input class="inp" id="invName" placeholder="Für wen? (z. B. Tante Sabine)" style="flex:1"><button class="btn primary" id="invMake">Link erstellen</button></div>
+        <div id="invOut" style="margin-top:12px"></div></div>` : "";
+    const wireInv = () => { const m = $("#invMake"); if (m) m.onclick = () => { showInvite($("#invName").value.trim()); const sh = $("#invShare"); if (sh) sh.click(); }; };
+    if (Sync.token) setTimeout(() => { $("#deployBox").innerHTML = invHtml; wireInv(); }, 0);
+    if (!Sync.token) setTimeout(() => { $("#deployBox").innerHTML = invHtml + `<div class="invbox"><h3>💾 Liste sichern</h3>
       <div class="hint" style="margin-bottom:8px">Deine Liste ist nur auf diesem Handy gespeichert. Sichere sie ab und zu als Datei – z. B. bevor du ein neues Handy bekommst.</div>
       <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" id="bkSave">💾 Sicherung speichern</button><button class="btn sm" id="bkLoad">📂 Sicherung laden</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"></div></div>`;
+      wireInv();
       $("#bkSave").onclick = async () => { const st = await api("GET", "/api/state"); const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([JSON.stringify(st, null, 1)], { type: "application/json" })); a.download = `Watchlist-Sicherung-${new Date().toISOString().slice(0, 10)}.json`; a.click(); toast("✓ Sicherung gespeichert"); };
       $("#bkLoad").onclick = () => $("#bkFile").click();
@@ -7783,12 +7790,13 @@ function renderSyncSettings() {
 function inviteLink(name) {
   const data = { k: settings.apiKey, r: settings.region || "DE", n: name || "" };
   const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  return settings.pagesUrl + "#invite=" + b64;
+  const base = MODE === "local" ? location.origin + location.pathname : settings.pagesUrl;
+  return base + "#invite=" + b64;
 }
 function showInvite(name) {
   const link = inviteLink(name);
-  $("#invOut").innerHTML = `<div class="qrbox"><img src="api/qr?text=${encodeURIComponent(link)}" alt="QR-Code">
-    <div><b>${name ? esc(name) + " scannt" : "Mit dem Handy scannen"}</b> – oder den Link per WhatsApp schicken.<br>
+  $("#invOut").innerHTML = `<div class="qrbox">${MODE === "server" ? `<img src="api/qr?text=${encodeURIComponent(link)}" alt="QR-Code">` : ""}
+    <div>${MODE === "server" ? `<b>${name ? esc(name) + " scannt" : "Mit dem Handy scannen"}</b> – oder den Link per WhatsApp schicken.<br>` : `<b>Link ist fertig${name ? " für " + esc(name) : ""}!</b> Tipp auf <b>📤 Teilen</b> und wähl WhatsApp, SMS oder E-Mail.<br>`}
       <span class="hint">Die Watchlist öffnet sich sofort und ist startklar. Danach im Browser-Menü <b>„Zum Startbildschirm hinzufügen“</b> wählen, dann ist sie wie eine App.</span>
       <div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" id="invCopy">🔗 Link kopieren</button>${navigator.share ? `<button class="btn sm" id="invShare">📤 Teilen</button>` : ""}</div>
       <div class="hint" style="margin-top:6px">🔒 Im Link steckt dein TMDB-Schlüssel (nur zum Nachschlagen von Filmen) – gib ihn nur an Leute, denen du vertraust.</div></div></div>`;
