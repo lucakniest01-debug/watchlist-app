@@ -165,6 +165,8 @@
   .scr .info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .owntag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 6px; margin: 2px 0 4px; background: rgba(96,165,250,.15); color: #bfdbfe; }
   .tab.own { margin-left: 6px; }
+  .invbox { margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); }
+  .invbox h3 { margin: 0 0 6px; font-size: 15px; }
   .flag { display: inline-block; width: 15px; height: 10px; border-radius: 2px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255,255,255,.18); font-style: normal; }
   .flag.de { background: linear-gradient(#111 0 33.3%, #dd0000 33.3% 66.6%, #ffce00 66.6%); }
   .flag.ja { background: radial-gradient(circle at 50% 50%, #bc002d 0 28%, #fff 30%); }
@@ -7209,7 +7211,7 @@ async function handleShare() {
 }
 
 /* ---------- Abgleich PC ↔ Handy über ein privates GitHub-Gist ---------- */
-const APP_VERSION = "1.15";
+const APP_VERSION = "1.16";
 { const v = document.getElementById("appVer"); if (v) v.textContent = "Version " + APP_VERSION; }
 // Selbst-Update: liegt eine neue Version bereit, Knopf zum Neustarten anzeigen
 (() => {
@@ -7748,8 +7750,13 @@ function renderSyncSettings() {
     const box = $("#deployBox");
     if (!Sync.token) { box.innerHTML = ""; return; }
     box.innerHTML = `<button class="btn primary" id="btnDeploy">${settings.pagesUrl ? "📱 Handy-App aktualisieren" : "📱 Handy-App einrichten"}</button>
-      <div id="deployOut" style="margin-top:12px"></div>`;
+      <div id="deployOut" style="margin-top:12px"></div>
+      ${settings.pagesUrl && settings.apiKey ? `<div class="invbox"><h3>👪 Watchlist weitergeben</h3>
+        <div class="hint" style="margin-bottom:8px">Für Familie & Freunde: Sie bekommen auf ihrem Handy eine <b>eigene, leere Watchlist</b> – getrennt von deiner Liste, ohne PC, ohne GitHub und ohne TMDB-Schlüssel eintippen zu müssen.</div>
+        <div class="row" style="gap:8px"><input class="inp" id="invName" placeholder="Für wen? (z. B. Tante Sabine)" style="flex:1"><button class="btn primary" id="invMake">Einladung erstellen</button></div>
+        <div id="invOut" style="margin-top:12px"></div></div>` : ""}`;
     if (settings.pagesUrl) showQR();
+    if ($("#invMake")) $("#invMake").onclick = () => showInvite($("#invName").value.trim());
     $("#btnDeploy").onclick = async () => {
       const b = $("#btnDeploy"); b.disabled = true; b.innerHTML = `<span class="spin"></span> Richte ein …`;
       try { const r = await api("POST", "/api/deploy"); settings.pagesUrl = r.url; settings.deployedVersion = APP_VERSION; showQR(true); }
@@ -7757,10 +7764,36 @@ function renderSyncSettings() {
       b.disabled = false; b.textContent = "📱 Handy-App aktualisieren";
     };
   } else {
+    $("#deployBox").innerHTML = "";
+    if (!Sync.token) setTimeout(() => { $("#deployBox").innerHTML = `<div class="invbox"><h3>💾 Liste sichern</h3>
+      <div class="hint" style="margin-bottom:8px">Deine Liste ist nur auf diesem Handy gespeichert. Sichere sie ab und zu als Datei – z. B. bevor du ein neues Handy bekommst.</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" id="bkSave">💾 Sicherung speichern</button><button class="btn sm" id="bkLoad">📂 Sicherung laden</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"></div></div>`;
+      $("#bkSave").onclick = async () => { const st = await api("GET", "/api/state"); const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(st, null, 1)], { type: "application/json" })); a.download = `Watchlist-Sicherung-${new Date().toISOString().slice(0, 10)}.json`; a.click(); toast("✓ Sicherung gespeichert"); };
+      $("#bkLoad").onclick = () => $("#bkFile").click();
+      $("#bkFile").onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const st = JSON.parse(await f.text()); if (!Array.isArray(st.items)) throw new Error();
+        if (!confirm(`Sicherung mit ${st.items.length} Titeln laden? Die aktuelle Liste wird ersetzt.`)) return; await api("PUT", "/api/state", st); await load(); render(); toast("✓ Sicherung geladen"); } catch { toast("Das ist keine gültige Watchlist-Sicherung", true); } e.target.value = ""; };
+    }, 0);
     $("#syncIntro").innerHTML = Sync.token ? "Diese App ist mit deinem PC verbunden." :
       `So verbindest du die Handy-App mit deinem PC: Öffne auf dem PC <b>Watchlist → ⚙ → Handy & Abgleich</b> und scanne den QR-Code mit der Handy-Kamera. Oder füge hier denselben GitHub-Token ein wie am PC.`;
     $("#deployBox").innerHTML = "";
   }
+}
+// Einladung: Link mit eingebautem TMDB-Schlüssel (nur im Link, nicht auf der Webseite) – ohne Abgleich-Token, also eigene Liste
+function inviteLink(name) {
+  const data = { k: settings.apiKey, r: settings.region || "DE", n: name || "" };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return settings.pagesUrl + "#invite=" + b64;
+}
+function showInvite(name) {
+  const link = inviteLink(name);
+  $("#invOut").innerHTML = `<div class="qrbox"><img src="api/qr?text=${encodeURIComponent(link)}" alt="QR-Code">
+    <div><b>${name ? esc(name) + " scannt" : "Mit dem Handy scannen"}</b> – oder den Link per WhatsApp schicken.<br>
+      <span class="hint">Die Watchlist öffnet sich sofort und ist startklar. Danach im Browser-Menü <b>„Zum Startbildschirm hinzufügen“</b> wählen, dann ist sie wie eine App.</span>
+      <div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" id="invCopy">🔗 Link kopieren</button>${navigator.share ? `<button class="btn sm" id="invShare">📤 Teilen</button>` : ""}</div>
+      <div class="hint" style="margin-top:6px">🔒 Im Link steckt dein TMDB-Schlüssel (nur zum Nachschlagen von Filmen) – gib ihn nur an Leute, denen du vertraust.</div></div></div>`;
+  $("#invCopy").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("✓ Link kopiert"); } catch { prompt("Link kopieren:", link); } };
+  const sh = $("#invShare"); if (sh) sh.onclick = () => navigator.share({ title: "Meine Watchlist", text: `${name ? "Hallo " + name + "! " : ""}Hier ist deine eigene Watchlist für Filme, Serien und Anime:`, url: link }).catch(() => {});
 }
 function showQR(fresh) {
   const link = settings.pagesUrl + "#connect=" + encodeURIComponent(Sync.token);
@@ -7791,6 +7824,28 @@ function showQR(fresh) {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
   }
   // Verbindungslink aus dem QR-Code (#connect=…) übernehmen – beim Start und wenn die App schon offen ist
+  const acceptInvite = async () => {
+    if (MODE !== "local" || !location.hash.startsWith("#invite=")) return false;
+    let d = null;
+    try { const b = location.hash.slice(8).replace(/-/g, "+").replace(/_/g, "/"); d = JSON.parse(decodeURIComponent(escape(atob(b)))); } catch {}
+    history.replaceState(null, "", location.pathname + location.search);
+    if (!d || !d.k) { toast("Die Einladung ist ungültig", true); return true; }
+    // nur den Schlüssel übernehmen – die Liste bleibt die eigene (kein Abgleich mit dem Einladenden)
+    await api("POST", "/api/settings", { apiKey: d.k, region: d.r || "DE", myServices: settings.myServices || [] });
+    settings = await api("GET", "/api/settings");
+    try { if (d.n) localStorage.setItem("watchlist-owner", d.n); } catch {}
+    render();
+    const box = document.createElement("div"); box.className = "overlay open"; box.id = "ovWelcome";
+    box.innerHTML = `<div class="modal" style="max-width:440px"><div class="mbody" style="text-align:center;padding:26px 22px">
+      <div style="font-size:46px">🍿</div><h2 style="margin:8px 0 6px">Willkommen${d.n ? ", " + esc(d.n) : ""}!</h2>
+      <p class="hint" style="font-size:14.5px;line-height:1.5">Das ist <b>deine eigene Watchlist</b> – alles, was du hier einträgst, bleibt auf deinem Handy.</p>
+      <ol class="steps" style="text-align:left;font-size:14px;line-height:1.6;margin:12px 0 16px"><li>Oben einen Film, eine Serie oder einen Anime suchen</li><li>Auf <b>+ Hinzufügen</b> tippen – du siehst gleich, wo er läuft</li>
+        <li>Tipp: im Browser-Menü <b>„Zum Startbildschirm hinzufügen“</b>, dann ist die Watchlist wie eine App</li></ol>
+      <button class="btn primary" id="welcomeGo" style="width:100%">Los geht's</button></div></div>`;
+    document.body.appendChild(box); $("#welcomeGo").onclick = () => box.remove();
+    return true;
+  };
+  addEventListener("hashchange", acceptInvite);
   const connectFromHash = async () => {
     if (MODE !== "local" || !location.hash.startsWith("#connect=")) return false;
     const t = decodeURIComponent(location.hash.slice(9));
@@ -7806,7 +7861,8 @@ function showQR(fresh) {
   try { await load(); } catch (e) { toast(e.message, true); }
   introLoaded(); setTimeout(() => Intro.refresh().catch(() => {}), 4000); // Szenen fürs nächste Mal vorbereiten
   await Sync.loadLocal(); Sync.status();
-  if (!(await connectFromHash()) && Sync.token) await Sync.run();
+  const invited = await acceptInvite();
+  if (!invited && !(await connectFromHash()) && Sync.token) await Sync.run();
   try { if (localStorage.getItem("watchlist-view") === "shop" && !location.search.includes("share_")) setView("shop"); } catch {}
   if (MODE === "local") handleShare();
   // Handy-App automatisch auf den neuesten Stand bringen, wenn die .exe aktualisiert wurde
